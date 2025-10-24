@@ -1,22 +1,20 @@
-import { MadeWithDyad } from "@/components/made-with-dyad";
-import ExpenseList from "@/components/expenses/ExpenseList";
-import CreateExpenseButton from "@/components/expenses/CreateExpenseButton";
+import { Navigate } from "react-router-dom";
+import { useAuth } from "@/components/auth/SessionContextProvider";
 
 const Index = () => {
-  return (
-    <div className="container mx-auto p-4 sm:p-6 lg:p-8 min-h-screen">
-      <header className="flex justify-between items-center mb-8">
-        <h1 className="text-3xl font-bold tracking-tight">Gerenciador de Despesas</h1>
-        <CreateExpenseButton />
-      </header>
-      
-      <main>
-        <ExpenseList />
-      </main>
+  const { session, isLoading } = useAuth();
 
-      <MadeWithDyad />
-    </div>
-  );
+  if (isLoading) {
+    return null; // Wait for auth state to load
+  }
+
+  // Redirect authenticated users to the dashboard
+  if (session) {
+    return <Navigate to="/dashboard" replace />;
+  }
+
+  // Redirect unauthenticated users to the login page
+  return <Navigate to="/login" replace />;
 };
 
 export default Index;
