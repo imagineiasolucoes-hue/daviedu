@@ -1,20 +1,19 @@
-import { NavLink, Outlet, useLocation } from "react-router-dom";
+import { NavLink, Outlet, useLocation, Navigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
 
 const financialNavItems = [
   { href: "/financeiro/dashboard", label: "Dashboard" },
   { href: "/financeiro/receitas", label: "Receitas" },
   { href: "/financeiro/despesas", label: "Despesas" },
-  { href: "/financeiro/tipos-receita", label: "Tipos de Receita" }, // New navigation item
+  { href: "/financeiro/folha-de-pagamento", label: "Folha de Pagamento" },
+  { href: "/financeiro/relatorios", label: "Relatórios" },
 ];
 
 const FinancialLayout = () => {
   const location = useLocation();
 
-  // Redirect base /financeiro to /financeiro/dashboard
   if (location.pathname === "/financeiro") {
-    window.location.replace("/financeiro/dashboard");
-    return null;
+    return <Navigate to="/financeiro/dashboard" replace />;
   }
 
   return (
@@ -26,7 +25,7 @@ const FinancialLayout = () => {
         </p>
       </div>
       <div className="border-b">
-        <nav className="-mb-px flex space-x-8" aria-label="Tabs">
+        <nav className="-mb-px flex space-x-8 overflow-x-auto" aria-label="Tabs">
           {financialNavItems.map((item) => (
             <NavLink
               key={item.href}

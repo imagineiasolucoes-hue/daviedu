@@ -17,9 +17,10 @@ import AppLayout from "@/components/layout/AppLayout";
 import LandingPage from "./pages/LandingPage";
 import FinancialLayout from "@/components/layout/FinancialLayout";
 import FinancialDashboard from "@/pages/financial/Dashboard";
-import Income from "@/pages/financial/Income";
+import Revenues from "@/pages/financial/Revenues";
 import Expenses from "@/pages/financial/Expenses";
-import IncomeCategories from "@/pages/financial/IncomeCategories"; // Import the new page
+import Payroll from "@/pages/financial/Payroll";
+import Reports from "@/pages/financial/Reports";
 
 const queryClient = new QueryClient();
 
@@ -42,13 +43,14 @@ const App = () => (
                 <Route path="/dashboard" element={<Dashboard />} />
                 <Route path="/secretaria" element={<Secretaria />} />
                 
-                {/* Financial Module Routes */}
+                {/* New Financial Module Routes */}
                 <Route path="/financeiro" element={<FinancialLayout />}>
                   <Route index element={<Navigate to="/financeiro/dashboard" replace />} />
                   <Route path="dashboard" element={<FinancialDashboard />} />
-                  <Route path="receitas" element={<Income />} />
+                  <Route path="receitas" element={<Revenues />} />
                   <Route path="despesas" element={<Expenses />} />
-                  <Route path="tipos-receita" element={<IncomeCategories />} /> {/* New route */}
+                  <Route path="folha-de-pagamento" element={<Payroll />} />
+                  <Route path="relatorios" element={<Reports />} />
                 </Route>
 
                 <Route path="/pedagogico" element={<Pedagogico />} />
