@@ -62,15 +62,7 @@ export const TransactionsTable: React.FC<TransactionsTableProps> = ({ transactio
                   </Badge>
                 </TableCell>
                 <TableCell className="font-medium">{transaction.description || "N/A"}</TableCell>
-                <TableCell>
-                  {transaction.categories?.parent_id ? (
-                    // If it's a subcategory, display parent > sub
-                    `${transaction.categories.categories?.name || 'N/A'} > ${transaction.categories.name}`
-                  ) : (
-                    // Otherwise, just display the category name
-                    transaction.categories?.name || "Sem categoria"
-                  )}
-                </TableCell>
+                <TableCell>{transaction.transaction_categories?.name || "Sem categoria"}</TableCell>
                 <TableCell className="text-right">{formatCurrency(transaction.amount)}</TableCell>
                 <TableCell className="hidden md:table-cell text-right">
                   {format(new Date(transaction.date), "dd/MM/yyyy", { locale: ptBR })}
