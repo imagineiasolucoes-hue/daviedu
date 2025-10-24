@@ -27,6 +27,7 @@ const registerSchema = z.object({
   firstName: z.string().min(2, "O nome é obrigatório"),
   lastName: z.string().min(2, "O sobrenome é obrigatório"),
   email: z.string().email("Email inválido"),
+  password: z.string().min(6, "A senha deve ter no mínimo 6 caracteres"), // Added password field
 });
 
 const Register = () => {
@@ -40,18 +41,46 @@ const Register = () => {
       firstName: "",
       lastName: "",
       email: "",
+      password: "", // Default value for password
     },
   });
 
   async function onSubmit(values: z.infer<typeof registerSchema>) {
     setIsLoading(true);
     try {
-      const { data, error } = await supabase.functions.invoke("create-tenant-and-admin", {
-        body: values,
+      // 1. Sign up the user with Supabase Auth
+      const { data: authData, error: authError } = await supabase.auth.signUp({
+        email: values.email,
+        password: values.password,
+        options: {
+          data: {
+            first_name: values.firstName,
+            last_name: values.lastName,
+          },
+        },
       });
 
-      if (error) {
-        throw new Error(error.message);
+      if (authError) {
+        throw new Error(authError.message);
+      }
+
+      if (!authData.user) {
+        throw new Error("Falha ao criar usuário. Verifique seu email e tente novamente.");
+      }
+
+      // 2. Invoke the edge function to create tenant and update profile
+      const { data, error: edgeFunctionError } = await supabase.functions.invoke("create-tenant-and-admin", {
+        body: {
+          schoolName: values.schoolName,
+          email: values.email,
+          firstName: values.firstName,
+          lastName: values.lastName,
+          userId: authData.user.id, // Pass the newly created user's ID
+        },
+      });
+
+      if (edgeFunctionError) {
+        throw new Error(edgeFunctionError.message);
       }
       
       const { schoolName, firstName, email } = data as { schoolName: string, firstName: string, email: string };
@@ -144,6 +173,19 @@ const Register = () => {
                     <FormLabel>Seu Email (Administrador)</FormLabel>
                     <FormControl>
                       <Input type="email" placeholder="admin@exemplo.com" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="password"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Senha</FormLabel>
+                    <FormControl>
+                      <Input type="password" placeholder="••••••••" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>

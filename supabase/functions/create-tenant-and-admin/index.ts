@@ -1,6 +1,6 @@
-// @ts-nocheck
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+/// <reference lib="deno.ns" />
+import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -14,19 +14,18 @@ serve(async (req) => {
   }
 
   try {
-    const { schoolName, email, firstName, lastName } = await req.json();
+    const { schoolName, email, firstName, lastName, userId } = await req.json(); // Added userId
 
-    if (!schoolName || !email || !firstName || !lastName) {
-      throw new Error("Missing required fields: schoolName, email, firstName, lastName.");
+    if (!schoolName || !email || !firstName || !lastName || !userId) { // userId is now required
+      throw new Error("Missing required fields: schoolName, email, firstName, lastName, userId.");
     }
 
-    // Create a Supabase client with the service role key
     const supabaseAdmin = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
     );
 
-    // 1. Check if a tenant with this name already exists (optional check for uniqueness)
+    // 1. Check if a tenant with this name already exists
     const { data: existingTenant, error: checkError } = await supabaseAdmin
       .from("tenants")
       .select("id")
@@ -47,9 +46,17 @@ serve(async (req) => {
 
     if (tenantError) throw tenantError;
 
-    // 3. Return the tenant ID and the admin details for WhatsApp redirection
-    return new Response(JSON.stringify({ 
-        success: true, 
+    // 3. Update the user's profile with the new tenant_id and set role to 'admin'
+    const { error: profileUpdateError } = await supabaseAdmin
+      .from("profiles")
+      .update({ tenant_id: tenant.id, role: 'admin' }) // Assuming 'admin' role exists
+      .eq("id", userId);
+
+    if (profileUpdateError) throw profileUpdateError;
+
+    // 4. Return success
+    return new Response(JSON.stringify({
+        success: true,
         tenantId: tenant.id,
         schoolName,
         firstName,
