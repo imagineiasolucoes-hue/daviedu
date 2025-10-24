@@ -13,7 +13,7 @@ const fetchExpenseTransactions = async (tenantId: string | undefined): Promise<T
   if (!tenantId) return [];
   const { data, error } = await supabase
     .from("transactions")
-    .select("*, transaction_categories(name)")
+    .select("*, categories(name, parent_id, categories(name))") // Fetch parent category name too
     .eq("tenant_id", tenantId)
     .eq("type", "expense")
     .order("date", { ascending: false });

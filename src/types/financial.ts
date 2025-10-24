@@ -3,7 +3,7 @@ export interface Transaction {
   date: string;
   type: 'income' | 'expense';
   category_id: string;
-  transaction_categories: { name: string } | null;
+  categories: { name: string; parent_id: string | null; categories: { name: string } | null } | null; // Updated to reflect hierarchical categories
   description: string | null;
   amount: number;
   tenant_id: string;
