@@ -34,9 +34,9 @@ const Login = () => {
               },
             },
           }}
-          theme="light" // Using light theme for simplicity, matching current design
+          view="sign_in" // This ensures only the login form is shown
+          theme="light"
           providers={[]}
-          redirectTo={window.location.origin + "/dashboard"}
           localization={{
             variables: {
               sign_in: {
@@ -44,23 +44,11 @@ const Login = () => {
                 password_label: 'Senha',
                 button_label: 'Entrar',
                 social_provider_text: 'Entrar com {{provider}}',
-                link_text: 'Já tem uma conta? Entrar',
-              },
-              sign_up: {
-                email_label: 'Email',
-                password_label: 'Criar Senha',
-                button_label: 'Cadastrar',
-                social_provider_text: 'Cadastrar com {{provider}}',
-                link_text: 'Não tem uma conta? Cadastre-se',
               },
               forgotten_password: {
                 link_text: 'Esqueceu sua senha?',
                 button_label: 'Enviar instruções de redefinição',
                 email_label: 'Email',
-              },
-              update_password: {
-                password_label: 'Nova Senha',
-                button_label: 'Atualizar Senha',
               },
             },
           }}

@@ -28,7 +28,6 @@ const LandingPage = () => {
     return null; // Or a loading spinner
   }
 
-  // If user is already logged in, redirect to the dashboard
   if (session) {
     return <Navigate to="/dashboard" replace />;
   }
@@ -52,7 +51,7 @@ const LandingPage = () => {
               <Link to="/login">Entrar</Link>
             </Button>
             <Button asChild>
-              <Link to="/login">Comece Agora</Link>
+              <Link to="/register">Comece Agora</Link>
             </Button>
           </div>
         </div>
@@ -71,7 +70,7 @@ const LandingPage = () => {
             </p>
             <div className="mt-8">
               <Button size="lg" asChild>
-                <Link to="/login">Experimente Grátis</Link>
+                <Link to="/register">Experimente Grátis</Link>
               </Button>
             </div>
           </div>
