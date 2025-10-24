@@ -5,6 +5,7 @@ const financialNavItems = [
   { href: "/financeiro/dashboard", label: "Dashboard" },
   { href: "/financeiro/receitas", label: "Receitas" },
   { href: "/financeiro/despesas", label: "Despesas" },
+  { href: "/financeiro/tipos-receita", label: "Tipos de Receita" }, // New navigation item
 ];
 
 const FinancialLayout = () => {

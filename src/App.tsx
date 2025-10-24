@@ -19,6 +19,7 @@ import FinancialLayout from "@/components/layout/FinancialLayout";
 import FinancialDashboard from "@/pages/financial/Dashboard";
 import Income from "@/pages/financial/Income";
 import Expenses from "@/pages/financial/Expenses";
+import IncomeCategories from "@/pages/financial/IncomeCategories"; // Import the new page
 
 const queryClient = new QueryClient();
 
@@ -47,6 +48,7 @@ const App = () => (
                   <Route path="dashboard" element={<FinancialDashboard />} />
                   <Route path="receitas" element={<Income />} />
                   <Route path="despesas" element={<Expenses />} />
+                  <Route path="tipos-receita" element={<IncomeCategories />} /> {/* New route */}
                 </Route>
 
                 <Route path="/pedagogico" element={<Pedagogico />} />
