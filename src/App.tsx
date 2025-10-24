@@ -12,6 +12,7 @@ import Teachers from "./pages/Teachers";
 import Payroll from "./pages/Payroll";
 import { SessionContextProvider } from "@/components/auth/SessionContextProvider";
 import ProtectedRoute from "@/components/auth/ProtectedRoute";
+import AppLayout from "@/components/layout/AppLayout";
 
 const queryClient = new QueryClient();
 
@@ -28,10 +29,12 @@ const App = () => (
             
             {/* Protected Routes */}
             <Route element={<ProtectedRoute />}>
-              <Route path="/dashboard" element={<Dashboard />} />
-              <Route path="/expenses" element={<Expenses />} />
-              <Route path="/teachers" element={<Teachers />} />
-              <Route path="/payroll" element={<Payroll />} />
+              <Route element={<AppLayout />}>
+                <Route path="/dashboard" element={<Dashboard />} />
+                <Route path="/expenses" element={<Expenses />} />
+                <Route path="/teachers" element={<Teachers />} />
+                <Route path="/payroll" element={<Payroll />} />
+              </Route>
             </Route>
 
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

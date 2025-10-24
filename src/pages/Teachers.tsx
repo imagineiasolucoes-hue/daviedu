@@ -1,10 +1,9 @@
-import { MadeWithDyad } from "@/components/made-with-dyad";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
 
 const Teachers = () => {
   return (
-    <div className="container mx-auto p-4 sm:p-6 lg:p-8 min-h-screen">
+    <div className="p-4 sm:p-6 lg:p-8 min-h-screen">
       <header className="flex justify-between items-center mb-8">
         <h1 className="text-3xl font-bold tracking-tight">Cadastro de Professores</h1>
         <Button className="flex items-center gap-2">
@@ -20,8 +19,6 @@ const Teachers = () => {
           </p>
         </div>
       </main>
-
-      <MadeWithDyad />
     </div>
   );
 };
