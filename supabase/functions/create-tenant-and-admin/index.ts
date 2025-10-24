@@ -14,10 +14,10 @@ serve(async (req) => {
   }
 
   try {
-    const { schoolName, email, password, firstName, lastName } = await req.json();
+    const { schoolName, email, firstName, lastName } = await req.json();
 
-    if (!schoolName || !email || !password || !firstName || !lastName) {
-      throw new Error("Missing required fields.");
+    if (!schoolName || !email || !firstName || !lastName) {
+      throw new Error("Missing required fields: schoolName, email, firstName, lastName.");
     }
 
     // Create a Supabase client with the service role key
@@ -26,7 +26,19 @@ serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
     );
 
-    // 1. Create the tenant (school)
+    // 1. Check if a tenant with this name already exists (optional check for uniqueness)
+    const { data: existingTenant, error: checkError } = await supabaseAdmin
+      .from("tenants")
+      .select("id")
+      .eq("name", schoolName)
+      .maybeSingle();
+
+    if (checkError) throw checkError;
+    if (existingTenant) {
+        throw new Error("A escola com este nome já está cadastrada.");
+    }
+
+    // 2. Create the tenant (school)
     const { data: tenant, error: tenantError } = await supabaseAdmin
       .from("tenants")
       .insert({ name: schoolName })
@@ -35,33 +47,14 @@ serve(async (req) => {
 
     if (tenantError) throw tenantError;
 
-    // 2. Create the admin user
-    const { data: { user }, error: userError } = await supabaseAdmin.auth.admin.createUser({
-      email,
-      password,
-      email_confirm: true, // Auto-confirm email for simplicity, can be changed to false
-      user_metadata: {
-        first_name: firstName,
-        last_name: lastName,
-      },
-    });
-
-    if (userError) throw userError;
-    if (!user) throw new Error("User creation failed.");
-
-    // The handle_new_user trigger will create the profile.
-    // 3. Update the new profile with tenant_id and admin role
-    const { error: profileError } = await supabaseAdmin
-      .from("profiles")
-      .update({
-        tenant_id: tenant.id,
-        role: "admin",
-      })
-      .eq("id", user.id);
-
-    if (profileError) throw profileError;
-
-    return new Response(JSON.stringify({ success: true, userId: user.id, tenantId: tenant.id }), {
+    // 3. Return the tenant ID and the admin details for WhatsApp redirection
+    return new Response(JSON.stringify({ 
+        success: true, 
+        tenantId: tenant.id,
+        schoolName,
+        firstName,
+        email
+    }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 200,
     });
