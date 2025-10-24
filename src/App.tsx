@@ -7,6 +7,9 @@ import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
+import Expenses from "./pages/Expenses";
+import Teachers from "./pages/Teachers";
+import Payroll from "./pages/Payroll";
 import { SessionContextProvider } from "@/components/auth/SessionContextProvider";
 import ProtectedRoute from "@/components/auth/ProtectedRoute";
 
@@ -26,6 +29,9 @@ const App = () => (
             {/* Protected Routes */}
             <Route element={<ProtectedRoute />}>
               <Route path="/dashboard" element={<Dashboard />} />
+              <Route path="/expenses" element={<Expenses />} />
+              <Route path="/teachers" element={<Teachers />} />
+              <Route path="/payroll" element={<Payroll />} />
             </Route>
 
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

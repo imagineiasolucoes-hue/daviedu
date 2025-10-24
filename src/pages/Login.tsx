@@ -45,7 +45,6 @@ const Login = () => {
                 button_label: 'Entrar',
                 social_provider_text: 'Entrar com {{provider}}',
                 link_text: 'Já tem uma conta? Entrar',
-                no_account_text: 'Não tem uma conta? Cadastre-se',
               },
               sign_up: {
                 email_label: 'Email',
@@ -53,7 +52,6 @@ const Login = () => {
                 button_label: 'Cadastrar',
                 social_provider_text: 'Cadastrar com {{provider}}',
                 link_text: 'Não tem uma conta? Cadastre-se',
-                no_account_text: 'Já tem uma conta? Entrar',
               },
               forgotten_password: {
                 link_text: 'Esqueceu sua senha?',
