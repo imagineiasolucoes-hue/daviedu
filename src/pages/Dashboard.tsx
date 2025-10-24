@@ -1,7 +1,7 @@
 import { MadeWithDyad } from "@/components/made-with-dyad";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
-import { LogOut, Users, DollarSign, TrendingUp, BookOpen } from "lucide-react";
+import { LogOut, DollarSign } from "lucide-react";
 import { showError, showSuccess } from "@/utils/toast";
 import IndicatorCard from "@/components/dashboard/IndicatorCard";
 
@@ -16,35 +16,14 @@ const Dashboard = () => {
     }
   };
 
-  // Dados de exemplo para indicadores
+  // Dados de exemplo para indicadores (mantendo apenas Despesas Mensais)
   const indicators = [
-    {
-      title: "Total de Professores",
-      value: 45,
-      change: "+20.1% desde o mês passado",
-      icon: Users,
-      color: "text-blue-500",
-    },
     {
       title: "Despesas Mensais",
       value: "R$ 12.500,00",
       change: "-5.2% desde o mês passado",
       icon: DollarSign,
       color: "text-red-500",
-    },
-    {
-      title: "Média de Notas",
-      value: 8.7,
-      change: "+0.3 pontos",
-      icon: TrendingUp,
-      color: "text-green-500",
-    },
-    {
-      title: "Disciplinas Ativas",
-      value: 18,
-      change: "Nenhuma alteração",
-      icon: BookOpen,
-      color: "text-yellow-500",
     },
   ];
 
