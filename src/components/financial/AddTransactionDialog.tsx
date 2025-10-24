@@ -68,6 +68,7 @@ export const AddTransactionDialog: React.FC<AddTransactionDialogProps> = ({ open
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const [comboboxOpen, setComboboxOpen] = useState(false);
+  const [searchValue, setSearchValue] = useState("");
 
   const { data: tenantId } = useQuery({
     queryKey: ['tenantId', user?.id],
@@ -192,17 +193,19 @@ export const AddTransactionDialog: React.FC<AddTransactionDialogProps> = ({ open
                     </PopoverTrigger>
                     <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
                       <Command>
-                        <CommandInput placeholder="Procurar ou criar categoria..." />
+                        <CommandInput 
+                          placeholder="Procurar ou criar categoria..."
+                          onValueChange={setSearchValue}
+                        />
                         <CommandList>
                           <CommandEmpty>
                              <CommandItem
                                 onSelect={() => {
-                                  const inputValue = (document.querySelector('[cmdk-input]') as HTMLInputElement)?.value;
-                                  form.setValue("category", inputValue);
+                                  form.setValue("category", searchValue);
                                   setComboboxOpen(false);
                                 }}
                               >
-                                Criar "{ (document.querySelector('[cmdk-input]') as HTMLInputElement)?.value }"
+                                Criar "{searchValue}"
                               </CommandItem>
                           </CommandEmpty>
                           <CommandGroup>
