@@ -20,7 +20,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { Calendar } from "@/components/ui/calendar";
-import { CalendarIcon, Loader2, Check, ChevronsUpDown } from "lucide-react";
+import { CalendarIcon, Loader2, Check, ChevronsUpDown, PlusCircle } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -112,7 +112,6 @@ export const AddTransactionDialog: React.FC<AddTransactionDialogProps> = ({ open
       if (existingCategory) {
         categoryId = existingCategory.id;
       } else {
-        // It's a new category, so create it first
         const { data: newCategory, error: categoryError } = await supabase
           .from('transaction_categories')
           .insert({ name: category, type, tenant_id: tenantId })
@@ -138,7 +137,8 @@ export const AddTransactionDialog: React.FC<AddTransactionDialogProps> = ({ open
       queryClient.invalidateQueries({ queryKey: ["transaction_categories"] });
       onOpenChange(false);
       form.reset();
-    } catch (error: any) {
+    } catch (error: any)
+     {
       showError(error.message || "Ocorreu um erro ao registrar a transação.");
     }
   };
@@ -198,17 +198,19 @@ export const AddTransactionDialog: React.FC<AddTransactionDialogProps> = ({ open
                           onValueChange={setSearchValue}
                         />
                         <CommandList>
-                          <CommandEmpty>
-                             <CommandItem
+                          <CommandEmpty>Nenhuma categoria encontrada.</CommandEmpty>
+                          <CommandGroup>
+                            {searchValue && !categories.some(c => c.name.toLowerCase() === searchValue.toLowerCase()) && (
+                              <CommandItem
                                 onSelect={() => {
                                   form.setValue("category", searchValue);
                                   setComboboxOpen(false);
                                 }}
                               >
+                                <PlusCircle className="mr-2 h-4 w-4" />
                                 Criar "{searchValue}"
                               </CommandItem>
-                          </CommandEmpty>
-                          <CommandGroup>
+                            )}
                             {categories.map((cat) => (
                               <CommandItem
                                 value={cat.name}
