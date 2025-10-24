@@ -71,9 +71,6 @@ const LandingPage = () => {
             <a href="#testimonials" className="text-sm font-medium text-gray-600 hover:text-blue-600">Depoimentos</a>
           </nav>
           <div className="flex items-center gap-2">
-            <Button variant="ghost" asChild>
-              <Link to="/login">Entrar</Link>
-            </Button>
             <Button asChild>
               <Link to="/register">Comece Agora</Link>
             </Button>
