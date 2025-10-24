@@ -19,6 +19,7 @@ import FinancialLayout from "@/components/layout/FinancialLayout";
 import FinancialDashboard from "@/pages/financial/Dashboard";
 import Income from "@/pages/financial/Income";
 import Expenses from "@/pages/financial/Expenses";
+import Payroll from "@/pages/financial/Payroll";
 
 const queryClient = new QueryClient();
 
@@ -47,6 +48,7 @@ const App = () => (
                   <Route path="dashboard" element={<FinancialDashboard />} />
                   <Route path="receitas" element={<Income />} />
                   <Route path="despesas" element={<Expenses />} />
+                  <Route path="folha-de-pagamento" element={<Payroll />} />
                 </Route>
 
                 <Route path="/pedagogico" element={<Pedagogico />} />

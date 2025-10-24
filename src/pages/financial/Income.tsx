@@ -13,7 +13,7 @@ const fetchIncomeTransactions = async (tenantId: string | undefined): Promise<Tr
   if (!tenantId) return [];
   const { data, error } = await supabase
     .from("transactions")
-    .select("*, transaction_categories(name)")
+    .select("*, categories(name)") // Updated from transaction_categories
     .eq("tenant_id", tenantId)
     .eq("type", "income")
     .order("date", { ascending: false });
