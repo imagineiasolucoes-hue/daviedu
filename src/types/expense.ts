@@ -18,11 +18,10 @@ export type Expense = z.infer<typeof expenseSchema> & {
 export type ExpenseFormValues = z.infer<typeof expenseSchema>;
 
 export const expenseCategories = [
-  "Insumos",
-  "Contas Fixas (Água, Luz, Internet)",
-  "Folha de Pagamento",
-  "Manutenção",
-  "Marketing",
-  "Impostos",
+  "Alimentação",
+  "Transporte",
+  "Moradia",
+  "Entretenimento",
+  "Utilidades",
   "Outros",
 ];
