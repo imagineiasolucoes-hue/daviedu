@@ -11,6 +11,7 @@ import Secretaria from "./pages/Secretaria";
 import Financeiro from "./pages/Financeiro";
 import Pedagogico from "./pages/Pedagogico";
 import Comunicacao from "./pages/Comunicacao";
+import Settings from "./pages/Settings";
 import { SessionContextProvider } from "@/components/auth/SessionContextProvider";
 import ProtectedRoute from "@/components/auth/ProtectedRoute";
 import AppLayout from "@/components/layout/AppLayout";
@@ -39,6 +40,7 @@ const App = () => (
                 <Route path="/financeiro" element={<Financeiro />} />
                 <Route path="/pedagogico" element={<Pedagogico />} />
                 <Route path="/comunicacao" element={<Comunicacao />} />
+                <Route path="/settings" element={<Settings />} />
               </Route>
             </Route>
 
