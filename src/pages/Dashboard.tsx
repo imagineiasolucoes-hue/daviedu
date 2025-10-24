@@ -1,47 +1,31 @@
-import { MadeWithDyad } from "@/components/made-with-dyad";
-import { DollarSign } from "lucide-react";
-import IndicatorCard from "@/components/dashboard/IndicatorCard";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Users, GraduationCap, DollarSign, BarChart } from "lucide-react";
+
+const kpiData = [
+  { title: "Total de Alunos", value: "1,250", icon: Users },
+  { title: "Turmas Ativas", value: "42", icon: GraduationCap },
+  { title: "Receita Mensal", value: "R$ 150.000", icon: DollarSign },
+  { title: "Inadimplência", value: "5.2%", icon: BarChart },
+];
 
 const Dashboard = () => {
-  // Dados de exemplo para indicadores (mantendo apenas Despesas Mensais)
-  const indicators = [
-    {
-      title: "Despesas Mensais",
-      value: "R$ 12.500,00",
-      change: "-5.2% desde o mês passado",
-      icon: DollarSign,
-      color: "text-red-500",
-    },
-  ];
-
   return (
-    <div className="p-4 sm:p-6 lg:p-8 min-h-screen">
-      <header className="mb-8">
-        <h1 className="text-3xl font-bold tracking-tight">Dashboard de Indicadores</h1>
-      </header>
-      
-      <main className="space-y-8">
-        {/* Indicadores */}
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-          {indicators.map((indicator, index) => (
-            <IndicatorCard key={index} {...indicator} />
-          ))}
-        </div>
-
-        {/* Gráficos e Detalhes (Placeholder) */}
-        <div className="grid gap-4 lg:grid-cols-3">
-          <div className="lg:col-span-2 bg-card p-6 rounded-lg shadow">
-            <h2 className="text-xl font-semibold mb-4">Visão Geral de Desempenho</h2>
-            <p className="text-muted-foreground">Gráfico de desempenho aqui.</p>
-          </div>
-          <div className="bg-card p-6 rounded-lg shadow">
-            <h2 className="text-xl font-semibold mb-4">Atividades Recentes</h2>
-            <p className="text-muted-foreground">Lista de atividades recentes aqui.</p>
-          </div>
-        </div>
-      </main>
-
-      <MadeWithDyad />
+    <div>
+      <h1 className="text-3xl font-bold tracking-tight mb-6">Dashboard</h1>
+      <div className="grid gap-4 md:grid-cols-2 md:gap-8 lg:grid-cols-4">
+        {kpiData.map((kpi) => (
+          <Card key={kpi.title}>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">{kpi.title}</CardTitle>
+              <kpi.icon className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{kpi.value}</div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+      {/* Future charts and summaries will go here */}
     </div>
   );
 };

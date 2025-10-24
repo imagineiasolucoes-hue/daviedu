@@ -7,11 +7,13 @@ import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
-import Expenses from "./pages/Expenses";
-import Teachers from "./pages/Teachers";
-import Payroll from "./pages/Payroll";
+import Secretaria from "./pages/Secretaria";
+import Financeiro from "./pages/Financeiro";
+import Pedagogico from "./pages/Pedagogico";
+import Comunicacao from "./pages/Comunicacao";
 import { SessionContextProvider } from "@/components/auth/SessionContextProvider";
 import ProtectedRoute from "@/components/auth/ProtectedRoute";
+import AppLayout from "@/components/layout/AppLayout";
 
 const queryClient = new QueryClient();
 
@@ -23,18 +25,20 @@ const App = () => (
       <BrowserRouter>
         <SessionContextProvider>
           <Routes>
-            <Route path="/" element={<Index />} />
             <Route path="/login" element={<Login />} />
             
             {/* Protected Routes */}
             <Route element={<ProtectedRoute />}>
-              <Route path="/dashboard" element={<Dashboard />} />
-              <Route path="/expenses" element={<Expenses />} />
-              <Route path="/teachers" element={<Teachers />} />
-              <Route path="/payroll" element={<Payroll />} />
+              <Route element={<AppLayout />}>
+                <Route path="/" element={<Dashboard />} />
+                <Route path="/dashboard" element={<Dashboard />} />
+                <Route path="/secretaria" element={<Secretaria />} />
+                <Route path="/financeiro" element={<Financeiro />} />
+                <Route path="/pedagogico" element={<Pedagogico />} />
+                <Route path="/comunicacao" element={<Comunicacao />} />
+              </Route>
             </Route>
 
-            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
         </SessionContextProvider>
