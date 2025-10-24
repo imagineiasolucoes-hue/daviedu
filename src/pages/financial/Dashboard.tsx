@@ -5,17 +5,28 @@ import { TransactionsTable } from "@/components/financial/TransactionsTable";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/components/auth/SessionContextProvider";
-import { Transaction } from "@/types/financial";
+import { Transaction, PayrollExpense, CategoryType } from "@/types/financial";
 
 const fetchTransactions = async (tenantId: string | undefined): Promise<Transaction[]> => {
   if (!tenantId) return [];
   const { data, error } = await supabase
     .from("transactions")
-    .select("*, transaction_categories(name)")
+    .select("*, categories!transactions_category_id_fkey(name, parent_id, parent:parent_id(name, parent_id, parent:parent_id(name)))")
     .eq("tenant_id", tenantId)
     .order("date", { ascending: false });
   if (error) throw new Error(error.message);
   return data as Transaction[];
+};
+
+const fetchPayrollExpenses = async (tenantId: string | undefined): Promise<PayrollExpense[]> => {
+  if (!tenantId) return [];
+  const { data, error } = await supabase
+    .from("payroll_expenses")
+    .select("*")
+    .eq("tenant_id", tenantId)
+    .order("date", { ascending: false });
+  if (error) throw new Error(error.message);
+  return data as PayrollExpense[];
 };
 
 const fetchTenantId = async (userId: string | undefined): Promise<string | undefined> => {
@@ -41,18 +52,39 @@ const FinancialDashboard = () => {
     enabled: !!user,
   });
 
-  const { data: transactions = [], isLoading, error } = useQuery<Transaction[]>({
+  const { data: transactions = [], isLoading: isLoadingTransactions, error: transactionsError } = useQuery<Transaction[]>({
     queryKey: ["transactions", tenantId],
     queryFn: () => fetchTransactions(tenantId),
     enabled: !!tenantId,
   });
 
+  const { data: payrollExpenses = [], isLoading: isLoadingPayroll, error: payrollError } = useQuery<PayrollExpense[]>({
+    queryKey: ["payroll_expenses", tenantId],
+    queryFn: () => fetchPayrollExpenses(tenantId),
+    enabled: !!tenantId,
+  });
+
+  const allFinancialData = useMemo(() => {
+    const combined: Transaction[] = [
+      ...transactions,
+      ...payrollExpenses.map(pe => ({
+        ...pe,
+        type: 'expense' as CategoryType, // Fix: Cast to CategoryType
+        categories: { name: 'Folha de Pagamento', parent_id: null, parent: null }, // Mock category for payroll
+        category_id: 'payroll-category-id', // Placeholder
+        description: pe.description || 'Despesa de Folha de Pagamento',
+      }))
+    ];
+    return combined.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+  }, [transactions, payrollExpenses]);
+
+
   const summary = useMemo(() => {
-    const totalIncome = transactions.filter((t) => t.type === "income").reduce((sum, t) => sum + t.amount, 0);
-    const totalExpense = transactions.filter((t) => t.type === "expense").reduce((sum, t) => sum + t.amount, 0);
+    const totalIncome = allFinancialData.filter((t) => t.type === "income").reduce((sum, t) => sum + t.amount, 0);
+    const totalExpense = allFinancialData.filter((t) => t.type === "expense").reduce((sum, t) => sum + t.amount, 0);
     const balance = totalIncome - totalExpense;
     return { totalIncome, totalExpense, balance };
-  }, [transactions]);
+  }, [allFinancialData]);
 
   return (
     <div className="flex flex-col gap-6">
@@ -90,12 +122,12 @@ const FinancialDashboard = () => {
           <CardTitle>Últimas Transações</CardTitle>
         </CardHeader>
         <CardContent>
-          {isLoading ? (
+          {(isLoadingTransactions || isLoadingPayroll) ? (
             <div className="flex justify-center items-center h-40"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>
-          ) : error ? (
+          ) : (transactionsError || payrollError) ? (
             <div className="text-red-500 text-center">Falha ao carregar transações.</div>
           ) : (
-            <TransactionsTable transactions={transactions} />
+            <TransactionsTable transactions={allFinancialData} />
           )}
         </CardContent>
       </Card>

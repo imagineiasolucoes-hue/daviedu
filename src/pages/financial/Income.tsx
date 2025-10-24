@@ -13,7 +13,7 @@ const fetchIncomeTransactions = async (tenantId: string | undefined): Promise<Tr
   if (!tenantId) return [];
   const { data, error } = await supabase
     .from("transactions")
-    .select("*, transaction_categories(name)")
+    .select("*, categories!transactions_category_id_fkey(name, parent_id, parent:parent_id(name, parent_id, parent:parent_id(name)))")
     .eq("tenant_id", tenantId)
     .eq("type", "income")
     .order("date", { ascending: false });
@@ -66,7 +66,7 @@ const Income = () => {
       <AddTransactionDialog
         open={isIncomeDialogOpen}
         onOpenChange={setIsIncomeDialogOpen}
-        type="income"
+        transactionType="income"
       />
     </div>
   );

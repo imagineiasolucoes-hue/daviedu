@@ -31,6 +31,28 @@ const formatCurrency = (value: number) => {
   }).format(value);
 };
 
+const getCategoryPath = (transaction: Transaction) => {
+  if (!transaction.categories) return "Sem categoria";
+
+  const parts: string[] = [];
+  let current: any = transaction.categories;
+
+  // Traverse up the parent chain to build the full path
+  const getParentNames = (cat: any) => {
+    const names: string[] = [];
+    let temp = cat;
+    while (temp) {
+      names.unshift(temp.name);
+      temp = temp.parent;
+    }
+    return names;
+  };
+
+  const categoryPath = getParentNames(current);
+  return categoryPath.join(' > ');
+};
+
+
 export const TransactionsTable: React.FC<TransactionsTableProps> = ({ transactions }) => {
   return (
     <div className="rounded-xl border">
@@ -62,7 +84,7 @@ export const TransactionsTable: React.FC<TransactionsTableProps> = ({ transactio
                   </Badge>
                 </TableCell>
                 <TableCell className="font-medium">{transaction.description || "N/A"}</TableCell>
-                <TableCell>{transaction.transaction_categories?.name || "Sem categoria"}</TableCell>
+                <TableCell>{getCategoryPath(transaction)}</TableCell>
                 <TableCell className="text-right">{formatCurrency(transaction.amount)}</TableCell>
                 <TableCell className="hidden md:table-cell text-right">
                   {format(new Date(transaction.date), "dd/MM/yyyy", { locale: ptBR })}
