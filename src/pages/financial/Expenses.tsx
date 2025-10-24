@@ -13,7 +13,7 @@ const fetchExpenseTransactions = async (tenantId: string | undefined): Promise<T
   if (!tenantId) return [];
   const { data, error } = await supabase
     .from("transactions")
-    .select("*, categories(name)") // Updated from transaction_categories
+    .select("*, transaction_categories(name)")
     .eq("tenant_id", tenantId)
     .eq("type", "expense")
     .order("date", { ascending: false });

@@ -3,7 +3,7 @@ export interface Transaction {
   date: string;
   type: 'income' | 'expense';
   category_id: string;
-  categories: { name: string } | null; // Updated from transaction_categories
+  transaction_categories: { name: string } | null;
   description: string | null;
   amount: number;
   tenant_id: string;
