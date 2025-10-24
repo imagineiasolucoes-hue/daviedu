@@ -28,8 +28,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { supabase } from "../../../integrations/supabase/client";
-import { Expense, ExpenseFormValues } from "../../../types/expense";
+import { supabase } from "@/integrations/supabase/client";
+import { Expense, ExpenseFormValues } from "@/types/expense";
 import { showError, showSuccess } from "@/utils/toast";
 import ExpenseForm from "./ExpenseForm";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";

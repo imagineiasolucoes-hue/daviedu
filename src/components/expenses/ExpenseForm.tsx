@@ -25,14 +25,14 @@ import { Textarea } from "@/components/ui/textarea";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
-import { supabase } from "../../../integrations/supabase/client";
+import { supabase } from "@/integrations/supabase/client";
 import { showError, showSuccess } from "@/utils/toast";
 import {
   Expense,
   ExpenseFormValues,
   expenseCategories,
   expenseSchema,
-} from "../../../types/expense";
+} from "@/types/expense";
 
 interface ExpenseFormProps {
   initialExpense?: ExpenseFormValues;
