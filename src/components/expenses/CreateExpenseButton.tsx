@@ -18,12 +18,12 @@ const CreateExpenseButton = () => {
       <DialogTrigger asChild>
         <Button className="flex items-center gap-2">
           <Plus className="h-4 w-4" />
-          Add New Expense
+          Adicionar Nova Despesa
         </Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle>Add New Expense</DialogTitle>
+          <DialogTitle>Adicionar Nova Despesa</DialogTitle>
         </DialogHeader>
         <ExpenseForm onSuccess={() => setOpen(false)} />
       </DialogContent>

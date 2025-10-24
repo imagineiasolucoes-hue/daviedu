@@ -67,12 +67,12 @@ const ExpenseList = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["expenses"] });
-      showSuccess("Expense deleted successfully!");
+      showSuccess("Despesa excluída com sucesso!");
       setDeletingExpenseId(null);
     },
     onError: (error) => {
       console.error("Delete failed:", error);
-      showError("Failed to delete expense.");
+      showError("Falha ao excluir despesa.");
     },
   });
 
@@ -98,7 +98,7 @@ const ExpenseList = () => {
     return (
       <Card>
         <CardHeader>
-          <CardTitle>Recent Expenses</CardTitle>
+          <CardTitle>Despesas Recentes</CardTitle>
         </CardHeader>
         <CardContent>
           <Skeleton className="h-8 w-full mb-2" />
@@ -110,30 +110,30 @@ const ExpenseList = () => {
   }
 
   if (isError || !expenses) {
-    return <p className="text-red-500">Error loading expenses.</p>;
+    return <p className="text-red-500">Erro ao carregar despesas.</p>;
   }
 
   return (
     <>
       <Card>
         <CardHeader>
-          <CardTitle>Recent Expenses</CardTitle>
+          <CardTitle>Despesas Recentes</CardTitle>
         </CardHeader>
         <CardContent>
           {expenses.length === 0 ? (
             <p className="text-center text-muted-foreground py-8">
-              No expenses recorded yet. Add one above!
+              Nenhuma despesa registrada ainda. Adicione uma acima!
             </p>
           ) : (
             <div className="overflow-x-auto">
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Date</TableHead>
-                    <TableHead>Category</TableHead>
-                    <TableHead>Description</TableHead>
-                    <TableHead className="text-right">Amount</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
+                    <TableHead>Data</TableHead>
+                    <TableHead>Categoria</TableHead>
+                    <TableHead>Descrição</TableHead>
+                    <TableHead className="text-right">Valor</TableHead>
+                    <TableHead className="text-right">Ações</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -147,7 +147,7 @@ const ExpenseList = () => {
                         {expense.description || "N/A"}
                       </TableCell>
                       <TableCell className="text-right font-semibold">
-                        ${expense.amount.toFixed(2)}
+                        R${expense.amount.toFixed(2)}
                       </TableCell>
                       <TableCell className="text-right space-x-2">
                         <Button
@@ -183,7 +183,7 @@ const ExpenseList = () => {
       <Dialog open={!!editingExpense} onOpenChange={() => setEditingExpense(null)}>
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
-            <DialogTitle>Edit Expense</DialogTitle>
+            <DialogTitle>Editar Despesa</DialogTitle>
           </DialogHeader>
           {editingExpense && (
             <ExpenseForm
@@ -201,15 +201,15 @@ const ExpenseList = () => {
       >
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+            <AlertDialogTitle>Tem certeza absoluta?</AlertDialogTitle>
             <AlertDialogDescription>
-              This action cannot be undone. This will permanently delete your
-              expense record.
+              Esta ação não pode ser desfeita. Isso excluirá permanentemente seu
+              registro de despesa.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel disabled={deleteMutation.isPending}>
-              Cancel
+              Cancelar
             </AlertDialogCancel>
             <AlertDialogAction
               onClick={handleDeleteConfirm}
@@ -219,7 +219,7 @@ const ExpenseList = () => {
               {deleteMutation.isPending ? (
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
               ) : (
-                "Delete"
+                "Excluir"
               )}
             </AlertDialogAction>
           </AlertDialogFooter>

@@ -2,11 +2,11 @@ import { z } from "zod";
 
 export const expenseSchema = z.object({
   id: z.string().optional(),
-  amount: z.number().min(0.01, "Amount must be greater than zero"),
+  amount: z.number().min(0.01, "O valor deve ser maior que zero"),
   description: z.string().max(255).optional(),
-  category: z.string().min(1, "Category is required"),
+  category: z.string().min(1, "A categoria é obrigatória"),
   date: z.date({
-    required_error: "A date is required.",
+    required_error: "A data é obrigatória.",
   }),
 });
 
@@ -18,10 +18,10 @@ export type Expense = z.infer<typeof expenseSchema> & {
 export type ExpenseFormValues = z.infer<typeof expenseSchema>;
 
 export const expenseCategories = [
-  "Food",
-  "Transport",
-  "Housing",
-  "Entertainment",
-  "Utilities",
-  "Other",
+  "Alimentação",
+  "Transporte",
+  "Moradia",
+  "Entretenimento",
+  "Utilidades",
+  "Outros",
 ];

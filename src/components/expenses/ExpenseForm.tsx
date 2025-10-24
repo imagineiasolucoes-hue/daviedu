@@ -76,13 +76,13 @@ const ExpenseForm = ({ initialExpense, onSuccess }: ExpenseFormProps) => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["expenses"] });
       showSuccess(
-        isEditing ? "Expense updated successfully!" : "Expense added successfully!",
+        isEditing ? "Despesa atualizada com sucesso!" : "Despesa adicionada com sucesso!",
       );
       onSuccess?.();
     },
     onError: (error) => {
       console.error("Expense operation failed:", error);
-      showError(`Failed to ${isEditing ? "update" : "add"} expense.`);
+      showError(`Falha ao ${isEditing ? "atualizar" : "adicionar"} despesa.`);
     },
   });
 
@@ -98,12 +98,12 @@ const ExpenseForm = ({ initialExpense, onSuccess }: ExpenseFormProps) => {
           name="amount"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Amount ($)</FormLabel>
+              <FormLabel>Valor (R$)</FormLabel>
               <FormControl>
                 <Input
                   type="number"
                   step="0.01"
-                  placeholder="e.g., 45.50"
+                  placeholder="Ex: 45.50"
                   {...field}
                   onChange={(e) => field.onChange(parseFloat(e.target.value))}
                 />
@@ -118,11 +118,11 @@ const ExpenseForm = ({ initialExpense, onSuccess }: ExpenseFormProps) => {
           name="category"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Category</FormLabel>
+              <FormLabel>Categoria</FormLabel>
               <Select onValueChange={field.onChange} defaultValue={field.value}>
                 <FormControl>
                   <SelectTrigger>
-                    <SelectValue placeholder="Select a category" />
+                    <SelectValue placeholder="Selecione uma categoria" />
                   </SelectTrigger>
                 </FormControl>
                 <SelectContent>
@@ -143,7 +143,7 @@ const ExpenseForm = ({ initialExpense, onSuccess }: ExpenseFormProps) => {
           name="date"
           render={({ field }) => (
             <FormItem className="flex flex-col">
-              <FormLabel>Date</FormLabel>
+              <FormLabel>Data</FormLabel>
               <Popover>
                 <PopoverTrigger asChild>
                   <FormControl>
@@ -158,7 +158,7 @@ const ExpenseForm = ({ initialExpense, onSuccess }: ExpenseFormProps) => {
                       {field.value ? (
                         format(field.value, "PPP")
                       ) : (
-                        <span>Pick a date</span>
+                        <span>Selecione uma data</span>
                       )}
                     </Button>
                   </FormControl>
@@ -182,10 +182,10 @@ const ExpenseForm = ({ initialExpense, onSuccess }: ExpenseFormProps) => {
           name="description"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Description (Optional)</FormLabel>
+              <FormLabel>Descrição (Opcional)</FormLabel>
               <FormControl>
                 <Textarea
-                  placeholder="Brief note about the expense"
+                  placeholder="Breve nota sobre a despesa"
                   {...field}
                   value={field.value || ""}
                 />
@@ -199,9 +199,9 @@ const ExpenseForm = ({ initialExpense, onSuccess }: ExpenseFormProps) => {
           {mutation.isPending ? (
             <Loader2 className="mr-2 h-4 w-4 animate-spin" />
           ) : isEditing ? (
-            "Save Changes"
+            "Salvar Alterações"
           ) : (
-            "Add Expense"
+            "Adicionar Despesa"
           )}
         </Button>
       </form>
