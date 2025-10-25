@@ -1,9 +1,10 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { PlusCircle } from "lucide-react";
+import { PlusCircle, Settings } from "lucide-react";
 import RevenuesTable from "@/components/financial/revenues/RevenuesTable";
 import RevenueForm from "@/components/financial/revenues/RevenueForm";
 import DeleteRevenueDialog from "@/components/financial/revenues/DeleteRevenueDialog";
+import ManageCategoriesDialog from "@/components/financial/revenues/ManageCategoriesDialog";
 import { Revenue } from "@/types/financial";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -12,6 +13,7 @@ import { showError, showSuccess } from "@/utils/toast";
 const Revenues = () => {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [isCategoriesDialogOpen, setIsCategoriesDialogOpen] = useState(false);
   const [selectedRevenue, setSelectedRevenue] = useState<Revenue | null>(null);
   const queryClient = useQueryClient();
 
@@ -70,10 +72,16 @@ const Revenues = () => {
             Acompanhe e gerencie todas as suas fontes de receita.
           </p>
         </div>
-        <Button onClick={handleAdd}>
-          <PlusCircle className="mr-2 h-4 w-4" />
-          Adicionar Receita
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" onClick={() => setIsCategoriesDialogOpen(true)}>
+            <Settings className="mr-2 h-4 w-4" />
+            Gerenciar Categorias
+          </Button>
+          <Button onClick={handleAdd}>
+            <PlusCircle className="mr-2 h-4 w-4" />
+            Adicionar Receita
+          </Button>
+        </div>
       </div>
 
       <RevenuesTable onEdit={handleEdit} onDelete={handleDelete} />
@@ -92,6 +100,11 @@ const Revenues = () => {
           isPending={deleteMutation.isPending}
         />
       )}
+
+      <ManageCategoriesDialog
+        isOpen={isCategoriesDialogOpen}
+        onClose={() => setIsCategoriesDialogOpen(false)}
+      />
     </div>
   );
 };
