@@ -1,9 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Users, GraduationCap, DollarSign, BarChart, Activity, PlusCircle } from "lucide-react";
-import { Bar, BarChart as RechartsBarChart, ResponsiveContainer, XAxis, YAxis, Tooltip } from "recharts";
+import { Users, GraduationCap, DollarSign, ArrowDownCircle, Activity, PlusCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import { supabase } from "@/integrations/supabase/client";
 import { fetchTenantId } from "@/lib/tenant";
@@ -11,6 +9,12 @@ import { fetchTenantId } from "@/lib/tenant";
 const fetchDashboardData = async () => {
   const { tenantId, error: tenantError } = await fetchTenantId();
   if (tenantError) throw new Error(tenantError);
+
+  const today = new Date();
+  const firstDayOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+  const lastDayOfMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+  const firstDayISO = firstDayOfMonth.toISOString().split('T')[0];
+  const lastDayISO = lastDayOfMonth.toISOString().split('T')[0];
 
   // 1. Total Students
   const { count: studentCount, error: studentError } = await supabase
@@ -27,25 +31,32 @@ const fetchDashboardData = async () => {
   if (classError) throw classError;
 
   // 3. Monthly Revenue
-  const today = new Date();
-  const firstDayOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
-  const lastDayOfMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0);
-
   const { data: revenueData, error: revenueError } = await supabase
     .from('revenues')
     .select('amount')
     .eq('tenant_id', tenantId)
-    .gte('date', firstDayOfMonth.toISOString().split('T')[0])
-    .lte('date', lastDayOfMonth.toISOString().split('T')[0])
+    .gte('date', firstDayISO)
+    .lte('date', lastDayISO)
     .eq('status', 'pago');
   if (revenueError) throw revenueError;
-
   const monthlyRevenue = revenueData.reduce((sum, rev) => sum + rev.amount, 0);
+
+  // 4. Monthly Expenses
+  const { data: expenseData, error: expenseError } = await supabase
+    .from('expenses')
+    .select('amount')
+    .eq('tenant_id', tenantId)
+    .gte('date', firstDayISO)
+    .lte('date', lastDayISO)
+    .eq('status', 'pago');
+  if (expenseError) throw expenseError;
+  const monthlyExpenses = expenseData.reduce((sum, exp) => sum + exp.amount, 0);
 
   return {
     totalStudents: studentCount ?? 0,
     activeClasses: classCount ?? 0,
     monthlyRevenue: monthlyRevenue,
+    monthlyExpenses: monthlyExpenses,
   };
 };
 
@@ -59,7 +70,7 @@ const Dashboard = () => {
     { title: "Total de Alunos", value: data?.totalStudents, icon: Users, format: (v: number) => v },
     { title: "Turmas Ativas", value: data?.activeClasses, icon: GraduationCap, format: (v: number) => v },
     { title: "Receita Mensal", value: data?.monthlyRevenue, icon: DollarSign, format: (v: number) => new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(v) },
-    { title: "Inadimplência", value: "Em breve", icon: BarChart },
+    { title: "Despesa Mensal", value: data?.monthlyExpenses, icon: ArrowDownCircle, format: (v: number) => new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(v) },
   ];
 
   return (
