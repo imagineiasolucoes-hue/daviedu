@@ -17,7 +17,7 @@ import {
   DropdownMenuLabel,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { MoreHorizontal, Pencil, Trash2, Loader2 } from "lucide-react";
+import { MoreHorizontal, Pencil, Trash2, Loader2, Repeat } from "lucide-react";
 import { Expense } from "@/types/financial";
 import { cn } from "@/lib/utils";
 
@@ -94,7 +94,14 @@ const ExpensesTable: React.FC<ExpensesTableProps> = ({ onEdit, onDelete }) => {
             expenses.map((expense) => (
               <TableRow key={expense.id}>
                 <TableCell className="font-medium">
-                  {expense.description}
+                  <div className="flex items-center gap-2">
+                    {expense.is_recurring && (
+                      <span title="Despesa Recorrente">
+                        <Repeat className="h-4 w-4 text-muted-foreground" />
+                      </span>
+                    )}
+                    <span>{expense.description}</span>
+                  </div>
                 </TableCell>
                 <TableCell>
                   {new Intl.NumberFormat("pt-BR", {

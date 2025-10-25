@@ -19,6 +19,7 @@ import {
 import {
   Form,
   FormControl,
+  FormDescription as FormDescriptionComponent,
   FormField,
   FormItem,
   FormLabel,
@@ -38,6 +39,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
 import { CalendarIcon, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Expense } from "@/types/financial";
@@ -50,6 +52,7 @@ const expenseSchema = z.object({
   destination: z.string().optional(),
   status: z.enum(["pago", "pendente", "atrasado"]),
   category_id: z.string().optional(),
+  is_recurring: z.boolean().default(false),
 });
 
 interface ExpenseFormProps {
@@ -77,6 +80,7 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({
         date: new Date(initialData.date),
         amount: Number(initialData.amount),
         category_id: initialData.category_id || "",
+        is_recurring: initialData.is_recurring || false,
       });
     } else {
       form.reset({
@@ -87,6 +91,7 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({
         destination: "",
         status: "pendente",
         category_id: "",
+        is_recurring: false,
       });
     }
   }, [initialData, form]);
@@ -314,6 +319,26 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({
                   </FormItem>
                 )}
               />
+            <FormField
+              control={form.control}
+              name="is_recurring"
+              render={({ field }) => (
+                <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
+                  <div className="space-y-0.5">
+                    <FormLabel>Pagamento Recorrente</FormLabel>
+                    <FormDescriptionComponent>
+                      Marque se esta despesa se repete mensalmente.
+                    </FormDescriptionComponent>
+                  </div>
+                  <FormControl>
+                    <Switch
+                      checked={field.value}
+                      onCheckedChange={field.onChange}
+                    />
+                  </FormControl>
+                </FormItem>
+              )}
+            />
             <DialogFooter>
               <Button
                 type="button"

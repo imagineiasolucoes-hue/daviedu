@@ -40,6 +40,7 @@ export interface Expense {
   destination?: string;
   status: PaymentStatus;
   attachment_url?: string;
+  is_recurring?: boolean;
   category?: ExpenseCategory; // For joins
 }
 
