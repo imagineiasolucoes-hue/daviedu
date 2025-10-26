@@ -32,7 +32,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Loader2 } from "lucide-react";
-import { format } from "date-fns";
 
 const payrollSchema = z.object({
   discounts: z.coerce.number().min(0, "O valor não pode ser negativo."),
@@ -52,7 +51,7 @@ const PayrollForm: React.FC<PayrollFormProps> = ({ isOpen, onClose, initialData 
     resolver: zodResolver(payrollSchema),
   });
 
-  const { watch, setValue } = form;
+  const { watch } = form;
   const discounts = watch("discounts", 0);
   const benefits = watch("benefits", 0);
   const grossSalary = initialData?.gross_salary || 0;
@@ -83,7 +82,8 @@ const PayrollForm: React.FC<PayrollFormProps> = ({ isOpen, onClose, initialData 
     onSuccess: () => {
       showSuccess("Lançamento atualizado!");
       if (initialData) {
-        const monthKey = format(new Date(initialData.reference_month), "yyyy-MM");
+        // FIX: Use string slicing to get 'YYYY-MM' to avoid timezone issues with `new Date()`.
+        const monthKey = initialData.reference_month.slice(0, 7);
         queryClient.invalidateQueries({ queryKey: ["payrolls", monthKey] });
       }
       onClose();
