@@ -18,4 +18,21 @@ export interface Student {
   registration_code: string;
   status: 'active' | 'inactive' | 'suspended';
   created_at: string;
+  
+  // Campos adicionados baseados no formulário detalhado
+  gender?: 'Masculino' | 'Feminino' | 'Outro';
+  nationality?: string;
+  naturality?: string; // Naturalidade (Cidade de Nascimento)
+  cpf?: string;
+  rg?: string;
+  phone?: string;
+  email?: string;
+  
+  // Endereço
+  zip_code?: string;
+  address_street?: string;
+  address_number?: string;
+  address_neighborhood?: string;
+  address_city?: string;
+  address_state?: string;
 }

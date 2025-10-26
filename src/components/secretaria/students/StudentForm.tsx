@@ -41,12 +41,31 @@ import {
 import { Calendar } from "@/components/ui/calendar";
 import { CalendarIcon, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 const studentSchema = z.object({
-  full_name: z.string().min(3, "O nome completo é obrigatório."),
+  // Matrícula
   registration_code: z.string().min(1, "O código de matrícula é obrigatório."),
-  birth_date: z.date().optional(),
   status: z.enum(["active", "inactive", "suspended"]),
+
+  // Dados Pessoais
+  full_name: z.string().min(3, "O nome completo é obrigatório."),
+  birth_date: z.date().optional(),
+  gender: z.enum(["Masculino", "Feminino", "Outro"]).optional(),
+  nationality: z.string().optional(),
+  naturality: z.string().optional(),
+  cpf: z.string().optional(),
+  rg: z.string().optional(),
+  phone: z.string().optional(),
+  email: z.string().email("Email inválido.").optional().or(z.literal("")),
+
+  // Endereço
+  zip_code: z.string().optional(),
+  address_street: z.string().optional(),
+  address_number: z.string().optional(),
+  address_neighborhood: z.string().optional(),
+  address_city: z.string().optional(),
+  address_state: z.string().optional(),
 });
 
 interface StudentFormProps {
@@ -68,6 +87,8 @@ const StudentForm: React.FC<StudentFormProps> = ({ isOpen, onClose, initialData 
       form.reset({
         ...initialData,
         birth_date: initialData.birth_date ? parseISO(initialData.birth_date) : undefined,
+        gender: initialData.gender || undefined,
+        email: initialData.email || "",
       });
     } else {
       form.reset({
@@ -75,6 +96,19 @@ const StudentForm: React.FC<StudentFormProps> = ({ isOpen, onClose, initialData 
         registration_code: "",
         birth_date: undefined,
         status: "active",
+        gender: undefined,
+        nationality: "",
+        naturality: "",
+        cpf: "",
+        rg: "",
+        phone: "",
+        email: "",
+        zip_code: "",
+        address_street: "",
+        address_number: "",
+        address_neighborhood: "",
+        address_city: "",
+        address_state: "",
       });
     }
   }, [initialData, form]);
@@ -88,6 +122,20 @@ const StudentForm: React.FC<StudentFormProps> = ({ isOpen, onClose, initialData 
         ...values,
         tenant_id: tenantId,
         birth_date: values.birth_date ? format(values.birth_date, "yyyy-MM-dd") : null,
+        // Ensure optional fields are null if empty string
+        gender: values.gender || null,
+        nationality: values.nationality || null,
+        naturality: values.naturality || null,
+        cpf: values.cpf || null,
+        rg: values.rg || null,
+        phone: values.phone || null,
+        email: values.email || null,
+        zip_code: values.zip_code || null,
+        address_street: values.address_street || null,
+        address_number: values.address_number || null,
+        address_neighborhood: values.address_neighborhood || null,
+        address_city: values.address_city || null,
+        address_state: values.address_state || null,
       };
 
       if (isEditMode) {
@@ -104,7 +152,7 @@ const StudentForm: React.FC<StudentFormProps> = ({ isOpen, onClose, initialData 
     onSuccess: () => {
       showSuccess(isEditMode ? "Aluno atualizado!" : "Aluno cadastrado!");
       queryClient.invalidateQueries({ queryKey: ["students"] });
-      queryClient.invalidateQueries({ queryKey: ["dashboardData"] }); // Update student count on dashboard
+      queryClient.invalidateQueries({ queryKey: ["dashboardData"] });
       onClose();
     },
     onError: (error: any) => showError(error.message),
@@ -116,92 +164,306 @@ const StudentForm: React.FC<StudentFormProps> = ({ isOpen, onClose, initialData 
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-2xl">
+      <DialogContent className="sm:max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{isEditMode ? "Editar Aluno" : "Cadastrar Novo Aluno"}</DialogTitle>
           <DialogDescription>
-            Preencha as informações cadastrais do aluno.
+            Preencha as informações cadastrais e de matrícula do aluno.
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            <FormField
-              control={form.control}
-              name="full_name"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Nome Completo</FormLabel>
-                  <FormControl>
-                    <Input placeholder="Ex: Maria da Silva" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <FormField
-                control={form.control}
-                name="registration_code"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Código de Matrícula</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Ex: 2024001" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="status"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Status</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+            <Tabs defaultValue="personal">
+              <TabsList className="grid w-full grid-cols-3">
+                <TabsTrigger value="personal">Dados Pessoais</TabsTrigger>
+                <TabsTrigger value="address">Endereço</TabsTrigger>
+                <TabsTrigger value="enrollment">Matrícula</TabsTrigger>
+              </TabsList>
+
+              {/* TAB 1: Dados Pessoais */}
+              <TabsContent value="personal" className="space-y-4 pt-4">
+                <FormField
+                  control={form.control}
+                  name="full_name"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Nome Completo</FormLabel>
                       <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Selecione o status" />
-                        </SelectTrigger>
+                        <Input placeholder="Ex: Maria da Silva" {...field} />
                       </FormControl>
-                      <SelectContent>
-                        <SelectItem value="active">Ativo</SelectItem>
-                        <SelectItem value="inactive">Inativo</SelectItem>
-                        <SelectItem value="suspended">Suspenso</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
-            <FormField
-              control={form.control}
-              name="birth_date"
-              render={({ field }) => (
-                <FormItem className="flex flex-col">
-                  <FormLabel>Data de Nascimento (Opcional)</FormLabel>
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <FormControl>
-                        <Button
-                          variant={"outline"}
-                          className={cn("w-full pl-3 text-left font-normal", !field.value && "text-muted-foreground")}
-                        >
-                          {field.value ? format(field.value, "dd/MM/yyyy") : <span>Escolha uma data</span>}
-                          <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                        </Button>
-                      </FormControl>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0" align="start">
-                      <Calendar mode="single" selected={field.value} onSelect={field.onChange} initialFocus />
-                    </PopoverContent>
-                  </Popover>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <DialogFooter>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="birth_date"
+                    render={({ field }) => (
+                      <FormItem className="flex flex-col">
+                        <FormLabel>Data de Nascimento</FormLabel>
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <FormControl>
+                              <Button
+                                variant={"outline"}
+                                className={cn("w-full pl-3 text-left font-normal", !field.value && "text-muted-foreground")}
+                              >
+                                {field.value ? format(field.value, "dd/MM/yyyy") : <span>Escolha uma data</span>}
+                                <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                              </Button>
+                            </FormControl>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-auto p-0" align="start">
+                            <Calendar mode="single" selected={field.value} onSelect={field.onChange} initialFocus />
+                          </PopoverContent>
+                        </Popover>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="gender"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Gênero</FormLabel>
+                        <Select onValueChange={field.onChange} value={field.value}>
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Selecione" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="Masculino">Masculino</SelectItem>
+                            <SelectItem value="Feminino">Feminino</SelectItem>
+                            <SelectItem value="Outro">Outro</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="nationality"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Nacionalidade</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Ex: Brasileira" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="naturality"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Naturalidade (Cidade)</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Ex: São Paulo" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="cpf"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>CPF</FormLabel>
+                        <FormControl>
+                          <Input placeholder="000.000.000-00" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="rg"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>RG</FormLabel>
+                        <FormControl>
+                          <Input placeholder="00.000.000-0" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="phone"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Telefone</FormLabel>
+                        <FormControl>
+                          <Input placeholder="(11) 99999-9999" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="email"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Email</FormLabel>
+                        <FormControl>
+                          <Input type="email" placeholder="aluno@exemplo.com" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+              </TabsContent>
+
+              {/* TAB 2: Endereço */}
+              <TabsContent value="address" className="space-y-4 pt-4">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="zip_code"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>CEP</FormLabel>
+                        <FormControl>
+                          <Input placeholder="00000-000" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="address_street"
+                    render={({ field }) => (
+                      <FormItem className="md:col-span-2">
+                        <FormLabel>Rua/Avenida</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Rua Exemplo" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="address_number"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Número</FormLabel>
+                        <FormControl>
+                          <Input placeholder="123" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="address_neighborhood"
+                    render={({ field }) => (
+                      <FormItem className="md:col-span-2">
+                        <FormLabel>Bairro</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Centro" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="address_city"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Cidade</FormLabel>
+                        <FormControl>
+                          <Input placeholder="São Paulo" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="address_state"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Estado (UF)</FormLabel>
+                        <FormControl>
+                          <Input placeholder="SP" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+              </TabsContent>
+
+              {/* TAB 3: Matrícula */}
+              <TabsContent value="enrollment" className="space-y-4 pt-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="registration_code"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Código de Matrícula</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Ex: 2024001" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="status"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Status</FormLabel>
+                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Selecione o status" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="active">Ativo</SelectItem>
+                            <SelectItem value="inactive">Inativo</SelectItem>
+                            <SelectItem value="suspended">Suspenso</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+                {/* TODO: Adicionar campos de Turma/Classe e Responsável aqui no futuro */}
+                <div className="p-4 border rounded-md text-sm text-muted-foreground">
+                    <p>Informações de Turma e Responsáveis serão adicionadas em breve.</p>
+                </div>
+              </TabsContent>
+            </Tabs>
+
+            <DialogFooter className="mt-6">
               <Button type="button" variant="outline" onClick={onClose}>
                 Cancelar
               </Button>
