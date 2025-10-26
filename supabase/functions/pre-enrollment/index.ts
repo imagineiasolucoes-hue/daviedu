@@ -16,15 +16,12 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-// NOTE: This function assumes the tenantId is passed in the request body.
-// In a real scenario, you might validate this ID against a public list of tenants.
 const DEMO_TENANT_ID = "00000000-0000-0000-0000-000000000000";
 
 async function generateNextRegistrationCode(supabaseAdmin: any, tenantId: string): Promise<string> {
     const currentYear = format(new Date(), "yyyy");
     const prefix = currentYear;
 
-    // Find the highest registration code for the current year within the tenant
     const { data, error } = await supabaseAdmin
         .from("students")
         .select("registration_code")
@@ -41,7 +38,6 @@ async function generateNextRegistrationCode(supabaseAdmin: any, tenantId: string
     let nextSequence = 1;
 
     if (data?.registration_code) {
-        // Extract the sequence number (last 3 digits)
         const lastCode = data.registration_code;
         const lastSequenceStr = lastCode.slice(-3);
         const lastSequence = parseInt(lastSequenceStr, 10);
@@ -51,7 +47,6 @@ async function generateNextRegistrationCode(supabaseAdmin: any, tenantId: string
         }
     }
 
-    // Format the sequence number (e.g., 1 -> 001, 12 -> 012)
     const nextSequenceStr = String(nextSequence).padStart(3, '0');
 
     return `${prefix}${nextSequenceStr}`;
@@ -59,7 +54,6 @@ async function generateNextRegistrationCode(supabaseAdmin: any, tenantId: string
 
 
 serve(async (req) => {
-  // Handle CORS preflight request
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
   }
@@ -67,7 +61,6 @@ serve(async (req) => {
   try {
     const body = await req.json();
     
-    // Use the provided tenant_id or fallback to DEMO_TENANT_ID
     const tenantId = body.tenant_id || DEMO_TENANT_ID; 
 
     const supabaseAdmin = createClient(
@@ -78,22 +71,35 @@ serve(async (req) => {
     // 1. Generate the sequential registration code
     const registration_code = await generateNextRegistrationCode(supabaseAdmin, tenantId);
 
-    // 2. Prepare submission data
-    const submissionData = {
-        ...body,
+    // 2. Explicitly construct the submission object using only valid columns
+    const finalSubmission = {
         tenant_id: tenantId,
         registration_code: registration_code,
         status: "pre-enrolled",
-        // Ensure date is correctly formatted (it should already be YYYY-MM-DD from client)
-        birth_date: body.birth_date, 
-    };
-    
-    // Remove fields that are not columns in the students table (if any were passed)
-    delete submissionData.tenant_id; // We re-add it below
-    
-    const finalSubmission = {
-        ...submissionData,
-        tenant_id: tenantId, // Re-add tenant_id
+        
+        // Data from form body
+        full_name: body.full_name,
+        birth_date: body.birth_date, // Already YYYY-MM-DD string
+        phone: body.phone,
+        email: body.email || null,
+        gender: body.gender || null,
+        nationality: body.nationality || null,
+        naturality: body.naturality || null,
+        cpf: body.cpf || null,
+        rg: body.rg || null,
+        zip_code: body.zip_code || null,
+        address_street: body.address_street || null,
+        address_number: body.address_number || null,
+        address_neighborhood: body.address_neighborhood || null,
+        address_city: body.address_city || null,
+        address_state: body.address_state || null,
+        guardian_name: body.guardian_name || null,
+        special_needs: body.special_needs || null,
+        medication_use: body.medication_use || null,
+        
+        // user_id and class_id are null for pre-enrollment
+        user_id: null,
+        class_id: null,
     };
 
     // 3. Insert the new student
@@ -103,7 +109,10 @@ serve(async (req) => {
         .select("registration_code")
         .single();
 
-    if (insertError) throw insertError;
+    if (insertError) {
+        console.error("Supabase Insert Error:", insertError);
+        throw new Error(`Database insertion failed: ${insertError.message}`);
+    }
 
     // 4. Return the generated code
     return new Response(JSON.stringify({
@@ -114,8 +123,9 @@ serve(async (req) => {
       status: 200,
     });
   } catch (error) {
-    console.error("Pre-enrollment Edge Function Error:", error.message);
-    return new Response(JSON.stringify({ error: error.message || "Erro desconhecido na função Edge." }), {
+    const errorMessage = error instanceof Error ? error.message : "Erro desconhecido na função Edge.";
+    console.error("Pre-enrollment Edge Function Error:", errorMessage);
+    return new Response(JSON.stringify({ error: errorMessage }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 400,
     });
