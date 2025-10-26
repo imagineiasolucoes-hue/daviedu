@@ -102,7 +102,7 @@ const StudentForm: React.FC<StudentFormProps> = ({ isOpen, onClose, initialData 
     staleTime: 0,
   });
 
-  // Fetch all classes (FIX: Select all fields to match Class interface)
+  // Fetch all classes
   const { data: classes } = useQuery<Class[]>({
     queryKey: ["classes"],
     queryFn: async () => {
@@ -133,7 +133,7 @@ const StudentForm: React.FC<StudentFormProps> = ({ isOpen, onClose, initialData 
     } else {
       form.reset({
         full_name: "",
-        registration_code: nextCode || "",
+        registration_code: nextCode || "", // Use nextCode if available
         birth_date: undefined,
         status: "active",
         gender: undefined,
@@ -157,6 +157,14 @@ const StudentForm: React.FC<StudentFormProps> = ({ isOpen, onClose, initialData 
       });
     }
   }, [initialData, form, nextCode, classes]);
+
+  // Effect to set registration code once loaded (only for creation mode)
+  useEffect(() => {
+    if (!isEditMode && nextCode && form.getValues("registration_code") === "") {
+        form.setValue("registration_code", nextCode);
+    }
+  }, [nextCode, isEditMode, form]);
+
 
   // Effect to update class_id when class_name changes
   useEffect(() => {
@@ -462,7 +470,7 @@ const StudentForm: React.FC<StudentFormProps> = ({ isOpen, onClose, initialData 
                         <FormControl>
                           <Input placeholder="Centro" {...field} />
                         </FormControl>
-                        <FormMessage />
+                          <FormMessage />
                       </FormItem>
                     )}
                   />
@@ -636,7 +644,7 @@ const StudentForm: React.FC<StudentFormProps> = ({ isOpen, onClose, initialData 
               <Button type="button" variant="outline" onClick={onClose}>
                 Cancelar
               </Button>
-              <Button type="submit" disabled={mutation.isPending || isLoadingCode}>
+              <Button type="submit" disabled={mutation.isPending || isLoadingCode || (!isEditMode && !nextCode)}>
                 {mutation.isPending || isLoadingCode ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : "Salvar"}
               </Button>
             </DialogFooter>
