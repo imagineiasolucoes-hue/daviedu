@@ -2,7 +2,7 @@ import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { format, parseISO } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
 import { fetchTenantId } from "@/lib/tenant";
@@ -42,6 +42,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { CalendarIcon, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { generateNextRegistrationCode } from "@/lib/registration";
 
 const studentSchema = z.object({
   // Matrícula
@@ -82,6 +83,14 @@ const StudentForm: React.FC<StudentFormProps> = ({ isOpen, onClose, initialData 
     resolver: zodResolver(studentSchema),
   });
 
+  // Fetch next registration code only if creating a new student
+  const { data: nextCode, isLoading: isLoadingCode } = useQuery({
+    queryKey: ["nextRegistrationCode"],
+    queryFn: generateNextRegistrationCode,
+    enabled: isOpen && !isEditMode,
+    staleTime: 0,
+  });
+
   useEffect(() => {
     if (initialData) {
       form.reset({
@@ -93,7 +102,7 @@ const StudentForm: React.FC<StudentFormProps> = ({ isOpen, onClose, initialData 
     } else {
       form.reset({
         full_name: "",
-        registration_code: "",
+        registration_code: nextCode || "", // Use generated code
         birth_date: undefined,
         status: "active",
         gender: undefined,
@@ -111,7 +120,7 @@ const StudentForm: React.FC<StudentFormProps> = ({ isOpen, onClose, initialData 
         address_state: "",
       });
     }
-  }, [initialData, form]);
+  }, [initialData, form, nextCode]);
 
   const mutation = useMutation({
     mutationFn: async (values: z.infer<typeof studentSchema>) => {
@@ -153,6 +162,7 @@ const StudentForm: React.FC<StudentFormProps> = ({ isOpen, onClose, initialData 
       showSuccess(isEditMode ? "Aluno atualizado!" : "Aluno cadastrado!");
       queryClient.invalidateQueries({ queryKey: ["students"] });
       queryClient.invalidateQueries({ queryKey: ["dashboardData"] });
+      queryClient.invalidateQueries({ queryKey: ["nextRegistrationCode"] }); // Invalidate to fetch the next code
       onClose();
     },
     onError: (error: any) => showError(error.message),
@@ -427,7 +437,12 @@ const StudentForm: React.FC<StudentFormProps> = ({ isOpen, onClose, initialData 
                       <FormItem>
                         <FormLabel>Código de Matrícula</FormLabel>
                         <FormControl>
-                          <Input placeholder="Ex: 2024001" {...field} />
+                          <Input 
+                            placeholder="Ex: 2024001" 
+                            {...field} 
+                            disabled={!isEditMode || isLoadingCode} // Disable if creating or loading
+                            value={isEditMode ? field.value : (isLoadingCode ? "Gerando..." : nextCode || "")}
+                          />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -467,9 +482,8 @@ const StudentForm: React.FC<StudentFormProps> = ({ isOpen, onClose, initialData 
               <Button type="button" variant="outline" onClick={onClose}>
                 Cancelar
               </Button>
-              <Button type="submit" disabled={mutation.isPending}>
-                {mutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                Salvar
+              <Button type="submit" disabled={mutation.isPending || isLoadingCode}>
+                {mutation.isPending || isLoadingCode ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : "Salvar"}
               </Button>
             </DialogFooter>
           </form>
