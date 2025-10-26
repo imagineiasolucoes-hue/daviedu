@@ -43,16 +43,9 @@ import { CalendarIcon, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
-// Helper function to generate a simple registration code (YYYYMMDDHHMMSS)
-const generateRegistrationCode = () => {
-  const now = new Date();
-  // Simple timestamp based code for uniqueness. In a real app, this might involve a database sequence.
-  return format(now, "yyyyMMddHHmmss");
-};
-
 const studentSchema = z.object({
-  // Matrícula - Agora opcional na validação, mas será gerado se estiver vazio na criação
-  registration_code: z.string().optional(),
+  // Matrícula
+  registration_code: z.string().min(1, "O código de matrícula é obrigatório."),
   status: z.enum(["active", "inactive", "suspended"]),
 
   // Dados Pessoais
@@ -125,17 +118,9 @@ const StudentForm: React.FC<StudentFormProps> = ({ isOpen, onClose, initialData 
       const { tenantId, error: tenantError } = await fetchTenantId();
       if (tenantError) throw new Error(tenantError);
 
-      let finalRegistrationCode = values.registration_code;
-      
-      // Generate code only if creating a new student AND the field is empty
-      if (!isEditMode && (!finalRegistrationCode || finalRegistrationCode.trim() === "")) {
-        finalRegistrationCode = generateRegistrationCode();
-      }
-
       const submissionData = {
         ...values,
         tenant_id: tenantId,
-        registration_code: finalRegistrationCode, // Use generated or provided code
         birth_date: values.birth_date ? format(values.birth_date, "yyyy-MM-dd") : null,
         // Ensure optional fields are null if empty string
         gender: values.gender || null,
@@ -440,9 +425,9 @@ const StudentForm: React.FC<StudentFormProps> = ({ isOpen, onClose, initialData 
                     name="registration_code"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Código de Matrícula (Opcional)</FormLabel>
+                        <FormLabel>Código de Matrícula</FormLabel>
                         <FormControl>
-                          <Input placeholder="Deixe vazio para gerar automaticamente" {...field} />
+                          <Input placeholder="Ex: 2024001" {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
