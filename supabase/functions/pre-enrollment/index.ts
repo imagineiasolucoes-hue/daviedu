@@ -32,6 +32,7 @@ async function generateNextRegistrationCode(supabaseAdmin: any, tenantId: string
         .maybeSingle();
 
     if (error) {
+        console.error("Error fetching last registration code:", error);
         throw new Error(`Failed to fetch last registration code: ${error.message}`);
     }
 
@@ -79,7 +80,7 @@ serve(async (req) => {
         
         // Data from form body
         full_name: body.full_name,
-        birth_date: body.birth_date, // Already YYYY-MM-DD string
+        birth_date: body.birth_date, // YYYY-MM-DD string
         phone: body.phone,
         email: body.email || null,
         gender: body.gender || null,
@@ -101,6 +102,8 @@ serve(async (req) => {
         user_id: null,
         class_id: null,
     };
+    
+    console.log("Attempting to insert:", finalSubmission);
 
     // 3. Insert the new student
     const { data: student, error: insertError } = await supabaseAdmin
@@ -124,7 +127,7 @@ serve(async (req) => {
     });
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : "Erro desconhecido na função Edge.";
-    console.error("Pre-enrollment Edge Function Error:", errorMessage);
+    console.error("Pre-enrollment Edge Function Error (Catch Block):", errorMessage);
     return new Response(JSON.stringify({ error: errorMessage }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 400,
