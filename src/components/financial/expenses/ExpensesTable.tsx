@@ -35,12 +35,7 @@ const fetchExpenses = async () => {
   if (error) {
     throw new Error(error.message);
   }
-  // The 'category' property in the Expense type is expecting an object, but Supabase returns an array.
-  // We need to flatten this to match the type.
-  return data?.map(expense => ({
-    ...expense,
-    expense_categories: Array.isArray(expense.expense_categories) ? expense.expense_categories[0] : expense.expense_categories,
-  })) || [];
+  return data || [];
 };
 
 interface ExpensesTableProps {
@@ -127,7 +122,7 @@ const ExpensesTable: React.FC<ExpensesTableProps> = ({ onEdit, onDelete }) => {
                   </Badge>
                 </TableCell>
                 <TableCell>
-                  {(expense.category as any)?.name || "N/A"}
+                  {(expense.expense_categories as any)?.name || "N/A"}
                 </TableCell>
                 <TableCell>
                   <DropdownMenu>
