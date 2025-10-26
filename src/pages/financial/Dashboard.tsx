@@ -41,12 +41,13 @@ const fetchReportData = async (dateRange?: DateRange) => {
     .lte("date", toDate);
   if (revenueError) throw revenueError;
 
-  // Fetch paid expenses
+  // Fetch paid expenses, EXCLUDING payroll-related ones to avoid double counting
   const { data: expenses, error: expenseError } = await supabase
     .from("expenses")
     .select("amount, expense_categories (name)")
     .eq("tenant_id", tenantId)
     .eq("status", "pago")
+    .is("payroll_id", null) // <-- FIX: Exclude payroll expenses
     .gte("date", fromDate)
     .lte("date", toDate);
   if (expenseError) throw expenseError;
