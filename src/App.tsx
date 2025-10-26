@@ -20,6 +20,7 @@ import FinancialDashboard from "@/pages/financial/Dashboard";
 import Revenues from "@/pages/financial/Revenues";
 import Expenses from "@/pages/financial/Expenses";
 import Payroll from "@/pages/financial/Payroll";
+import PreEnrollment from "./pages/PreEnrollment"; // Import the new public page
 
 const queryClient = new QueryClient();
 
@@ -35,6 +36,7 @@ const App = () => (
             <Route path="/" element={<LandingPage />} />
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
+            <Route path="/pre-matricula" element={<PreEnrollment />} /> {/* New Public Route */}
             
             {/* Protected Routes */}
             <Route element={<ProtectedRoute />}>

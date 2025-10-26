@@ -1,12 +1,13 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Users, GraduationCap, DollarSign, ArrowDownCircle, Activity, PlusCircle } from "lucide-react";
+import { Users, GraduationCap, DollarSign, ArrowDownCircle, Activity, PlusCircle, Share2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { supabase } from "@/integrations/supabase/client";
 import { fetchTenantId } from "@/lib/tenant";
-import StudentForm from "@/components/secretaria/students/StudentForm"; // Import StudentForm
+import StudentForm from "@/components/secretaria/students/StudentForm";
+import ShareEnrollmentLink from "@/components/dashboard/ShareEnrollmentLink"; // Import the new component
 
 const fetchDashboardData = async () => {
   const { tenantId, error: tenantError } = await fetchTenantId();
@@ -64,6 +65,7 @@ const fetchDashboardData = async () => {
 
 const Dashboard = () => {
   const [isStudentFormOpen, setIsStudentFormOpen] = useState(false);
+  const [isShareLinkOpen, setIsShareLinkOpen] = useState(false); // New state for share link
   
   const { data, isLoading, error } = useQuery({
     queryKey: ['dashboardData'],
@@ -82,6 +84,10 @@ const Dashboard = () => {
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
         <div className="flex items-center gap-2">
+            <Button variant="outline" size="sm" onClick={() => setIsShareLinkOpen(true)}>
+                <Share2 className="mr-2 h-4 w-4" />
+                Link Pré-Matrícula
+            </Button>
             <Button variant="outline" size="sm" onClick={() => setIsStudentFormOpen(true)}>
                 <PlusCircle className="mr-2 h-4 w-4" />
                 Novo Aluno
@@ -146,11 +152,15 @@ const Dashboard = () => {
         </Card>
       </div>
       
-      {/* Student Form Modal */}
+      {/* Modals */}
       <StudentForm
         isOpen={isStudentFormOpen}
         onClose={() => setIsStudentFormOpen(false)}
         initialData={null}
+      />
+      <ShareEnrollmentLink
+        isOpen={isShareLinkOpen}
+        onClose={() => setIsShareLinkOpen(false)}
       />
     </div>
   );
