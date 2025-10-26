@@ -133,53 +133,44 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({
       const { tenantId, error: tenantError } = await fetchTenantId();
       if (tenantError) throw new Error(tenantError);
 
-      // Handle payroll expense creation
       if (!isEditMode && values.category_id === payrollCategoryId) {
         if (!values.employee_id) {
           throw new Error("Por favor, selecione um funcionário para o pagamento.");
         }
-        const payrollData = {
-          tenant_id: tenantId,
-          employee_id: values.employee_id,
-          reference_month: format(startOfMonth(values.date), "yyyy-MM-dd"),
-          gross_salary: values.amount,
-          net_salary: values.amount,
-          discounts: 0,
-          benefits: 0,
-          payment_status: "pago" as const,
-        };
+        const referenceMonth = format(startOfMonth(values.date), "yyyy-MM-dd");
+        let payrollId;
 
         const { data: existing, error: checkError } = await supabase
-          .from('payrolls')
-          .select('id')
-          .eq('employee_id', values.employee_id)
-          .eq('reference_month', payrollData.reference_month)
-          .maybeSingle();
-        
+          .from('payrolls').select('id').eq('employee_id', values.employee_id).eq('reference_month', referenceMonth).maybeSingle();
         if (checkError) throw checkError;
 
         if (existing) {
-          const { error } = await supabase.from('payrolls').update({
-            gross_salary: values.amount, net_salary: values.amount, discounts: 0, benefits: 0, payment_status: 'pago'
-          }).eq('id', existing.id);
+          const { data: updated, error } = await supabase.from('payrolls').update({ gross_salary: values.amount, net_salary: values.amount, payment_status: 'pago' }).eq('id', existing.id).select('id').single();
           if (error) throw error;
+          payrollId = updated.id;
         } else {
-          const { error } = await supabase.from("payrolls").insert(payrollData);
+          const { data: created, error } = await supabase.from("payrolls").insert({ tenant_id: tenantId, employee_id: values.employee_id, reference_month: referenceMonth, gross_salary: values.amount, net_salary: values.amount, payment_status: "pago" }).select('id').single();
           if (error) throw error;
+          payrollId = created.id;
         }
-      } else { // Handle regular expense creation/update
-        const submissionData = {
-          ...values,
-          tenant_id: tenantId,
-          date: format(values.date, "yyyy-MM-dd"),
-          category_id: values.category_id || null,
-        };
 
+        const { data: employee } = await supabase.from('employees').select('full_name').eq('id', values.employee_id).single();
+        const expenseDescription = `Pagamento: ${employee?.full_name || 'Funcionário'}`;
+        const expenseData = { tenant_id: tenantId, date: format(values.date, "yyyy-MM-dd"), category_id: values.category_id, description: expenseDescription, amount: values.amount, payment_method: values.payment_method, status: 'pago' as const, payroll_id: payrollId };
+        
+        const { data: existingExpense, error: expenseCheckError } = await supabase.from('expenses').select('id').eq('payroll_id', payrollId).maybeSingle();
+        if (expenseCheckError) throw expenseCheckError;
+
+        if (existingExpense) {
+            await supabase.from('expenses').update(expenseData).eq('id', existingExpense.id);
+        } else {
+            await supabase.from('expenses').insert(expenseData);
+        }
+
+      } else {
+        const submissionData = { ...values, tenant_id: tenantId, date: format(values.date, "yyyy-MM-dd"), category_id: values.category_id || null };
         if (isEditMode) {
-          const { error } = await supabase
-            .from("expenses")
-            .update(submissionData)
-            .eq("id", initialData!.id);
+          const { error } = await supabase.from("expenses").update(submissionData).eq("id", initialData!.id);
           if (error) throw error;
         } else {
           const { error } = await supabase.from("expenses").insert(submissionData);
@@ -194,10 +185,10 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({
         queryClient.invalidateQueries({ queryKey: ["payrolls"] });
       } else {
         showSuccess(isEditMode ? "Despesa atualizada com sucesso!" : "Despesa adicionada com sucesso!");
-        queryClient.invalidateQueries({ queryKey: ["expenses"] });
       }
+      queryClient.invalidateQueries({ queryKey: ["expenses"] });
       queryClient.invalidateQueries({ queryKey: ["financialReports"] });
-      queryClient.invalidateQueries({ queryKey: ["dashboardData"] }); // <-- FIX: Invalidate main dashboard data
+      queryClient.invalidateQueries({ queryKey: ["dashboardData"] });
       onClose();
     },
     onError: (error: any) => {
