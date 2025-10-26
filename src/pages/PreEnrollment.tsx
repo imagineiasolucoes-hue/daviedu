@@ -29,11 +29,6 @@ import { useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
-// NOTE: Since this is a public form, we cannot use fetchTenantId (requires auth).
-// For demonstration, we use a placeholder tenant ID. In a real multi-tenant app,
-// this ID should be passed securely via URL parameter or derived from a public identifier.
-const DEMO_TENANT_ID = "00000000-0000-0000-0000-000000000000"; // Placeholder ID
-
 // Esquema completo para pré-matrícula
 const preEnrollmentSchema = z.object({
   // Dados Pessoais (Obrigatórios)
@@ -94,7 +89,6 @@ const PreEnrollment = () => {
     mutationFn: async (values: z.infer<typeof preEnrollmentSchema>) => {
       
       const submissionData = {
-        tenant_id: DEMO_TENANT_ID, // Placeholder tenant ID
         full_name: values.full_name,
         birth_date: format(values.birth_date, "yyyy-MM-dd"), // Format date for database
         phone: values.phone,

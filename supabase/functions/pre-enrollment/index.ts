@@ -16,10 +16,13 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-const DEMO_TENANT_ID = "00000000-0000-0000-0000-000000000000";
+// Este é um placeholder para matrículas públicas.
+// Em um aplicativo multi-tenant real, isso seria determinado a partir de um parâmetro de URL
+// ou um identificador público que mapeia para um tenant real.
+const PUBLIC_ENROLLMENT_TENANT_ID = "00000000-0000-0000-0000-000000000000";
 
 async function generateNextRegistrationCode(supabaseAdmin: any, tenantId: string): Promise<string> {
-    const currentYear = format(new Date(), "yyyy");
+    const currentYear = new Date().getFullYear().toString();
     const prefix = currentYear;
 
     const { data, error } = await supabaseAdmin
@@ -33,7 +36,7 @@ async function generateNextRegistrationCode(supabaseAdmin: any, tenantId: string
 
     if (error) {
         console.error("Error fetching last registration code:", error);
-        throw new Error(`Failed to fetch last registration code: ${error.message}`);
+        throw new Error(`Falha ao buscar o último código de matrícula: ${error.message}`);
     }
 
     let nextSequence = 1;
@@ -49,10 +52,8 @@ async function generateNextRegistrationCode(supabaseAdmin: any, tenantId: string
     }
 
     const nextSequenceStr = String(nextSequence).padStart(3, '0');
-
     return `${prefix}${nextSequenceStr}`;
 }
-
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -61,73 +62,70 @@ serve(async (req) => {
 
   try {
     const body = await req.json();
-    
-    const tenantId = body.tenant_id || DEMO_TENANT_ID; 
+
+    // --- Validação Robusta ---
+    if (!body.full_name || !body.birth_date || !body.phone) {
+      throw new Error("Campos obrigatórios ausentes: nome, data de nascimento e telefone.");
+    }
 
     const supabaseAdmin = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
     );
 
-    // 1. Generate the sequential registration code
-    const registration_code = await generateNextRegistrationCode(supabaseAdmin, tenantId);
+    // --- Gerar Código de Matrícula ---
+    const registration_code = await generateNextRegistrationCode(supabaseAdmin, PUBLIC_ENROLLMENT_TENANT_ID);
 
-    // 2. Explicitly construct the submission object using only valid columns
-    const finalSubmission = {
-        tenant_id: tenantId,
-        registration_code: registration_code,
-        status: "pre-enrolled",
-        
-        // Data from form body
-        full_name: body.full_name,
-        birth_date: body.birth_date, // YYYY-MM-DD string
-        phone: body.phone,
-        email: body.email || null,
-        gender: body.gender || null,
-        nationality: body.nationality || null,
-        naturality: body.naturality || null,
-        cpf: body.cpf || null,
-        rg: body.rg || null,
-        zip_code: body.zip_code || null,
-        address_street: body.address_street || null,
-        address_number: body.address_number || null,
-        address_neighborhood: body.address_neighborhood || null,
-        address_city: body.address_city || null,
-        address_state: body.address_state || null,
-        guardian_name: body.guardian_name || null,
-        special_needs: body.special_needs || null,
-        medication_use: body.medication_use || null,
-        
-        // user_id and class_id are null for pre-enrollment
-        user_id: null,
-        class_id: null,
+    // --- Preparar Dados para Inserção ---
+    const studentData = {
+      tenant_id: PUBLIC_ENROLLMENT_TENANT_ID,
+      registration_code: registration_code,
+      status: "pre-enrolled",
+      full_name: body.full_name,
+      birth_date: body.birth_date,
+      phone: body.phone,
+      email: body.email || null,
+      gender: body.gender || null,
+      nationality: body.nationality || null,
+      naturality: body.naturality || null,
+      cpf: body.cpf || null,
+      rg: body.rg || null,
+      zip_code: body.zip_code || null,
+      address_street: body.address_street || null,
+      address_number: body.address_number || null,
+      address_neighborhood: body.address_neighborhood || null,
+      address_city: body.address_city || null,
+      address_state: body.address_state || null,
+      guardian_name: body.guardian_name || null,
+      special_needs: body.special_needs || null,
+      medication_use: body.medication_use || null,
     };
-    
-    console.log("Attempting to insert:", finalSubmission);
 
-    // 3. Insert the new student
-    const { data: student, error: insertError } = await supabaseAdmin
-        .from("students")
-        .insert(finalSubmission)
-        .select("registration_code")
-        .single();
+    // --- Inserir no Banco de Dados ---
+    const { data, error: insertError } = await supabaseAdmin
+      .from("students")
+      .insert(studentData)
+      .select("registration_code")
+      .single();
 
     if (insertError) {
-        console.error("Supabase Insert Error:", insertError);
-        throw new Error(`Database insertion failed: ${insertError.message}`);
+      console.error("Supabase Insert Error:", JSON.stringify(insertError, null, 2));
+      throw new Error(`Erro no banco de dados: ${insertError.message} (Código: ${insertError.code})`);
     }
 
-    // 4. Return the generated code
+    // --- Sucesso ---
     return new Response(JSON.stringify({
-        success: true,
-        registration_code: student.registration_code,
+      success: true,
+      registration_code: data.registration_code,
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 200,
     });
+
   } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : "Erro desconhecido na função Edge.";
-    console.error("Pre-enrollment Edge Function Error (Catch Block):", errorMessage);
+    // --- Capturar Todos os Erros ---
+    const errorMessage = error instanceof Error ? error.message : "Ocorreu um erro inesperado.";
+    console.error("Edge Function CATCH block error:", errorMessage);
     return new Response(JSON.stringify({ error: errorMessage }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 400,
