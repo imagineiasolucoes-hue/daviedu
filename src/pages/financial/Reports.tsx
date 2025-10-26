@@ -51,40 +51,16 @@ const fetchReportData = async (dateRange?: DateRange) => {
     .lte("date", toDate);
   if (expenseError) throw expenseError;
 
-  // Fetch paid payrolls
-  const { data: payrolls, error: payrollError } = await supabase
-    .from("payrolls")
-    .select("net_salary")
-    .eq("tenant_id", tenantId)
-    .eq("payment_status", "pago")
-    .gte("reference_month", fromDate)
-    .lte("reference_month", toDate);
-  if (payrollError) throw payrollError;
-
   // Process data
   const totalRevenue = revenues.reduce((sum, r) => sum + r.amount, 0);
-  const totalRegularExpenses = expenses.reduce((sum, e) => sum + e.amount, 0);
-  const totalPayrollExpenses = payrolls.reduce((sum, p) => sum + p.net_salary, 0);
-  const totalExpenses = totalRegularExpenses + totalPayrollExpenses;
+  const totalExpenses = expenses.reduce((sum, e) => sum + e.amount, 0);
 
-  const processRevenueCategories = (items: any[]) => {
+  const processCategories = (items: any[], categoryField: string, defaultName: string) => {
     const categoryMap = new Map<string, number>();
     items.forEach(item => {
-      const categoryName = (item.revenue_categories as any)?.name || 'Sem Categoria';
+      const categoryName = (item[categoryField] as any)?.name || defaultName;
       categoryMap.set(categoryName, (categoryMap.get(categoryName) || 0) + item.amount);
     });
-    return Array.from(categoryMap, ([name, value]) => ({ name, value })).sort((a, b) => b.value - a.value);
-  };
-
-  const processExpensesCategories = (expenseItems: any[], payrollTotal: number) => {
-    const categoryMap = new Map<string, number>();
-    expenseItems.forEach(item => {
-      const categoryName = (item.expense_categories as any)?.name || 'Sem Categoria';
-      categoryMap.set(categoryName, (categoryMap.get(categoryName) || 0) + item.amount);
-    });
-    if (payrollTotal > 0) {
-      categoryMap.set('Folha de Pagamento', payrollTotal);
-    }
     return Array.from(categoryMap, ([name, value]) => ({ name, value })).sort((a, b) => b.value - a.value);
   };
 
@@ -92,8 +68,8 @@ const fetchReportData = async (dateRange?: DateRange) => {
     totalRevenue,
     totalExpenses,
     netProfit: totalRevenue - totalExpenses,
-    revenueByCategory: processRevenueCategories(revenues),
-    expensesByCategory: processExpensesCategories(expenses, totalPayrollExpenses),
+    revenueByCategory: processCategories(revenues, 'revenue_categories', 'Sem Categoria'),
+    expensesByCategory: processCategories(expenses, 'expense_categories', 'Sem Categoria'),
   };
 };
 
