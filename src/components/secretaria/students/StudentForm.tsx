@@ -112,6 +112,9 @@ const StudentForm: React.FC<StudentFormProps> = ({ isOpen, onClose, initialData 
     },
   });
 
+  // Helper function to safely get string value, defaulting to ""
+  const safeString = (value: string | null | undefined) => value ?? "";
+
   // Effect to set initial form values
   useEffect(() => {
     if (initialData) {
@@ -123,7 +126,20 @@ const StudentForm: React.FC<StudentFormProps> = ({ isOpen, onClose, initialData 
         ...initialData,
         birth_date: initialData.birth_date ? parseISO(initialData.birth_date) : undefined,
         gender: initialData.gender || undefined,
-        email: initialData.email || "",
+        
+        // Ensure optional string fields are initialized as ""
+        email: safeString(initialData.email),
+        nationality: safeString(initialData.nationality),
+        naturality: safeString(initialData.naturality),
+        cpf: safeString(initialData.cpf),
+        rg: safeString(initialData.rg),
+        phone: safeString(initialData.phone),
+        zip_code: safeString(initialData.zip_code),
+        address_street: safeString(initialData.address_street),
+        address_number: safeString(initialData.address_number),
+        address_neighborhood: safeString(initialData.address_neighborhood),
+        address_city: safeString(initialData.address_city),
+        address_state: safeString(initialData.address_state),
         
         // Set class fields for editing
         class_id: initialData.class_id || "",
@@ -197,7 +213,7 @@ const StudentForm: React.FC<StudentFormProps> = ({ isOpen, onClose, initialData 
         tenant_id: tenantId,
         birth_date: values.birth_date ? format(values.birth_date, "yyyy-MM-dd") : null,
         
-        // Ensure optional fields are null if empty string
+        // Ensure optional fields are null if empty string (Supabase best practice)
         gender: values.gender || null,
         nationality: values.nationality || null,
         naturality: values.naturality || null,
@@ -215,7 +231,6 @@ const StudentForm: React.FC<StudentFormProps> = ({ isOpen, onClose, initialData 
       };
 
       if (isEditMode) {
-        // FIX: Ensure we use the initialData ID for the update operation
         const { error } = await supabase
           .from("students")
           .update(submissionData)
