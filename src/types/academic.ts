@@ -1,21 +1,12 @@
-export interface Course {
-  id: string;
-  tenant_id: string;
-  name: string;
-  workload_hours?: number;
-  created_at: string;
-}
-
 export interface Class {
   id: string;
   tenant_id: string;
-  course_id: string;
+  course_id?: string; // Keeping optional for backward compatibility with existing data, but no longer used in UI
   name: string;
   school_year: number;
   period?: string;
   room?: string;
   created_at: string;
-  course?: Pick<Course, 'name'>; // For joins
 }
 
 export interface Student {

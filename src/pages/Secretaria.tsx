@@ -1,5 +1,4 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import Courses from "./secretaria/Courses";
 import Classes from "./secretaria/Classes";
 
 const Secretaria = () => {
@@ -7,14 +6,13 @@ const Secretaria = () => {
     <div className="flex flex-col gap-6">
       <h1 className="text-3xl font-bold tracking-tight">Secretaria</h1>
       <p className="text-muted-foreground mt-2">
-        Gerencie alunos, turmas, cursos e matrículas.
+        Gerencie alunos, turmas e matrículas.
       </p>
       
       <Tabs defaultValue="classes">
-        <TabsList className="grid w-full grid-cols-3 md:w-[450px]">
+        <TabsList className="grid w-full grid-cols-2 md:w-[300px]">
           <TabsTrigger value="students">Alunos</TabsTrigger>
           <TabsTrigger value="classes">Turmas</TabsTrigger>
-          <TabsTrigger value="courses">Cursos</TabsTrigger>
         </TabsList>
         
         <TabsContent value="students" className="mt-6">
@@ -26,10 +24,6 @@ const Secretaria = () => {
         
         <TabsContent value="classes" className="mt-6">
           <Classes />
-        </TabsContent>
-        
-        <TabsContent value="courses" className="mt-6">
-          <Courses />
         </TabsContent>
       </Tabs>
     </div>

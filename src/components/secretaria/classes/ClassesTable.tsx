@@ -22,7 +22,7 @@ import { MoreHorizontal, Pencil, Trash2, Loader2 } from "lucide-react";
 const fetchClasses = async () => {
   const { data, error } = await supabase
     .from("classes")
-    .select("*") // Removed courses (name) join
+    .select("*")
     .order("school_year", { ascending: false })
     .order("name");
   if (error) throw new Error(error.message);
@@ -62,7 +62,6 @@ const ClassesTable: React.FC<ClassesTableProps> = ({ onEdit, onDelete }) => {
         <TableHeader>
           <TableRow>
             <TableHead>Turma</TableHead>
-            <TableHead>Curso</TableHead>
             <TableHead>Ano Letivo</TableHead>
             <TableHead>Período</TableHead>
             <TableHead>Sala</TableHead>
@@ -76,8 +75,6 @@ const ClassesTable: React.FC<ClassesTableProps> = ({ onEdit, onDelete }) => {
             classes.map((classItem) => (
               <TableRow key={classItem.id}>
                 <TableCell className="font-medium">{classItem.name}</TableCell>
-                {/* Since course_id is removed from the form, we display N/A here */}
-                <TableCell>N/A</TableCell> 
                 <TableCell>{classItem.school_year}</TableCell>
                 <TableCell>{classItem.period || "N/A"}</TableCell>
                 <TableCell>{classItem.room || "N/A"}</TableCell>
@@ -108,7 +105,7 @@ const ClassesTable: React.FC<ClassesTableProps> = ({ onEdit, onDelete }) => {
             ))
           ) : (
             <TableRow>
-              <TableCell colSpan={6} className="h-24 text-center">
+              <TableCell colSpan={5} className="h-24 text-center">
                 Nenhuma turma encontrada.
               </TableCell>
             </TableRow>
