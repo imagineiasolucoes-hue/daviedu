@@ -64,7 +64,7 @@ const LandingPage = () => {
         <div className="container mx-auto flex h-16 items-center justify-between px-4 md:px-6">
           <Link to="/" className="flex items-center gap-2 font-bold text-xl">
             <GraduationCap className="h-7 w-7 text-blue-600" />
-            <span>Gestão Escolar</span>
+            <span>Davi EDU - Gestor Educacional</span>
           </Link>
           <nav className="hidden items-center gap-6 md:flex">
             <a href="#features" className="text-sm font-medium text-gray-600 hover:text-blue-600">Funcionalidades</a>
@@ -175,7 +175,7 @@ const LandingPage = () => {
       {/* Footer */}
       <footer className="border-t">
         <div className="container mx-auto flex flex-col items-center justify-between gap-4 px-4 py-6 md:flex-row">
-          <p className="text-sm text-gray-500">&copy; {new Date().getFullYear()} Gestão Escolar. Todos os direitos reservados.</p>
+          <p className="text-sm text-gray-500">&copy; {new Date().getFullYear()} Davi EDU - Gestor Educacional. Todos os direitos reservados.</p>
           <div className="flex gap-4">
             <a href="#" className="text-sm text-gray-500 hover:text-blue-600">Termos de Serviço</a>
             <a href="#" className="text-sm text-gray-500 hover:text-blue-600">Política de Privacidade</a>

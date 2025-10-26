@@ -64,7 +64,7 @@ const AppLayout = () => {
           <div className="flex h-14 items-center border-b px-4 lg:h-[60px] lg:px-6">
             <Link to="/" className="flex items-center gap-2 font-semibold">
               <GraduationCap className="h-6 w-6 text-blue-600" />
-              <span className="">Gestão Escolar</span>
+              <span className="">Davi EDU</span>
             </Link>
           </div>
           <div className="flex-1">
@@ -89,7 +89,7 @@ const AppLayout = () => {
               <nav className="grid gap-2 text-lg font-medium">
                 <Link to="/" className="flex items-center gap-2 text-lg font-semibold mb-4">
                   <GraduationCap className="h-6 w-6 text-blue-600" />
-                  <span>Gestão Escolar</span>
+                  <span>Davi EDU</span>
                 </Link>
                 {navItems.map((item) => (
                   <NavLink key={item.href} {...item} />
