@@ -22,12 +22,7 @@ import { MoreHorizontal, Pencil, Trash2, Loader2 } from "lucide-react";
 const fetchClasses = async () => {
   const { data, error } = await supabase
     .from("classes")
-    .select(
-      `
-      *,
-      courses (name)
-    `
-    )
+    .select("*") // Removed courses (name) join
     .order("school_year", { ascending: false })
     .order("name");
   if (error) throw new Error(error.message);
@@ -81,7 +76,8 @@ const ClassesTable: React.FC<ClassesTableProps> = ({ onEdit, onDelete }) => {
             classes.map((classItem) => (
               <TableRow key={classItem.id}>
                 <TableCell className="font-medium">{classItem.name}</TableCell>
-                <TableCell>{(classItem.course as any)?.name || "N/A"}</TableCell>
+                {/* Since course_id is removed from the form, we display N/A here */}
+                <TableCell>N/A</TableCell> 
                 <TableCell>{classItem.school_year}</TableCell>
                 <TableCell>{classItem.period || "N/A"}</TableCell>
                 <TableCell>{classItem.room || "N/A"}</TableCell>

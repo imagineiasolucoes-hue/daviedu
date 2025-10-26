@@ -2,11 +2,11 @@ import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { fetchTenantId } from "@/lib/tenant";
 import { showError, showSuccess } from "@/utils/toast";
-import { Class, Course } from "@/types/academic";
+import { Class } from "@/types/academic";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -36,7 +36,6 @@ import { Loader2 } from "lucide-react";
 
 const classSchema = z.object({
   name: z.string().min(3, "O nome da turma é obrigatório."),
-  course_id: z.string().min(1, "O curso é obrigatório."),
   school_year: z.coerce.number().min(2000, "Ano inválido."),
   period: z.string().optional(),
   room: z.string().optional(),
@@ -61,12 +60,10 @@ const ClassForm: React.FC<ClassFormProps> = ({ isOpen, onClose, initialData }) =
       form.reset({
         ...initialData,
         school_year: initialData.school_year,
-        course_id: initialData.course_id,
       });
     } else {
       form.reset({
         name: "",
-        course_id: "",
         school_year: new Date().getFullYear(),
         period: "",
         room: "",
@@ -74,20 +71,12 @@ const ClassForm: React.FC<ClassFormProps> = ({ isOpen, onClose, initialData }) =
     }
   }, [initialData, form]);
 
-  const { data: courses } = useQuery<Pick<Course, 'id' | 'name'>[]>({
-    queryKey: ["courses"],
-    queryFn: async () => {
-      const { data, error } = await supabase.from("courses").select("id, name");
-      if (error) throw new Error(error.message);
-      return data || [];
-    },
-  });
-
   const mutation = useMutation({
     mutationFn: async (values: z.infer<typeof classSchema>) => {
       const { tenantId, error: tenantError } = await fetchTenantId();
       if (tenantError) throw new Error(tenantError);
 
+      // Note: course_id is implicitly excluded from submissionData as it's not in classSchema
       const submissionData = { ...values, tenant_id: tenantId };
 
       if (isEditMode) {
@@ -119,7 +108,7 @@ const ClassForm: React.FC<ClassFormProps> = ({ isOpen, onClose, initialData }) =
         <DialogHeader>
           <DialogTitle>{isEditMode ? "Editar Turma" : "Adicionar Nova Turma"}</DialogTitle>
           <DialogDescription>
-            Preencha os detalhes da turma, como curso, ano e sala.
+            Preencha os detalhes da turma, como ano e sala.
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
@@ -140,30 +129,6 @@ const ClassForm: React.FC<ClassFormProps> = ({ isOpen, onClose, initialData }) =
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <FormField
                 control={form.control}
-                name="course_id"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Curso</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value}>
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Selecione o curso" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {courses?.map((course) => (
-                          <SelectItem key={course.id} value={course.id}>
-                            {course.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
                 name="school_year"
                 render={({ field }) => (
                   <FormItem>
@@ -175,8 +140,6 @@ const ClassForm: React.FC<ClassFormProps> = ({ isOpen, onClose, initialData }) =
                   </FormItem>
                 )}
               />
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <FormField
                 control={form.control}
                 name="period"
@@ -200,20 +163,20 @@ const ClassForm: React.FC<ClassFormProps> = ({ isOpen, onClose, initialData }) =
                   </FormItem>
                 )}
               />
-              <FormField
-                control={form.control}
-                name="room"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Sala (Opcional)</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Ex: Sala 101" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
             </div>
+            <FormField
+              control={form.control}
+              name="room"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Sala (Opcional)</FormLabel>
+                  <FormControl>
+                    <Input placeholder="Ex: Sala 101" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
             <DialogFooter>
               <Button type="button" variant="outline" onClick={onClose}>
                 Cancelar
