@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -33,8 +33,18 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Loader2 } from "lucide-react";
+import {
+  academicLevels,
+  classOptions,
+  AcademicLevel,
+  getLevelByClassName,
+} from "@/lib/academic-options";
 
+// Extend the schema to include the temporary 'level' field for form logic
 const classSchema = z.object({
+  level: z.enum(academicLevels as [string, ...string[]], {
+    required_error: "O nível de ensino é obrigatório.",
+  }),
   name: z.string().min(3, "O nome da turma é obrigatório."),
   school_year: z.coerce.number().min(2000, "Ano inválido."),
   period: z.string().optional(),
@@ -55,14 +65,19 @@ const ClassForm: React.FC<ClassFormProps> = ({ isOpen, onClose, initialData }) =
     resolver: zodResolver(classSchema),
   });
 
+  const selectedLevel = form.watch("level");
+
   useEffect(() => {
     if (initialData) {
+      const initialLevel = getLevelByClassName(initialData.name);
       form.reset({
         ...initialData,
         school_year: initialData.school_year,
+        level: initialLevel, // Set the level based on the existing name
       });
     } else {
       form.reset({
+        level: undefined,
         name: "",
         school_year: new Date().getFullYear(),
         period: "",
@@ -71,13 +86,20 @@ const ClassForm: React.FC<ClassFormProps> = ({ isOpen, onClose, initialData }) =
     }
   }, [initialData, form]);
 
+  // Reset class name when level changes
+  useEffect(() => {
+    if (selectedLevel) {
+      form.setValue("name", "");
+    }
+  }, [selectedLevel, form]);
+
   const mutation = useMutation({
     mutationFn: async (values: z.infer<typeof classSchema>) => {
       const { tenantId, error: tenantError } = await fetchTenantId();
       if (tenantError) throw new Error(tenantError);
 
-      // Note: course_id is implicitly excluded from submissionData as it's not in classSchema
-      const submissionData = { ...values, tenant_id: tenantId };
+      // Exclude 'level' from submission data as it's only for UI logic
+      const { level, ...submissionData } = { ...values, tenant_id: tenantId };
 
       if (isEditMode) {
         const { error } = await supabase
@@ -102,30 +124,75 @@ const ClassForm: React.FC<ClassFormProps> = ({ isOpen, onClose, initialData }) =
     mutation.mutate(values);
   };
 
+  const filteredClassNames = classOptions.filter(
+    (opt) => opt.level === selectedLevel
+  );
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent>
         <DialogHeader>
           <DialogTitle>{isEditMode ? "Editar Turma" : "Adicionar Nova Turma"}</DialogTitle>
           <DialogDescription>
-            Preencha os detalhes da turma, como ano e sala.
+            Preencha os detalhes da turma, como nível, nome, ano e sala.
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            <FormField
-              control={form.control}
-              name="name"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Nome da Turma</FormLabel>
-                  <FormControl>
-                    <Input placeholder="Ex: 1º Ano A - Matutino" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="level"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Nível de Ensino</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Selecione o nível" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {academicLevels.map((level) => (
+                          <SelectItem key={level} value={level}>
+                            {level}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="name"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Nome da Turma</FormLabel>
+                    <Select
+                      onValueChange={field.onChange}
+                      value={field.value}
+                      disabled={!selectedLevel}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder={selectedLevel ? "Selecione o nome da turma" : "Selecione o Nível primeiro"} />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {filteredClassNames.map((option) => (
+                          <SelectItem key={option.name} value={option.name}>
+                            {option.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <FormField
                 control={form.control}
