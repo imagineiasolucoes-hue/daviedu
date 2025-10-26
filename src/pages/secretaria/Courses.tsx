@@ -5,9 +5,9 @@ import { showError, showSuccess } from "@/utils/toast";
 import { Course } from "@/types/academic";
 import { Button } from "@/components/ui/button";
 import { PlusCircle } from "lucide-react";
-import CoursesTable from "../../../components/secretaria/courses/CoursesTable";
-import CourseForm from "../../../components/secretaria/courses/CourseForm";
-import DeleteCourseDialog from "../../../components/secretaria/courses/DeleteCourseDialog";
+import CoursesTable from "../../components/secretaria/courses/CoursesTable";
+import CourseForm from "../../components/secretaria/courses/CourseForm";
+import DeleteCourseDialog from "../../components/secretaria/courses/DeleteCourseDialog";
 
 const Courses = () => {
   const [isFormOpen, setIsFormOpen] = useState(false);

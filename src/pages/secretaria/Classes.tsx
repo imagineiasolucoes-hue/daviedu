@@ -5,9 +5,9 @@ import { showError, showSuccess } from "@/utils/toast";
 import { Class } from "@/types/academic";
 import { Button } from "@/components/ui/button";
 import { PlusCircle } from "lucide-react";
-import ClassesTable from "../../../components/secretaria/classes/ClassesTable";
-import ClassForm from "../../../components/secretaria/classes/ClassForm";
-import DeleteClassDialog from "../../../components/secretaria/classes/DeleteClassDialog";
+import ClassesTable from "../../components/secretaria/classes/ClassesTable";
+import ClassForm from "../../components/secretaria/classes/ClassForm";
+import DeleteClassDialog from "../../components/secretaria/classes/DeleteClassDialog";
 
 const Classes = () => {
   const [isFormOpen, setIsFormOpen] = useState(false);
