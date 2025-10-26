@@ -92,17 +92,13 @@ const PreEnrollment = () => {
 
   const mutation = useMutation({
     mutationFn: async (values: z.infer<typeof preEnrollmentSchema>) => {
-      // Gerar um código de matrícula temporário/placeholder
-      const tempRegistrationCode = `PRE-${Date.now()}`;
       
       const submissionData = {
-        tenant_id: DEMO_TENANT_ID,
+        tenant_id: DEMO_TENANT_ID, // Placeholder tenant ID
         full_name: values.full_name,
-        birth_date: format(values.birth_date, "yyyy-MM-dd"),
+        birth_date: format(values.birth_date, "yyyy-MM-dd"), // Format date for database
         phone: values.phone,
         email: values.email || null,
-        status: "pre-enrolled" as const,
-        registration_code: tempRegistrationCode,
         
         // Campos adicionais
         gender: values.gender || null,
@@ -123,12 +119,17 @@ const PreEnrollment = () => {
         medication_use: values.medication_use || null,
       };
 
-      const { error } = await supabase.from("students").insert(submissionData);
-      if (error) throw error;
+      // Invoke the Edge Function to handle insertion and code generation
+      const { data, error } = await supabase.functions.invoke("pre-enrollment", {
+        body: submissionData,
+      });
+
+      if (error) throw new Error(error.message);
       
-      setGeneratedCode(tempRegistrationCode);
+      return data as { registration_code: string };
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
+      setGeneratedCode(data.registration_code);
       showSuccess("Pré-matrícula enviada com sucesso! Entraremos em contato em breve.");
       setIsSubmitted(true);
       form.reset();
