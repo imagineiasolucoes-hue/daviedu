@@ -215,6 +215,7 @@ const StudentForm: React.FC<StudentFormProps> = ({ isOpen, onClose, initialData 
       };
 
       if (isEditMode) {
+        // FIX: Ensure we use the initialData ID for the update operation
         const { error } = await supabase
           .from("students")
           .update(submissionData)
