@@ -20,7 +20,6 @@ import FinancialDashboard from "@/pages/financial/Dashboard";
 import Revenues from "@/pages/financial/Revenues";
 import Expenses from "@/pages/financial/Expenses";
 import Payroll from "@/pages/financial/Payroll";
-import Reports from "@/pages/financial/Reports";
 
 const queryClient = new QueryClient();
 
@@ -50,7 +49,6 @@ const App = () => (
                   <Route path="receitas" element={<Revenues />} />
                   <Route path="despesas" element={<Expenses />} />
                   <Route path="folha-de-pagamento" element={<Payroll />} />
-                  <Route path="relatorios" element={<Reports />} />
                 </Route>
 
                 <Route path="/pedagogico" element={<Pedagogico />} />

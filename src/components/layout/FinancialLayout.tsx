@@ -6,7 +6,6 @@ const financialNavItems = [
   { href: "/financeiro/receitas", label: "Receitas" },
   { href: "/financeiro/despesas", label: "Despesas" },
   { href: "/financeiro/folha-de-pagamento", label: "Folha de Pagamento" },
-  { href: "/financeiro/relatorios", label: "Relatórios" },
 ];
 
 const FinancialLayout = () => {
