@@ -41,15 +41,29 @@ const fetchReportData = async (dateRange?: DateRange) => {
     .lte("date", toDate);
   if (revenueError) throw revenueError;
 
-  // Fetch paid expenses, EXCLUDING payroll-related ones to avoid double counting
-  const { data: expenses, error: expenseError } = await supabase
+  // Find payroll category ID(s) to exclude them from general expenses
+  const { data: payrollCatData, error: catError } = await supabase
+    .from('expense_categories')
+    .select('id')
+    .eq('tenant_id', tenantId)
+    .ilike('name', '%folha%');
+  if (catError) throw catError;
+  const payrollCategoryIds = payrollCatData ? payrollCatData.map(c => c.id) : [];
+
+  // Fetch paid expenses, EXCLUDING payroll categories to avoid double counting
+  let expensesQuery = supabase
     .from("expenses")
     .select("amount, expense_categories (name)")
     .eq("tenant_id", tenantId)
     .eq("status", "pago")
-    .is("payroll_id", null) // <-- FIX: Exclude payroll expenses
     .gte("date", fromDate)
     .lte("date", toDate);
+
+  if (payrollCategoryIds.length > 0) {
+    expensesQuery = expensesQuery.not('category_id', 'in', `(${payrollCategoryIds.join(',')})`);
+  }
+  
+  const { data: expenses, error: expenseError } = await expensesQuery;
   if (expenseError) throw expenseError;
 
   // Fetch paid payrolls
