@@ -1,9 +1,9 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { format } from "date-fns";
+import { format, startOfMonth } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
 import { fetchTenantId } from "@/lib/tenant";
 import { showError, showSuccess } from "@/utils/toast";
@@ -42,7 +42,7 @@ import {
 import { Switch } from "@/components/ui/switch";
 import { CalendarIcon, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { Expense } from "@/types/financial";
+import { Employee, Expense } from "@/types/financial";
 
 const expenseSchema = z.object({
   date: z.date({ required_error: "A data é obrigatória." }),
@@ -53,6 +53,7 @@ const expenseSchema = z.object({
   status: z.enum(["pago", "pendente", "atrasado"]),
   category_id: z.string().optional(),
   is_recurring: z.boolean().default(false),
+  employee_id: z.string().optional(), // For payroll expenses
 });
 
 interface ExpenseFormProps {
@@ -68,10 +69,15 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({
 }) => {
   const queryClient = useQueryClient();
   const isEditMode = !!initialData;
+  const [payrollCategoryId, setPayrollCategoryId] = useState<string | null>(null);
 
   const form = useForm<z.infer<typeof expenseSchema>>({
     resolver: zodResolver(expenseSchema),
   });
+
+  const { watch } = form;
+  const selectedCategoryId = watch("category_id");
+  const isPayrollExpense = !isEditMode && selectedCategoryId === payrollCategoryId && payrollCategoryId !== null;
 
   useEffect(() => {
     if (initialData) {
@@ -89,9 +95,10 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({
         amount: 0,
         payment_method: "",
         destination: "",
-        status: "pendente",
+        status: "pago", // Default to 'pago' for new expenses
         category_id: "",
         is_recurring: false,
+        employee_id: "",
       });
     }
   }, [initialData, form]);
@@ -103,8 +110,22 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({
         .from("expense_categories")
         .select("id, name");
       if (error) throw new Error(error.message);
+      const payrollCat = data?.find(cat => cat.name.toLowerCase().includes("folha"));
+      if (payrollCat) {
+        setPayrollCategoryId(payrollCat.id);
+      }
       return data;
     },
+  });
+
+  const { data: employees } = useQuery<Pick<Employee, 'id' | 'full_name'>[]>({
+    queryKey: ["employees"],
+    queryFn: async () => {
+        const { data, error } = await supabase.from("employees").select("id, full_name").eq('status', 'active');
+        if (error) throw new Error(error.message);
+        return data || [];
+    },
+    enabled: isPayrollExpense, // Only fetch if needed
   });
 
   const mutation = useMutation({
@@ -112,31 +133,70 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({
       const { tenantId, error: tenantError } = await fetchTenantId();
       if (tenantError) throw new Error(tenantError);
 
-      const submissionData = {
-        ...values,
-        tenant_id: tenantId,
-        date: format(values.date, "yyyy-MM-dd"),
-        category_id: values.category_id || null,
-      };
+      // Handle payroll expense creation
+      if (!isEditMode && values.category_id === payrollCategoryId) {
+        if (!values.employee_id) {
+          throw new Error("Por favor, selecione um funcionário para o pagamento.");
+        }
+        const payrollData = {
+          tenant_id: tenantId,
+          employee_id: values.employee_id,
+          reference_month: format(startOfMonth(values.date), "yyyy-MM-dd"),
+          gross_salary: values.amount,
+          net_salary: values.amount,
+          discounts: 0,
+          benefits: 0,
+          payment_status: "pago" as const,
+        };
 
-      if (isEditMode) {
-        const { error } = await supabase
-          .from("expenses")
-          .update(submissionData)
-          .eq("id", initialData!.id);
-        if (error) throw error;
-      } else {
-        const { error } = await supabase.from("expenses").insert(submissionData);
-        if (error) throw error;
+        const { data: existing, error: checkError } = await supabase
+          .from('payrolls')
+          .select('id')
+          .eq('employee_id', values.employee_id)
+          .eq('reference_month', payrollData.reference_month)
+          .maybeSingle();
+        
+        if (checkError) throw checkError;
+
+        if (existing) {
+          const { error } = await supabase.from('payrolls').update({
+            gross_salary: values.amount, net_salary: values.amount, discounts: 0, benefits: 0, payment_status: 'pago'
+          }).eq('id', existing.id);
+          if (error) throw error;
+        } else {
+          const { error } = await supabase.from("payrolls").insert(payrollData);
+          if (error) throw error;
+        }
+      } else { // Handle regular expense creation/update
+        const submissionData = {
+          ...values,
+          tenant_id: tenantId,
+          date: format(values.date, "yyyy-MM-dd"),
+          category_id: values.category_id || null,
+        };
+
+        if (isEditMode) {
+          const { error } = await supabase
+            .from("expenses")
+            .update(submissionData)
+            .eq("id", initialData!.id);
+          if (error) throw error;
+        } else {
+          const { error } = await supabase.from("expenses").insert(submissionData);
+          if (error) throw error;
+        }
       }
     },
     onSuccess: () => {
-      showSuccess(
-        isEditMode
-          ? "Despesa atualizada com sucesso!"
-          : "Despesa adicionada com sucesso!"
-      );
-      queryClient.invalidateQueries({ queryKey: ["expenses"] });
+      const isPayroll = !isEditMode && form.getValues("category_id") === payrollCategoryId;
+      if (isPayroll) {
+        showSuccess("Pagamento de funcionário registrado com sucesso!");
+        queryClient.invalidateQueries({ queryKey: ["payrolls"] });
+      } else {
+        showSuccess(isEditMode ? "Despesa atualizada com sucesso!" : "Despesa adicionada com sucesso!");
+        queryClient.invalidateQueries({ queryKey: ["expenses"] });
+      }
+      queryClient.invalidateQueries({ queryKey: ["financialReports"] });
       onClose();
     },
     onError: (error: any) => {
@@ -261,7 +321,7 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Categoria</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value}>
+                    <Select onValueChange={field.onChange} value={field.value} disabled={isEditMode}>
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue placeholder="Selecione uma categoria" />
@@ -306,6 +366,32 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({
                 )}
               />
             </div>
+            {isPayrollExpense && (
+              <FormField
+                control={form.control}
+                name="employee_id"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Funcionário</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Selecione o funcionário" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {employees?.map((emp) => (
+                          <SelectItem key={emp.id} value={emp.id}>
+                            {emp.full_name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            )}
              <FormField
                 control={form.control}
                 name="destination"
