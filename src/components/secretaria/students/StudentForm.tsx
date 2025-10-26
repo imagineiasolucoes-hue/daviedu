@@ -26,6 +26,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
   SelectContent,
@@ -61,7 +62,7 @@ const studentSchema = z.object({
   birth_date: z.date().optional(),
   gender: z.enum(["Masculino", "Feminino", "Outro"]).optional(),
   nationality: z.string().optional(),
-  naturality: z.string().optional(),
+  naturality: z.string().optional(), // Naturalidade (Cidade de Nascimento)
   cpf: z.string().optional(),
   rg: z.string().optional(),
   phone: z.string().optional(),
@@ -74,6 +75,11 @@ const studentSchema = z.object({
   address_neighborhood: z.string().optional(),
   address_city: z.string().optional(),
   address_state: z.string().optional(),
+  
+  // Novos Campos
+  guardian_name: z.string().optional(),
+  special_needs: z.string().optional(),
+  medication_use: z.string().optional(),
 });
 
 interface StudentFormProps {
@@ -141,6 +147,11 @@ const StudentForm: React.FC<StudentFormProps> = ({ isOpen, onClose, initialData 
         address_city: safeString(initialData.address_city),
         address_state: safeString(initialData.address_state),
         
+        // Novos campos
+        guardian_name: safeString(initialData.guardian_name),
+        special_needs: safeString(initialData.special_needs),
+        medication_use: safeString(initialData.medication_use),
+
         // Set class fields for editing
         class_id: initialData.class_id || "",
         class_level: initialLevel,
@@ -166,6 +177,11 @@ const StudentForm: React.FC<StudentFormProps> = ({ isOpen, onClose, initialData 
         address_city: "",
         address_state: "",
         
+        // Novos campos
+        guardian_name: "",
+        special_needs: "",
+        medication_use: "",
+
         // Reset class fields
         class_id: "",
         class_level: undefined,
@@ -228,6 +244,11 @@ const StudentForm: React.FC<StudentFormProps> = ({ isOpen, onClose, initialData 
         address_city: values.address_city || null,
         address_state: values.address_state || null,
         class_id: values.class_id || null,
+        
+        // Novos campos
+        guardian_name: values.guardian_name || null,
+        special_needs: values.special_needs || null,
+        medication_use: values.medication_use || null,
       };
 
       if (isEditMode) {
@@ -278,9 +299,10 @@ const StudentForm: React.FC<StudentFormProps> = ({ isOpen, onClose, initialData 
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
             <Tabs defaultValue="personal">
-              <TabsList className="grid w-full grid-cols-3">
+              <TabsList className="grid w-full grid-cols-4">
                 <TabsTrigger value="personal">Dados Pessoais</TabsTrigger>
                 <TabsTrigger value="address">Endereço</TabsTrigger>
+                <TabsTrigger value="guardian_health">Responsável & Saúde</TabsTrigger>
                 <TabsTrigger value="enrollment">Matrícula</TabsTrigger>
               </TabsList>
 
@@ -520,8 +542,57 @@ const StudentForm: React.FC<StudentFormProps> = ({ isOpen, onClose, initialData 
                   />
                 </div>
               </TabsContent>
+              
+              {/* TAB 3: Responsável & Saúde (NEW TAB) */}
+              <TabsContent value="guardian_health" className="space-y-4 pt-4">
+                <FormField
+                  control={form.control}
+                  name="guardian_name"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Nome do Pai/Mãe ou Responsável Principal</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Ex: Ana Paula Silva" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="special_needs"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Necessidades Especiais / Condições Médicas</FormLabel>
+                      <FormControl>
+                        <Textarea 
+                          placeholder="Descreva se o aluno possui alguma necessidade especial, alergia ou condição médica relevante." 
+                          {...field} 
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="medication_use"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Uso Contínuo de Medicamentos</FormLabel>
+                      <FormControl>
+                        <Textarea 
+                          placeholder="Liste os medicamentos de uso contínuo e a dosagem, se aplicável." 
+                          {...field} 
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </TabsContent>
 
-              {/* TAB 3: Matrícula */}
+              {/* TAB 4: Matrícula */}
               <TabsContent value="enrollment" className="space-y-4 pt-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <FormField
@@ -649,10 +720,6 @@ const StudentForm: React.FC<StudentFormProps> = ({ isOpen, onClose, initialData 
                         </FormItem>
                         )}
                     />
-                </div>
-                
-                <div className="p-4 border rounded-md text-sm text-muted-foreground">
-                    <p>Informações de Responsáveis serão adicionadas em breve.</p>
                 </div>
               </TabsContent>
             </Tabs>

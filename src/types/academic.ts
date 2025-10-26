@@ -19,6 +19,13 @@ export interface Student {
   status: 'active' | 'inactive' | 'suspended' | 'pre-enrolled';
   created_at: string;
   
+  // Campos de Responsável
+  guardian_name?: string; // Nome do Pai/Mãe/Responsável
+  
+  // Informações de Saúde/Especiais
+  special_needs?: string; // Necessidades especiais ou condições médicas
+  medication_use?: string; // Uso de medicamentos contínuo
+
   // Campos adicionados baseados no formulário detalhado
   gender?: 'Masculino' | 'Feminino' | 'Outro';
   nationality?: string;

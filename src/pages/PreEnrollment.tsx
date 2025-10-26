@@ -15,6 +15,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Popover,
   PopoverContent,
@@ -55,6 +56,11 @@ const preEnrollmentSchema = z.object({
   address_neighborhood: z.string().optional(),
   address_city: z.string().optional(),
   address_state: z.string().optional(),
+
+  // Novos Campos
+  guardian_name: z.string().optional(),
+  special_needs: z.string().optional(),
+  medication_use: z.string().optional(),
 });
 
 const PreEnrollment = () => {
@@ -78,6 +84,9 @@ const PreEnrollment = () => {
       address_neighborhood: "",
       address_city: "",
       address_state: "",
+      guardian_name: "",
+      special_needs: "",
+      medication_use: "",
     },
   });
 
@@ -107,6 +116,11 @@ const PreEnrollment = () => {
         address_neighborhood: values.address_neighborhood || null,
         address_city: values.address_city || null,
         address_state: values.address_state || null,
+
+        // Novos Campos
+        guardian_name: values.guardian_name || null,
+        special_needs: values.special_needs || null,
+        medication_use: values.medication_use || null,
       };
 
       const { error } = await supabase.from("students").insert(submissionData);
@@ -165,9 +179,10 @@ const PreEnrollment = () => {
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
               <Tabs defaultValue="personal">
-                <TabsList className="grid w-full grid-cols-2 md:w-[400px] mx-auto">
+                <TabsList className="grid w-full grid-cols-3 md:w-[600px] mx-auto">
                   <TabsTrigger value="personal">Dados Pessoais</TabsTrigger>
                   <TabsTrigger value="address">Endereço</TabsTrigger>
+                  <TabsTrigger value="guardian_health">Responsável & Saúde</TabsTrigger>
                 </TabsList>
 
                 {/* TAB 1: Dados Pessoais */}
@@ -405,6 +420,55 @@ const PreEnrollment = () => {
                       )}
                     />
                   </div>
+                </TabsContent>
+                
+                {/* TAB 3: Responsável & Saúde */}
+                <TabsContent value="guardian_health" className="space-y-4 pt-4">
+                  <FormField
+                    control={form.control}
+                    name="guardian_name"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Nome do Pai/Mãe ou Responsável Principal (Opcional)</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Ex: Ana Paula Silva" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="special_needs"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Necessidades Especiais / Condições Médicas (Opcional)</FormLabel>
+                        <FormControl>
+                          <Textarea 
+                            placeholder="Descreva se o aluno possui alguma necessidade especial, alergia ou condição médica relevante." 
+                            {...field} 
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="medication_use"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Uso Contínuo de Medicamentos (Opcional)</FormLabel>
+                        <FormControl>
+                          <Textarea 
+                            placeholder="Liste os medicamentos de uso contínuo e a dosagem, se aplicável." 
+                            {...field} 
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
                 </TabsContent>
               </Tabs>
               
