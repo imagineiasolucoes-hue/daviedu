@@ -135,7 +135,9 @@ const PreEnrollment = () => {
       form.reset();
     },
     onError: (error: any) => {
-      showError(`Erro ao enviar pré-matrícula: ${error.message}`);
+      // Se o erro for um objeto JSON da Edge Function, use a mensagem de erro
+      const errorMessage = error.context?.error?.message || error.message || "Ocorreu um erro desconhecido ao enviar o formulário.";
+      showError(`Erro ao enviar pré-matrícula: ${errorMessage}`);
     },
   });
 

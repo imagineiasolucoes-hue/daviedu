@@ -67,7 +67,7 @@ serve(async (req) => {
   try {
     const body = await req.json();
     
-    // We must ensure the tenantId is present, even if it's the placeholder
+    // Use the provided tenant_id or fallback to DEMO_TENANT_ID
     const tenantId = body.tenant_id || DEMO_TENANT_ID; 
 
     const supabaseAdmin = createClient(
@@ -87,11 +87,19 @@ serve(async (req) => {
         // Ensure date is correctly formatted (it should already be YYYY-MM-DD from client)
         birth_date: body.birth_date, 
     };
+    
+    // Remove fields that are not columns in the students table (if any were passed)
+    delete submissionData.tenant_id; // We re-add it below
+    
+    const finalSubmission = {
+        ...submissionData,
+        tenant_id: tenantId, // Re-add tenant_id
+    };
 
     // 3. Insert the new student
     const { data: student, error: insertError } = await supabaseAdmin
         .from("students")
-        .insert(submissionData)
+        .insert(finalSubmission)
         .select("registration_code")
         .single();
 
@@ -107,7 +115,7 @@ serve(async (req) => {
     });
   } catch (error) {
     console.error("Pre-enrollment Edge Function Error:", error.message);
-    return new Response(JSON.stringify({ error: error.message }), {
+    return new Response(JSON.stringify({ error: error.message || "Erro desconhecido na função Edge." }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 400,
     });
