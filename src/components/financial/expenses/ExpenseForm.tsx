@@ -197,6 +197,7 @@ const ExpenseForm: React.FC<ExpenseFormProps> = ({
         queryClient.invalidateQueries({ queryKey: ["expenses"] });
       }
       queryClient.invalidateQueries({ queryKey: ["financialReports"] });
+      queryClient.invalidateQueries({ queryKey: ["dashboardData"] }); // <-- FIX: Invalidate main dashboard data
       onClose();
     },
     onError: (error: any) => {
