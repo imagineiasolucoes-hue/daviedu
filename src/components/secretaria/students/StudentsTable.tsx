@@ -50,6 +50,8 @@ const StudentsTable: React.FC<StudentsTableProps> = ({ onEdit, onDelete }) => {
         return <Badge variant="destructive">Inativo</Badge>;
       case 'suspended':
         return <Badge variant="secondary">Suspenso</Badge>;
+      case 'pre-enrolled':
+        return <Badge className="bg-blue-500 hover:bg-blue-600 text-white">Pré-Matriculado</Badge>;
       default:
         return <Badge variant="secondary">N/A</Badge>;
     }

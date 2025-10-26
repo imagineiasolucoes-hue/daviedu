@@ -16,7 +16,7 @@ export interface Student {
   full_name: string;
   birth_date?: string;
   registration_code: string;
-  status: 'active' | 'inactive' | 'suspended';
+  status: 'active' | 'inactive' | 'suspended' | 'pre-enrolled';
   created_at: string;
   
   // Campos adicionados baseados no formulário detalhado

@@ -49,7 +49,7 @@ import { academicLevels, classOptions, AcademicLevel, getLevelByClassName } from
 const studentSchema = z.object({
   // Matrícula
   registration_code: z.string().min(1, "O código de matrícula é obrigatório."),
-  status: z.enum(["active", "inactive", "suspended"]),
+  status: z.enum(["active", "inactive", "suspended", "pre-enrolled"]),
   
   // Campos de Turma (Temporários para UI ou IDs)
   class_id: z.string().optional(),
@@ -133,9 +133,9 @@ const StudentForm: React.FC<StudentFormProps> = ({ isOpen, onClose, initialData 
     } else {
       form.reset({
         full_name: "",
-        registration_code: nextCode || "", // Use nextCode if available
+        registration_code: nextCode || "",
         birth_date: undefined,
-        status: "active",
+        status: "pre-enrolled", // Default to 'pre-enrolled' for new students
         gender: undefined,
         nationality: "",
         naturality: "",
@@ -470,7 +470,7 @@ const StudentForm: React.FC<StudentFormProps> = ({ isOpen, onClose, initialData 
                         <FormControl>
                           <Input placeholder="Centro" {...field} />
                         </FormControl>
-                          <FormMessage />
+                        <FormMessage />
                       </FormItem>
                     )}
                   />
@@ -518,7 +518,7 @@ const StudentForm: React.FC<StudentFormProps> = ({ isOpen, onClose, initialData 
                           <Input 
                             placeholder="Ex: 2024001" 
                             {...field} 
-                            disabled={!isEditMode || isLoadingCode} // Disable if creating or loading
+                            disabled={!isEditMode || isLoadingCode}
                             value={isEditMode ? field.value : (isLoadingCode ? "Gerando..." : nextCode || "")}
                           />
                         </FormControl>
@@ -539,6 +539,7 @@ const StudentForm: React.FC<StudentFormProps> = ({ isOpen, onClose, initialData 
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
+                            <SelectItem value="pre-enrolled">Pré-Matriculado</SelectItem>
                             <SelectItem value="active">Ativo</SelectItem>
                             <SelectItem value="inactive">Inativo</SelectItem>
                             <SelectItem value="suspended">Suspenso</SelectItem>
