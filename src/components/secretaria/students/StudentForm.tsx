@@ -7,7 +7,7 @@ import { format, parseISO } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
 import { fetchTenantId } from "@/lib/tenant";
 import { showError, showSuccess } from "@/utils/toast";
-import { Student } from "@/types/academic";
+import { Student, Class } from "@/types/academic";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -43,11 +43,18 @@ import { CalendarIcon, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { generateNextRegistrationCode } from "@/lib/registration";
+import { academicLevels, classOptions, AcademicLevel, getLevelByClassName } from "@/lib/academic-options";
 
+// Define o esquema Zod para o formulário do aluno
 const studentSchema = z.object({
   // Matrícula
   registration_code: z.string().min(1, "O código de matrícula é obrigatório."),
   status: z.enum(["active", "inactive", "suspended"]),
+  
+  // Campos de Turma (Temporários para UI ou IDs)
+  class_id: z.string().optional(),
+  class_level: z.enum(academicLevels as [string, ...string[]]).optional(),
+  class_name: z.string().optional(),
 
   // Dados Pessoais
   full_name: z.string().min(3, "O nome completo é obrigatório."),
@@ -83,6 +90,10 @@ const StudentForm: React.FC<StudentFormProps> = ({ isOpen, onClose, initialData 
     resolver: zodResolver(studentSchema),
   });
 
+  const { watch, setValue } = form;
+  const selectedLevel = watch("class_level");
+  const selectedClassName = watch("class_name");
+
   // Fetch next registration code only if creating a new student
   const { data: nextCode, isLoading: isLoadingCode } = useQuery({
     queryKey: ["nextRegistrationCode"],
@@ -91,18 +102,38 @@ const StudentForm: React.FC<StudentFormProps> = ({ isOpen, onClose, initialData 
     staleTime: 0,
   });
 
+  // Fetch all classes (FIX: Select all fields to match Class interface)
+  const { data: classes } = useQuery<Class[]>({
+    queryKey: ["classes"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("classes").select("*");
+      if (error) throw new Error(error.message);
+      return data || [];
+    },
+  });
+
+  // Effect to set initial form values
   useEffect(() => {
     if (initialData) {
+      // Find the class name and level if class_id exists
+      const currentClass = classes?.find(c => c.id === initialData.class_id);
+      const initialLevel = currentClass ? getLevelByClassName(currentClass.name) : undefined;
+
       form.reset({
         ...initialData,
         birth_date: initialData.birth_date ? parseISO(initialData.birth_date) : undefined,
         gender: initialData.gender || undefined,
         email: initialData.email || "",
+        
+        // Set class fields for editing
+        class_id: initialData.class_id || "",
+        class_level: initialLevel,
+        class_name: currentClass?.name || "",
       });
     } else {
       form.reset({
         full_name: "",
-        registration_code: nextCode || "", // Use generated code
+        registration_code: nextCode || "",
         birth_date: undefined,
         status: "active",
         gender: undefined,
@@ -118,19 +149,46 @@ const StudentForm: React.FC<StudentFormProps> = ({ isOpen, onClose, initialData 
         address_neighborhood: "",
         address_city: "",
         address_state: "",
+        
+        // Reset class fields
+        class_id: "",
+        class_level: undefined,
+        class_name: "",
       });
     }
-  }, [initialData, form, nextCode]);
+  }, [initialData, form, nextCode, classes]);
+
+  // Effect to update class_id when class_name changes
+  useEffect(() => {
+    if (selectedClassName && classes) {
+      const matchingClass = classes.find(c => c.name === selectedClassName);
+      setValue("class_id", matchingClass?.id || "");
+    } else {
+      setValue("class_id", "");
+    }
+  }, [selectedClassName, classes, setValue]);
+
+  // Effect to reset class name when level changes
+  useEffect(() => {
+    if (selectedLevel) {
+      setValue("class_name", "");
+    }
+  }, [selectedLevel, setValue]);
+
 
   const mutation = useMutation({
     mutationFn: async (values: z.infer<typeof studentSchema>) => {
       const { tenantId, error: tenantError } = await fetchTenantId();
       if (tenantError) throw new Error(tenantError);
 
+      // Destructure temporary UI fields
+      const { class_level, class_name, ...rest } = values;
+
       const submissionData = {
-        ...values,
+        ...rest,
         tenant_id: tenantId,
         birth_date: values.birth_date ? format(values.birth_date, "yyyy-MM-dd") : null,
+        
         // Ensure optional fields are null if empty string
         gender: values.gender || null,
         nationality: values.nationality || null,
@@ -145,6 +203,7 @@ const StudentForm: React.FC<StudentFormProps> = ({ isOpen, onClose, initialData 
         address_neighborhood: values.address_neighborhood || null,
         address_city: values.address_city || null,
         address_state: values.address_state || null,
+        class_id: values.class_id || null,
       };
 
       if (isEditMode) {
@@ -171,6 +230,17 @@ const StudentForm: React.FC<StudentFormProps> = ({ isOpen, onClose, initialData 
   const onSubmit = (values: z.infer<typeof studentSchema>) => {
     mutation.mutate(values);
   };
+
+  const filteredClassNames = classOptions.filter(
+    (opt) => opt.level === selectedLevel
+  );
+  
+  // Filter available classes based on the selected name (e.g., '1º Ano')
+  const availableClasses = classes?.filter(c => {
+    if (!selectedClassName) return false;
+    return c.name === selectedClassName;
+  }) || [];
+
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -471,9 +541,93 @@ const StudentForm: React.FC<StudentFormProps> = ({ isOpen, onClose, initialData 
                     )}
                   />
                 </div>
-                {/* TODO: Adicionar campos de Turma/Classe e Responsável aqui no futuro */}
+                
+                {/* Seleção de Turma */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <FormField
+                        control={form.control}
+                        name="class_level"
+                        render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>Nível de Ensino</FormLabel>
+                            <Select onValueChange={field.onChange} value={field.value}>
+                            <FormControl>
+                                <SelectTrigger>
+                                <SelectValue placeholder="Selecione o nível" />
+                                </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                                {academicLevels.map((level) => (
+                                <SelectItem key={level} value={level}>
+                                    {level}
+                                </SelectItem>
+                                ))}
+                            </SelectContent>
+                            </Select>
+                            <FormMessage />
+                        </FormItem>
+                        )}
+                    />
+                    <FormField
+                        control={form.control}
+                        name="class_name"
+                        render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>Nome da Turma</FormLabel>
+                            <Select
+                            onValueChange={field.onChange}
+                            value={field.value}
+                            disabled={!selectedLevel}
+                            >
+                            <FormControl>
+                                <SelectTrigger>
+                                <SelectValue placeholder={selectedLevel ? "Selecione o nome da turma" : "Selecione o Nível primeiro"} />
+                                </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                                {filteredClassNames.map((option) => (
+                                <SelectItem key={option.name} value={option.name}>
+                                    {option.name}
+                                </SelectItem>
+                                ))}
+                            </SelectContent>
+                            </Select>
+                            <FormMessage />
+                        </FormItem>
+                        )}
+                    />
+                    <FormField
+                        control={form.control}
+                        name="class_id"
+                        render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>Turma (Ano Letivo)</FormLabel>
+                            <Select
+                            onValueChange={field.onChange}
+                            value={field.value}
+                            disabled={!selectedClassName || availableClasses.length === 0}
+                            >
+                            <FormControl>
+                                <SelectTrigger>
+                                <SelectValue placeholder={selectedClassName ? "Selecione a turma" : "Selecione o Nome da Turma"} />
+                                </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                                {availableClasses.map((classItem) => (
+                                <SelectItem key={classItem.id} value={classItem.id}>
+                                    {classItem.name} ({classItem.school_year})
+                                </SelectItem>
+                                ))}
+                            </SelectContent>
+                            </Select>
+                            <FormMessage />
+                        </FormItem>
+                        )}
+                    />
+                </div>
+                
                 <div className="p-4 border rounded-md text-sm text-muted-foreground">
-                    <p>Informações de Turma e Responsáveis serão adicionadas em breve.</p>
+                    <p>Informações de Responsáveis serão adicionadas em breve.</p>
                 </div>
               </TabsContent>
             </Tabs>

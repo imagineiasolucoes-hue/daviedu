@@ -35,4 +35,7 @@ export interface Student {
   address_neighborhood?: string;
   address_city?: string;
   address_state?: string;
+
+  // Vínculo com a Turma
+  class_id?: string;
 }
