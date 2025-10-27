@@ -75,7 +75,9 @@ const ClassesTable: React.FC<ClassesTableProps> = ({ onEdit, onDelete }) => {
             classes.map((classItem) => (
               <TableRow key={classItem.id}>
                 <TableCell className="font-medium">{classItem.name}</TableCell>
-                <TableCell>{classItem.school_year}</TableCell>
+                <TableCell>
+                  {classItem.school_year} / {classItem.school_year + 1}
+                </TableCell>
                 <TableCell>{classItem.period || "N/A"}</TableCell>
                 <TableCell>{classItem.room || "N/A"}</TableCell>
                 <TableCell>

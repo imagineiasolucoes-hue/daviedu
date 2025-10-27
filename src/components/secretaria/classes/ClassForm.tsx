@@ -199,9 +199,13 @@ const ClassForm: React.FC<ClassFormProps> = ({ isOpen, onClose, initialData }) =
                 name="school_year"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Ano Letivo</FormLabel>
+                    <FormLabel>Ano Letivo (Início do Ciclo)</FormLabel>
                     <FormControl>
-                      <Input type="number" placeholder="Ex: 2024" {...field} />
+                      <Input 
+                        type="number" 
+                        placeholder={`Ex: ${new Date().getFullYear()} (Será exibido como ${new Date().getFullYear()}/${new Date().getFullYear() + 1})`} 
+                        {...field} 
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
