@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Users, GraduationCap, DollarSign, ArrowDownCircle, Activity, PlusCircle, Share2, UserCheck, UserPlus, Clock, Briefcase } from "lucide-react";
+import { Users, GraduationCap, DollarSign, ArrowDownCircle, Activity, PlusCircle, Share2, UserCheck, UserPlus, Clock, Briefcase, UsersRound } from "lucide-react"; // Importando UsersRound
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { supabase } from "@/integrations/supabase/client";
@@ -111,7 +111,7 @@ const Dashboard = () => {
     { title: "Alunos Ativos", value: data?.totalActiveStudents, icon: UserCheck, format: (v: number) => v },
     { title: "Pré-Matriculados", value: data?.totalPreEnrolledStudents, icon: UserPlus, format: (v: number) => v },
     { title: "Turmas Ativas", value: data?.activeClasses, icon: GraduationCap, format: (v: number) => v },
-    { title: "Total de Professores", value: data?.totalTeachers, icon: Briefcase, format: (v: number) => v },
+    { title: "Total de Professores", value: data?.totalTeachers, icon: UsersRound, format: (v: number) => v }, // Ícone atualizado aqui
     { title: "Receita Paga (Mês)", value: data?.monthlyPaidRevenue, icon: DollarSign, format: formatCurrency },
     { title: "Receita Pendente (Mês)", value: data?.monthlyPendingRevenue, icon: Clock, format: formatCurrency },
     { title: "Despesa Paga (Mês)", value: data?.monthlyExpenses, icon: ArrowDownCircle, format: formatCurrency },
