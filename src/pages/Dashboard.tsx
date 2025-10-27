@@ -1,13 +1,14 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Users, GraduationCap, DollarSign, ArrowDownCircle, Activity, PlusCircle, Share2 } from "lucide-react";
+import { Users, GraduationCap, DollarSign, ArrowDownCircle, Activity, PlusCircle, Share2, UserCheck, UserPlus, Clock, Briefcase } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { supabase } from "@/integrations/supabase/client";
 import { fetchTenantId } from "@/lib/tenant";
 import StudentForm from "@/components/secretaria/students/StudentForm";
 import ShareEnrollmentLink from "@/components/dashboard/ShareEnrollmentLink"; // Import the new component
+import { format } from "date-fns";
 
 const fetchDashboardData = async () => {
   const { tenantId, error: tenantError } = await fetchTenantId();
@@ -16,35 +17,55 @@ const fetchDashboardData = async () => {
   const today = new Date();
   const firstDayOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
   const lastDayOfMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0);
-  const firstDayISO = firstDayOfMonth.toISOString().split('T')[0];
-  const lastDayISO = lastDayOfMonth.toISOString().split('T')[0];
+  const firstDayISO = format(firstDayOfMonth, 'yyyy-MM-dd');
+  const lastDayISO = format(lastDayOfMonth, 'yyyy-MM-dd');
 
-  // 1. Total Students
-  const { count: studentCount, error: studentError } = await supabase
+  // 1. Total Active Students
+  const { count: activeStudentCount, error: activeStudentError } = await supabase
     .from('students')
     .select('*', { count: 'exact', head: true })
-    .eq('tenant_id', tenantId);
-  if (studentError) throw studentError;
+    .eq('tenant_id', tenantId)
+    .eq('status', 'active');
+  if (activeStudentError) throw activeStudentError;
 
-  // 2. Active Classes
+  // 2. Total Pre-enrolled Students
+  const { count: preEnrolledStudentCount, error: preEnrolledStudentError } = await supabase
+    .from('students')
+    .select('*', { count: 'exact', head: true })
+    .eq('tenant_id', tenantId)
+    .eq('status', 'pre-enrolled');
+  if (preEnrolledStudentError) throw preEnrolledStudentError;
+
+  // 3. Active Classes
   const { count: classCount, error: classError } = await supabase
     .from('classes')
     .select('*', { count: 'exact', head: true })
     .eq('tenant_id', tenantId);
   if (classError) throw classError;
 
-  // 3. Monthly Revenue
-  const { data: revenueData, error: revenueError } = await supabase
+  // 4. Monthly Paid Revenue
+  const { data: paidRevenueData, error: paidRevenueError } = await supabase
     .from('revenues')
     .select('amount')
     .eq('tenant_id', tenantId)
     .gte('date', firstDayISO)
     .lte('date', lastDayISO)
     .eq('status', 'pago');
-  if (revenueError) throw revenueError;
-  const monthlyRevenue = revenueData.reduce((sum, rev) => sum + rev.amount, 0);
+  if (paidRevenueError) throw paidRevenueError;
+  const monthlyPaidRevenue = paidRevenueData.reduce((sum, rev) => sum + rev.amount, 0);
 
-  // 4. Monthly Expenses
+  // 5. Monthly Pending Revenue
+  const { data: pendingRevenueData, error: pendingRevenueError } = await supabase
+    .from('revenues')
+    .select('amount')
+    .eq('tenant_id', tenantId)
+    .gte('date', firstDayISO)
+    .lte('date', lastDayISO)
+    .eq('status', 'pendente');
+  if (pendingRevenueError) throw pendingRevenueError;
+  const monthlyPendingRevenue = pendingRevenueData.reduce((sum, rev) => sum + rev.amount, 0);
+
+  // 6. Monthly Paid Expenses
   const { data: expenseData, error: expenseError } = await supabase
     .from('expenses')
     .select('amount')
@@ -55,28 +76,45 @@ const fetchDashboardData = async () => {
   if (expenseError) throw expenseError;
   const monthlyExpenses = expenseData.reduce((sum, exp) => sum + exp.amount, 0);
 
+  // 7. Total Teachers
+  const { count: teacherCount, error: teacherError } = await supabase
+    .from('employees')
+    .select('*', { count: 'exact', head: true })
+    .eq('tenant_id', tenantId)
+    .eq('is_teacher', true)
+    .eq('status', 'active'); // Only count active teachers
+  if (teacherError) throw teacherError;
+
   return {
-    totalStudents: studentCount ?? 0,
+    totalActiveStudents: activeStudentCount ?? 0,
+    totalPreEnrolledStudents: preEnrolledStudentCount ?? 0,
     activeClasses: classCount ?? 0,
-    monthlyRevenue: monthlyRevenue,
+    monthlyPaidRevenue: monthlyPaidRevenue,
+    monthlyPendingRevenue: monthlyPendingRevenue,
     monthlyExpenses: monthlyExpenses,
+    totalTeachers: teacherCount ?? 0,
   };
 };
 
 const Dashboard = () => {
   const [isStudentFormOpen, setIsStudentFormOpen] = useState(false);
-  const [isShareLinkOpen, setIsShareLinkOpen] = useState(false); // New state for share link
+  const [isShareLinkOpen, setIsShareLinkOpen] = useState(false);
   
   const { data, isLoading, error } = useQuery({
     queryKey: ['dashboardData'],
     queryFn: fetchDashboardData,
   });
 
+  const formatCurrency = (value: number) => new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(value);
+
   const kpiCards = [
-    { title: "Total de Alunos", value: data?.totalStudents, icon: Users, format: (v: number) => v },
+    { title: "Alunos Ativos", value: data?.totalActiveStudents, icon: UserCheck, format: (v: number) => v },
+    { title: "Pré-Matriculados", value: data?.totalPreEnrolledStudents, icon: UserPlus, format: (v: number) => v },
     { title: "Turmas Ativas", value: data?.activeClasses, icon: GraduationCap, format: (v: number) => v },
-    { title: "Receita Mensal", value: data?.monthlyRevenue, icon: DollarSign, format: (v: number) => new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(v) },
-    { title: "Despesa Mensal", value: data?.monthlyExpenses, icon: ArrowDownCircle, format: (v: number) => new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(v) },
+    { title: "Total de Professores", value: data?.totalTeachers, icon: Briefcase, format: (v: number) => v },
+    { title: "Receita Paga (Mês)", value: data?.monthlyPaidRevenue, icon: DollarSign, format: formatCurrency },
+    { title: "Receita Pendente (Mês)", value: data?.monthlyPendingRevenue, icon: Clock, format: formatCurrency },
+    { title: "Despesa Paga (Mês)", value: data?.monthlyExpenses, icon: ArrowDownCircle, format: formatCurrency },
   ];
 
   return (
@@ -92,24 +130,21 @@ const Dashboard = () => {
                 <PlusCircle className="mr-2 h-4 w-4" />
                 Novo Aluno
             </Button>
-            <Button variant="outline" size="sm">
+            {/* <Button variant="outline" size="sm">
                 <PlusCircle className="mr-2 h-4 w-4" />
                 Nova Turma
-            </Button>
+            </Button> */} {/* Removido para simplificar o dashboard, pode ser adicionado na secretaria */}
         </div>
       </div>
       
       {/* KPI Cards */}
-      <div className="grid gap-4 md:grid-cols-2 md:gap-8 lg:grid-cols-4">
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-4"> {/* Ajustado para 4 colunas */}
         {isLoading ? (
           <>
-            <Skeleton className="h-[108px]" />
-            <Skeleton className="h-[108px]" />
-            <Skeleton className="h-[108px]" />
-            <Skeleton className="h-[108px]" />
+            {kpiCards.map((_, index) => <Skeleton key={index} className="h-[108px]" />)}
           </>
         ) : error ? (
-          <div className="col-span-4 text-red-500">Erro ao carregar os indicadores.</div>
+          <div className="col-span-full text-red-500">Erro ao carregar os indicadores: {error.message}</div>
         ) : (
           kpiCards.map((kpi) => (
             <Card key={kpi.title}>
