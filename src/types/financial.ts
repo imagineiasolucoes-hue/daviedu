@@ -63,6 +63,8 @@ export interface Employee {
   hire_date: string;
   contract_type?: string;
   status: EmployeeStatus;
+  is_teacher?: boolean; // NOVO CAMPO
+  main_subject?: string; // NOVO CAMPO
   role?: Role; // For joins
 }
 

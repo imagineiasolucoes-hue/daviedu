@@ -20,6 +20,7 @@ import {
 import {
   Form,
   FormControl,
+  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -33,6 +34,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
 import {
   Popover,
   PopoverContent,
@@ -50,6 +52,8 @@ const employeeSchema = z.object({
   status: z.enum(["active", "inactive"]),
   department: z.string().optional(),
   contract_type: z.string().optional(),
+  is_teacher: z.boolean().default(false), // NOVO
+  main_subject: z.string().optional(), // NOVO
 });
 
 interface EmployeeFormProps {
@@ -66,6 +70,8 @@ const EmployeeForm: React.FC<EmployeeFormProps> = ({ isOpen, onClose, initialDat
     resolver: zodResolver(employeeSchema),
   });
 
+  const isTeacher = form.watch("is_teacher");
+
   useEffect(() => {
     if (initialData) {
       form.reset({
@@ -73,6 +79,8 @@ const EmployeeForm: React.FC<EmployeeFormProps> = ({ isOpen, onClose, initialDat
         hire_date: parseISO(initialData.hire_date),
         base_salary: Number(initialData.base_salary),
         role_id: initialData.role_id || "",
+        is_teacher: initialData.is_teacher ?? false, // NOVO
+        main_subject: initialData.main_subject || "", // NOVO
       });
     } else {
       form.reset({
@@ -83,6 +91,8 @@ const EmployeeForm: React.FC<EmployeeFormProps> = ({ isOpen, onClose, initialDat
         status: "active",
         department: "",
         contract_type: "",
+        is_teacher: false, // NOVO
+        main_subject: "", // NOVO
       });
     }
   }, [initialData, form]);
@@ -106,6 +116,7 @@ const EmployeeForm: React.FC<EmployeeFormProps> = ({ isOpen, onClose, initialDat
         tenant_id: tenantId,
         hire_date: format(values.hire_date, "yyyy-MM-dd"),
         role_id: values.role_id || null,
+        main_subject: values.is_teacher ? (values.main_subject || null) : null, // Limpa se não for professor
       };
 
       if (isEditMode) {
@@ -122,6 +133,7 @@ const EmployeeForm: React.FC<EmployeeFormProps> = ({ isOpen, onClose, initialDat
     onSuccess: () => {
       showSuccess(isEditMode ? "Funcionário atualizado!" : "Funcionário criado!");
       queryClient.invalidateQueries({ queryKey: ["employees"] });
+      queryClient.invalidateQueries({ queryKey: ["teachers"] }); // Invalida a lista de professores
       onClose();
     },
     onError: (error: any) => showError(error.message),
@@ -271,6 +283,45 @@ const EmployeeForm: React.FC<EmployeeFormProps> = ({ isOpen, onClose, initialDat
                 )}
               />
             </div>
+
+            {/* Seção de Professor */}
+            <FormField
+              control={form.control}
+              name="is_teacher"
+              render={({ field }) => (
+                <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
+                  <div className="space-y-0.5">
+                    <FormLabel>É Professor?</FormLabel>
+                    <FormDescription>
+                      Marque se este funcionário também atua como professor.
+                    </FormDescription>
+                  </div>
+                  <FormControl>
+                    <Switch
+                      checked={field.value}
+                      onCheckedChange={field.onChange}
+                    />
+                  </FormControl>
+                </FormItem>
+              )}
+            />
+
+            {isTeacher && (
+              <FormField
+                control={form.control}
+                name="main_subject"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Disciplina Principal</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Ex: Matemática, Inglês" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            )}
+
             <DialogFooter>
               <Button type="button" variant="outline" onClick={onClose}>
                 Cancelar
