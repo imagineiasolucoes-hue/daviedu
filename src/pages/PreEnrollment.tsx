@@ -22,45 +22,45 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
-import { CalendarIcon, Loader2, CheckCircle } from "lucide-react";
+import { CalendarIcon, Loader2, CheckCircle, AlertTriangle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useSearchParams, Link } from "react-router-dom";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
-// Esquema completo para pré-matrícula
 const preEnrollmentSchema = z.object({
-  // Dados Pessoais (Obrigatórios)
   full_name: z.string().min(3, "O nome completo é obrigatório."),
   birth_date: z.date({ required_error: "A data de nascimento é obrigatória." }),
   phone: z.string().min(8, "O telefone é obrigatório."),
   email: z.string().email("Email inválido.").optional().or(z.literal("")),
-  
-  // Dados Pessoais (Opcionais)
   gender: z.enum(["Masculino", "Feminino", "Outro"]).optional(),
   nationality: z.string().optional(),
-  naturality: z.string().optional(), // Naturalidade (Cidade de Nascimento)
+  naturality: z.string().optional(),
   cpf: z.string().optional(),
   rg: z.string().optional(),
-
-  // Endereço (Opcionais)
   zip_code: z.string().optional(),
   address_street: z.string().optional(),
   address_number: z.string().optional(),
   address_neighborhood: z.string().optional(),
   address_city: z.string().optional(),
   address_state: z.string().optional(),
-
-  // Novos Campos
   guardian_name: z.string().optional(),
   special_needs: z.string().optional(),
   medication_use: z.string().optional(),
 });
 
 const PreEnrollment = () => {
+  const [searchParams] = useSearchParams();
+  const [tenantId, setTenantId] = useState<string | null>(null);
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [generatedCode, setGeneratedCode] = useState<string | null>(null);
+
+  useEffect(() => {
+    const id = searchParams.get("tenant_id");
+    setTenantId(id);
+  }, [searchParams]);
 
   const form = useForm<z.infer<typeof preEnrollmentSchema>>({
     resolver: zodResolver(preEnrollmentSchema),
@@ -87,14 +87,16 @@ const PreEnrollment = () => {
 
   const mutation = useMutation({
     mutationFn: async (values: z.infer<typeof preEnrollmentSchema>) => {
+      if (!tenantId) {
+        throw new Error("Link de matrícula inválido ou incompleto.");
+      }
       
       const submissionData = {
+        tenant_id: tenantId,
         full_name: values.full_name,
-        birth_date: format(values.birth_date, "yyyy-MM-dd"), // Format date for database
+        birth_date: format(values.birth_date, "yyyy-MM-dd"),
         phone: values.phone,
         email: values.email || null,
-        
-        // Campos adicionais
         gender: values.gender || null,
         nationality: values.nationality || null,
         naturality: values.naturality || null,
@@ -106,19 +108,25 @@ const PreEnrollment = () => {
         address_neighborhood: values.address_neighborhood || null,
         address_city: values.address_city || null,
         address_state: values.address_state || null,
-
-        // Novos Campos
         guardian_name: values.guardian_name || null,
         special_needs: values.special_needs || null,
         medication_use: values.medication_use || null,
       };
 
-      // Invoke the Edge Function to handle insertion and code generation
       const { data, error } = await supabase.functions.invoke("pre-enrollment", {
         body: submissionData,
       });
 
-      if (error) throw new Error(error.message);
+      if (error) {
+        try {
+          const errorJson = JSON.parse(error.message);
+          if (errorJson.error) {
+            throw new Error(errorJson.error);
+          }
+        } catch (e) {
+          throw new Error(error.message);
+        }
+      }
       
       return data as { registration_code: string };
     },
@@ -129,15 +137,32 @@ const PreEnrollment = () => {
       form.reset();
     },
     onError: (error: any) => {
-      // Se o erro for um objeto JSON da Edge Function, use a mensagem de erro
-      const errorMessage = error.context?.error?.message || error.message || "Ocorreu um erro desconhecido ao enviar o formulário.";
-      showError(`Erro ao enviar pré-matrícula: ${errorMessage}`);
+      showError(`Erro ao enviar pré-matrícula: ${error.message}`);
     },
   });
 
   const onSubmit = (values: z.infer<typeof preEnrollmentSchema>) => {
     mutation.mutate(values);
   };
+
+  if (!tenantId) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-gray-50 dark:bg-gray-900 p-4">
+        <Card className="w-full max-w-md text-center">
+          <CardContent className="p-8 space-y-4">
+            <AlertTriangle className="h-12 w-12 text-destructive mx-auto mb-4" />
+            <CardTitle className="text-2xl">Link Inválido</CardTitle>
+            <CardDescription>
+              Este link de pré-matrícula está incompleto ou é inválido. Por favor, solicite um novo link à instituição de ensino.
+            </CardDescription>
+            <Button asChild>
+              <Link to="/">Voltar à Página Inicial</Link>
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   if (isSubmitted) {
     return (
@@ -154,7 +179,7 @@ const PreEnrollment = () => {
                     Seu código de referência é: <span className="font-bold text-primary">{generatedCode}</span>.
                 </p>
             )}
-            <Button onClick={() => setIsSubmitted(false)} variant="outline">
+            <Button onClick={() => { setIsSubmitted(false); setGeneratedCode(null); }} variant="outline">
               Fazer Outra Pré-Matrícula
             </Button>
           </CardContent>

@@ -8,18 +8,11 @@ declare const Deno: {
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 // @ts-ignore
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
-// @ts-ignore
-import { format } from "https://deno.land/std@0.190.0/datetime/mod.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
-
-// Este é um placeholder para matrículas públicas.
-// Em um aplicativo multi-tenant real, isso seria determinado a partir de um parâmetro de URL
-// ou um identificador público que mapeia para um tenant real.
-const PUBLIC_ENROLLMENT_TENANT_ID = "00000000-0000-0000-0000-000000000000";
 
 async function generateNextRegistrationCode(supabaseAdmin: any, tenantId: string): Promise<string> {
     const currentYear = new Date().getFullYear().toString();
@@ -62,9 +55,13 @@ serve(async (req) => {
 
   try {
     const body = await req.json();
+    const { tenant_id, ...studentInfo } = body;
 
     // --- Validação Robusta ---
-    if (!body.full_name || !body.birth_date || !body.phone) {
+    if (!tenant_id) {
+      throw new Error("Identificador da escola (tenant_id) ausente.");
+    }
+    if (!studentInfo.full_name || !studentInfo.birth_date || !studentInfo.phone) {
       throw new Error("Campos obrigatórios ausentes: nome, data de nascimento e telefone.");
     }
 
@@ -74,31 +71,14 @@ serve(async (req) => {
     );
 
     // --- Gerar Código de Matrícula ---
-    const registration_code = await generateNextRegistrationCode(supabaseAdmin, PUBLIC_ENROLLMENT_TENANT_ID);
+    const registration_code = await generateNextRegistrationCode(supabaseAdmin, tenant_id);
 
     // --- Preparar Dados para Inserção ---
     const studentData = {
-      tenant_id: PUBLIC_ENROLLMENT_TENANT_ID,
+      ...studentInfo,
+      tenant_id: tenant_id,
       registration_code: registration_code,
       status: "pre-enrolled",
-      full_name: body.full_name,
-      birth_date: body.birth_date,
-      phone: body.phone,
-      email: body.email || null,
-      gender: body.gender || null,
-      nationality: body.nationality || null,
-      naturality: body.naturality || null,
-      cpf: body.cpf || null,
-      rg: body.rg || null,
-      zip_code: body.zip_code || null,
-      address_street: body.address_street || null,
-      address_number: body.address_number || null,
-      address_neighborhood: body.address_neighborhood || null,
-      address_city: body.address_city || null,
-      address_state: body.address_state || null,
-      guardian_name: body.guardian_name || null,
-      special_needs: body.special_needs || null,
-      medication_use: body.medication_use || null,
     };
 
     // --- Inserir no Banco de Dados ---

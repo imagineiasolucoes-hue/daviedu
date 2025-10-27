@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -8,16 +8,15 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { Copy, Share2 } from "lucide-react";
+import { Copy, Share2, Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import { fetchTenantId } from "@/lib/tenant";
 
 interface ShareEnrollmentLinkProps {
   isOpen: boolean;
   onClose: () => void;
 }
 
-// NOTE: In a real application, the base URL should be dynamically determined (e.g., via environment variables).
-// For this environment, we assume the public link is accessible via the root URL /pre-matricula.
 const PUBLIC_ENROLLMENT_PATH = "/pre-matricula";
 
 const ShareEnrollmentLink: React.FC<ShareEnrollmentLinkProps> = ({
@@ -25,25 +24,36 @@ const ShareEnrollmentLink: React.FC<ShareEnrollmentLinkProps> = ({
   onClose,
 }) => {
   const [link, setLink] = useState("");
+  const [isLoading, setIsLoading] = useState(true);
 
-  // Simulate generating the full public link
-  const generateLink = () => {
-    // In a real scenario, you might append a tenant identifier here:
-    // const fullLink = `${window.location.origin}${PUBLIC_ENROLLMENT_PATH}?tenantId=${tenantId}`;
-    const fullLink = `${window.location.origin}${PUBLIC_ENROLLMENT_PATH}`;
-    setLink(fullLink);
-  };
+  useEffect(() => {
+    if (isOpen) {
+      setIsLoading(true);
+      const generateLink = async () => {
+        try {
+          const { tenantId, error } = await fetchTenantId();
+          if (error || !tenantId) {
+            throw new Error(error || "Não foi possível obter o ID da escola.");
+          }
+          const fullLink = `${window.location.origin}${PUBLIC_ENROLLMENT_PATH}?tenant_id=${tenantId}`;
+          setLink(fullLink);
+        } catch (err: any) {
+          toast.error(`Erro ao gerar link: ${err.message}`);
+          setLink("Erro ao gerar o link.");
+        } finally {
+          setIsLoading(false);
+        }
+      };
+      generateLink();
+    }
+  }, [isOpen]);
 
   const handleCopy = () => {
-    if (link) {
+    if (link && !isLoading && !link.startsWith("Erro")) {
       navigator.clipboard.writeText(link);
       toast.success("Link copiado para a área de transferência!");
     }
   };
-
-  if (isOpen && !link) {
-    generateLink();
-  }
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -54,16 +64,23 @@ const ShareEnrollmentLink: React.FC<ShareEnrollmentLinkProps> = ({
             Compartilhar Formulário de Pré-Matrícula
           </DialogTitle>
           <DialogDescription>
-            Use este link para permitir que novos alunos ou responsáveis iniciem o
-            processo de matrícula de forma externa.
+            Use este link exclusivo da sua escola para permitir que novos alunos ou responsáveis iniciem o processo de matrícula.
           </DialogDescription>
         </DialogHeader>
         <div className="flex space-x-2">
-          <Input readOnly value={link} className="flex-1" />
-          <Button type="button" size="icon" onClick={handleCopy}>
-            <Copy className="h-4 w-4" />
-            <span className="sr-only">Copiar Link</span>
-          </Button>
+          {isLoading ? (
+            <div className="flex items-center justify-center w-full h-10 rounded-md border bg-muted">
+              <Loader2 className="h-4 w-4 animate-spin" />
+            </div>
+          ) : (
+            <>
+              <Input readOnly value={link} className="flex-1" />
+              <Button type="button" size="icon" onClick={handleCopy} disabled={link.startsWith("Erro")}>
+                <Copy className="h-4 w-4" />
+                <span className="sr-only">Copiar Link</span>
+              </Button>
+            </>
+          )}
         </div>
         <p className="text-sm text-muted-foreground mt-2">
           Os dados preenchidos serão salvos na sua seção de Secretaria com o status "Pré-Matriculado".
