@@ -20,8 +20,8 @@ import { Loader2 } from "lucide-react";
 import { showError, showSuccess } from "@/utils/toast";
 import usePageTitle from "@/hooks/usePageTitle";
 
-// Define o número de telefone para o WhatsApp (substitua pelo seu número)
-const WHATSAPP_NUMBER = "5511999999999"; // Exemplo: 55 (código do país) 11 (DDD) 999999999 (número)
+// Define o número de telefone para o WhatsApp
+const WHATSAPP_NUMBER = "5571992059840";
 
 const registerSchema = z.object({
   schoolName: z.string().min(3, "O nome da escola é obrigatório"),
