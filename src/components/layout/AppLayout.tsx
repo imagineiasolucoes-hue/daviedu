@@ -10,6 +10,9 @@ import {
   Menu,
   Settings,
   ChevronDown,
+  Instagram, // Importando o ícone do Instagram
+  Facebook,  // Importando o ícone do Facebook
+  Linkedin,  // Importando o ícone do LinkedIn
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -173,6 +176,27 @@ const AppLayout = () => {
         <main className="flex flex-1 flex-col gap-4 p-4 lg:gap-6 lg:p-6 bg-muted/40">
           <Outlet />
         </main>
+        {/* Rodapé do Sistema */}
+        <footer className="border-t bg-background py-4 px-4 lg:px-6 print-hidden">
+          <div className="container mx-auto flex flex-col md:flex-row items-center justify-between gap-4 text-sm text-muted-foreground">
+            <p>&copy; {new Date().getFullYear()} Davi EDU. Todos os direitos reservados.</p>
+            <div className="flex gap-4 items-center">
+              <a href="#" className="hover:text-primary">Termos de Serviço</a>
+              <a href="#" className="hover:text-primary">Política de Privacidade</a>
+              <div className="flex gap-3 ml-4"> {/* Links para redes sociais */}
+                <a href="https://instagram.com" target="_blank" rel="noopener noreferrer" className="hover:text-primary">
+                  <Instagram className="h-5 w-5" />
+                </a>
+                <a href="https://facebook.com" target="_blank" rel="noopener noreferrer" className="hover:text-primary">
+                  <Facebook className="h-5 w-5" />
+                </a>
+                <a href="https://linkedin.com" target="_blank" rel="noopener noreferrer" className="hover:text-primary">
+                  <Linkedin className="h-5 w-5" />
+                </a>
+              </div>
+            </div>
+          </div>
+        </footer>
       </div>
     </div>
   );
