@@ -15,11 +15,10 @@ const WhatsAppButton = () => {
       className="fixed bottom-6 right-6 z-50"
     >
       <Button
-        size="icon"
-        className="rounded-full h-14 w-14 bg-green-500 hover:bg-green-600 text-white shadow-lg"
+        className="rounded-full h-14 px-6 bg-green-500 hover:bg-green-600 text-white shadow-lg flex items-center"
       >
-        <MessageCircle className="h-7 w-7" />
-        <span className="sr-only">Fale conosco pelo WhatsApp</span>
+        <MessageCircle className="h-6 w-6 mr-2" />
+        <span className="text-base font-semibold">Tire suas dúvidas</span>
       </Button>
     </a>
   );
