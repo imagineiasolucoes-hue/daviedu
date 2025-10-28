@@ -4,7 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { fetchTenantId } from "@/lib/tenant";
+import { useTenant } from "@/hooks/useTenant";
 import { showError, showSuccess } from "@/utils/toast";
 import { Role } from "@/types/financial";
 import { Button } from "@/components/ui/button";
@@ -43,6 +43,7 @@ interface RoleFormProps {
 
 const RoleForm: React.FC<RoleFormProps> = ({ isOpen, onClose, initialData }) => {
   const queryClient = useQueryClient();
+  const { tenantId } = useTenant();
   const isEditMode = !!initialData;
 
   const form = useForm<z.infer<typeof roleSchema>>({
@@ -67,8 +68,7 @@ const RoleForm: React.FC<RoleFormProps> = ({ isOpen, onClose, initialData }) => 
 
   const mutation = useMutation({
     mutationFn: async (values: z.infer<typeof roleSchema>) => {
-      const { tenantId, error: tenantError } = await fetchTenantId();
-      if (tenantError) throw new Error(tenantError);
+      if (!tenantId) throw new Error("ID da escola não encontrado.");
 
       const submissionData = { ...values, tenant_id: tenantId };
 

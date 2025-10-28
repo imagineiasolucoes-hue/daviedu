@@ -4,7 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { fetchTenantId } from "@/lib/tenant";
+import { useTenant } from "@/hooks/useTenant";
 import { showError, showSuccess } from "@/utils/toast";
 import { Class } from "@/types/academic";
 import { Button } from "@/components/ui/button";
@@ -59,6 +59,7 @@ interface ClassFormProps {
 
 const ClassForm: React.FC<ClassFormProps> = ({ isOpen, onClose, initialData }) => {
   const queryClient = useQueryClient();
+  const { tenantId } = useTenant();
   const isEditMode = !!initialData;
 
   const form = useForm<z.infer<typeof classSchema>>({
@@ -95,11 +96,11 @@ const ClassForm: React.FC<ClassFormProps> = ({ isOpen, onClose, initialData }) =
 
   const mutation = useMutation({
     mutationFn: async (values: z.infer<typeof classSchema>) => {
-      const { tenantId, error: tenantError } = await fetchTenantId();
-      if (tenantError) throw new Error(tenantError);
+      if (!tenantId) throw new Error("ID da escola não encontrado.");
 
       // Exclude 'level' from submission data as it's only for UI logic
-      const { level, ...submissionData } = { ...values, tenant_id: tenantId };
+      const { level, ...rest } = values;
+      const submissionData = { ...rest, tenant_id: tenantId };
 
       if (isEditMode) {
         const { error } = await supabase

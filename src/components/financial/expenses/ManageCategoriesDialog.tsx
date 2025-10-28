@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { fetchTenantId } from "@/lib/tenant";
+import { useTenant } from "@/hooks/useTenant";
 import { showError, showSuccess } from "@/utils/toast";
 import { Button } from "@/components/ui/button";
 import {
@@ -25,6 +25,7 @@ const ManageCategoriesDialog: React.FC<ManageCategoriesDialogProps> = ({
   onClose,
 }) => {
   const queryClient = useQueryClient();
+  const { tenantId } = useTenant();
   const [editingCategory, setEditingCategory] = useState<Pick<
     ExpenseCategory,
     "id" | "name"
@@ -45,8 +46,7 @@ const ManageCategoriesDialog: React.FC<ManageCategoriesDialogProps> = ({
 
   const createMutation = useMutation({
     mutationFn: async ({ name }: { name: string }) => {
-      const { tenantId, error: tenantError } = await fetchTenantId();
-      if (tenantError) throw new Error(tenantError);
+      if (!tenantId) throw new Error("ID da escola não encontrado.");
       const { error } = await supabase
         .from("expense_categories")
         .insert({ name, tenant_id: tenantId });

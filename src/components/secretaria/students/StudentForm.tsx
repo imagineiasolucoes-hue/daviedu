@@ -5,7 +5,7 @@ import * as z from "zod";
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { format, parseISO } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
-import { fetchTenantId } from "@/lib/tenant";
+import { useTenant } from "@/hooks/useTenant";
 import { showError, showSuccess } from "@/utils/toast";
 import { Student, Class } from "@/types/academic";
 import { Button } from "@/components/ui/button";
@@ -90,6 +90,7 @@ interface StudentFormProps {
 
 const StudentForm: React.FC<StudentFormProps> = ({ isOpen, onClose, initialData }) => {
   const queryClient = useQueryClient();
+  const { tenantId } = useTenant();
   const isEditMode = !!initialData;
 
   const form = useForm<z.infer<typeof studentSchema>>({
@@ -218,8 +219,7 @@ const StudentForm: React.FC<StudentFormProps> = ({ isOpen, onClose, initialData 
 
   const mutation = useMutation({
     mutationFn: async (values: z.infer<typeof studentSchema>) => {
-      const { tenantId, error: tenantError } = await fetchTenantId();
-      if (tenantError) throw new Error(tenantError);
+      if (!tenantId) throw new Error("ID da escola não encontrado.");
 
       // Destructure temporary UI fields
       const { class_level, class_name, ...rest } = values;

@@ -5,7 +5,7 @@ import { GraduationCap, DollarSign, ArrowDownCircle, Activity, PlusCircle, Share
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { supabase } from "@/integrations/supabase/client";
-import { fetchTenantId } from "@/lib/tenant";
+import { useTenant } from "@/hooks/useTenant";
 import StudentForm from "@/components/secretaria/students/StudentForm";
 import ShareEnrollmentLink from "@/components/dashboard/ShareEnrollmentLink";
 import { format, subMonths, startOfMonth } from "date-fns";
@@ -13,12 +13,9 @@ import { ptBR } from "date-fns/locale";
 import usePageTitle from "@/hooks/usePageTitle";
 import EnrollmentChart from "@/components/dashboard/EnrollmentChart";
 import RecentActivities from "@/components/dashboard/RecentActivities";
-// import { useAuth } from "@/components/auth/SessionContextProvider"; // Não é mais necessário aqui
-// import { toast } from "sonner"; // Não é mais necessário aqui
 
-const fetchDashboardData = async () => {
-  const { tenantId, error: tenantError } = await fetchTenantId();
-  if (tenantError) throw new Error(tenantError);
+const fetchDashboardData = async (tenantId: string | null) => {
+  if (!tenantId) throw new Error("ID da escola não encontrado.");
 
   const today = new Date();
   const firstDayOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
@@ -99,14 +96,13 @@ const Dashboard = () => {
   usePageTitle("Dashboard");
   const [isStudentFormOpen, setIsStudentFormOpen] = useState(false);
   const [isShareLinkOpen, setIsShareLinkOpen] = useState(false);
+  const { tenantId } = useTenant();
   
   const { data, isLoading, error } = useQuery({
-    queryKey: ['dashboardData'],
-    queryFn: fetchDashboardData,
+    queryKey: ['dashboardData', tenantId],
+    queryFn: () => fetchDashboardData(tenantId),
+    enabled: !!tenantId,
   });
-
-  // A lógica de saudação foi movida para AppLayout.tsx
-  // useEffect(() => { ... }, [user]); 
 
   const formatCurrency = (value: number) => new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(value);
 

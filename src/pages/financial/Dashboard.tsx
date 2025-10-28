@@ -5,7 +5,7 @@ import { format, startOfMonth, endOfMonth, subMonths, startOfYear, endOfYear, su
 import { ptBR } from "date-fns/locale";
 import { Calendar as CalendarIcon, DollarSign, ArrowDownCircle, TrendingUp, Loader2, Printer } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { fetchTenantId } from "@/lib/tenant";
+import { useTenant } from "@/hooks/useTenant";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -15,7 +15,8 @@ import { cn } from "@/lib/utils";
 import FinancialPieChart from "@/components/dashboard/FinancialPieChart";
 import usePageTitle from "@/hooks/usePageTitle";
 
-const fetchReportData = async (dateRange?: DateRange) => {
+const fetchReportData = async (tenantId: string | null, dateRange?: DateRange) => {
+  if (!tenantId) throw new Error("ID da escola não encontrado.");
   if (!dateRange?.from || !dateRange?.to) {
     return {
       totalRevenue: 0,
@@ -25,9 +26,6 @@ const fetchReportData = async (dateRange?: DateRange) => {
       expensesByCategory: [],
     };
   }
-
-  const { tenantId, error: tenantError } = await fetchTenantId();
-  if (tenantError) throw new Error(tenantError);
 
   const fromDate = format(dateRange.from, "yyyy-MM-dd");
   const toDate = format(dateRange.to, "yyyy-MM-dd");
@@ -108,6 +106,7 @@ const fetchReportData = async (dateRange?: DateRange) => {
 
 const FinancialDashboard = () => {
   usePageTitle("Dashboard Financeiro");
+  const { tenantId } = useTenant();
   const [date, setDate] = useState<DateRange | undefined>({
     from: startOfMonth(new Date()),
     to: new Date(),
@@ -137,9 +136,9 @@ const FinancialDashboard = () => {
   }, [filterPreset]);
 
   const { data, isLoading, error } = useQuery({
-    queryKey: ["financialReports", date],
-    queryFn: () => fetchReportData(date),
-    enabled: !!date?.from && !!date?.to,
+    queryKey: ["financialReports", tenantId, date],
+    queryFn: () => fetchReportData(tenantId, date),
+    enabled: !!tenantId && !!date?.from && !!date?.to,
   });
 
   const formatCurrency = (value: number) => new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(value);

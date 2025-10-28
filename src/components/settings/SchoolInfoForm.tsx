@@ -4,7 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { fetchTenantId } from "@/lib/tenant";
+import { useTenant } from "@/hooks/useTenant";
 import { showError, showSuccess } from "@/utils/toast";
 import { Button } from "@/components/ui/button";
 import {
@@ -42,9 +42,7 @@ const schoolInfoSchema = z.object({
   address: z.string().optional(),
 });
 
-const fetchSchoolInfo = async (): Promise<TenantInfo | null> => {
-  const { tenantId, error: tenantError } = await fetchTenantId();
-  if (tenantError) throw new Error(tenantError);
+const fetchSchoolInfo = async (tenantId: string | null): Promise<TenantInfo | null> => {
   if (!tenantId) return null;
 
   const { data, error } = await supabase
@@ -59,6 +57,7 @@ const fetchSchoolInfo = async (): Promise<TenantInfo | null> => {
 
 const SchoolInfoForm = () => {
   const queryClient = useQueryClient();
+  const { tenantId } = useTenant();
 
   const form = useForm<z.infer<typeof schoolInfoSchema>>({
     resolver: zodResolver(schoolInfoSchema),
@@ -72,8 +71,9 @@ const SchoolInfoForm = () => {
   });
 
   const { data: schoolInfo, isLoading: isFetchingSchoolInfo, error: fetchError } = useQuery({
-    queryKey: ["tenantInfo"],
-    queryFn: fetchSchoolInfo,
+    queryKey: ["tenantInfo", tenantId],
+    queryFn: () => fetchSchoolInfo(tenantId),
+    enabled: !!tenantId,
   });
 
   useEffect(() => {
@@ -90,8 +90,6 @@ const SchoolInfoForm = () => {
 
   const updateMutation = useMutation({
     mutationFn: async (values: z.infer<typeof schoolInfoSchema>) => {
-      const { tenantId, error: tenantError } = await fetchTenantId();
-      if (tenantError) throw new Error(tenantError);
       if (!tenantId) throw new Error("ID da escola não encontrado.");
 
       const { name, cnpj, phone, email, address } = values;
@@ -112,7 +110,7 @@ const SchoolInfoForm = () => {
     },
     onSuccess: () => {
       showSuccess("Informações da escola salvas com sucesso!");
-      queryClient.invalidateQueries({ queryKey: ["tenantInfo"] });
+      queryClient.invalidateQueries({ queryKey: ["tenantInfo", tenantId] });
     },
     onError: (error: any) => {
       showError(`Erro ao salvar informações da escola: ${error.message}`);

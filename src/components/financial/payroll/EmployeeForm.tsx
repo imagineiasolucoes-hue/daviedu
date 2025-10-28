@@ -5,7 +5,7 @@ import * as z from "zod";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { format, parseISO } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
-import { fetchTenantId } from "@/lib/tenant";
+import { useTenant } from "@/hooks/useTenant";
 import { showError, showSuccess } from "@/utils/toast";
 import { Employee, Role } from "@/types/financial";
 import { Button } from "@/components/ui/button";
@@ -64,6 +64,7 @@ interface EmployeeFormProps {
 
 const EmployeeForm: React.FC<EmployeeFormProps> = ({ isOpen, onClose, initialData }) => {
   const queryClient = useQueryClient();
+  const { tenantId } = useTenant();
   const isEditMode = !!initialData;
 
   const form = useForm<z.infer<typeof employeeSchema>>({
@@ -108,8 +109,7 @@ const EmployeeForm: React.FC<EmployeeFormProps> = ({ isOpen, onClose, initialDat
 
   const mutation = useMutation({
     mutationFn: async (values: z.infer<typeof employeeSchema>) => {
-      const { tenantId, error: tenantError } = await fetchTenantId();
-      if (tenantError) throw new Error(tenantError);
+      if (!tenantId) throw new Error("ID da escola não encontrado.");
 
       const submissionData = {
         ...values,

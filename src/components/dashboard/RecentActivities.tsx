@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { fetchTenantId } from "@/lib/tenant";
+import { useTenant } from "@/hooks/useTenant";
 import { Loader2, UserPlus, DollarSign, ArrowDownCircle } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -14,9 +14,8 @@ interface Activity {
   icon: React.ElementType;
 }
 
-const fetchRecentActivities = async (): Promise<Activity[]> => {
-  const { tenantId, error: tenantError } = await fetchTenantId();
-  if (tenantError) throw new Error(tenantError);
+const fetchRecentActivities = async (tenantId: string | null): Promise<Activity[]> => {
+  if (!tenantId) return [];
 
   const [studentsRes, revenuesRes, expensesRes] = await Promise.all([
     supabase.from('students').select('full_name, created_at').eq('tenant_id', tenantId).order('created_at', { ascending: false }).limit(5),
@@ -60,9 +59,11 @@ const fetchRecentActivities = async (): Promise<Activity[]> => {
 };
 
 const RecentActivities = () => {
+  const { tenantId } = useTenant();
   const { data: activities, isLoading, error } = useQuery({
-    queryKey: ['recentActivities'],
-    queryFn: fetchRecentActivities,
+    queryKey: ['recentActivities', tenantId],
+    queryFn: () => fetchRecentActivities(tenantId),
+    enabled: !!tenantId,
   });
 
   if (isLoading) {

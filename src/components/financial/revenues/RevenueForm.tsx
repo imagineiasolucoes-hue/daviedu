@@ -5,7 +5,7 @@ import * as z from "zod";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { format } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
-import { fetchTenantId } from "@/lib/tenant";
+import { useTenant } from "@/hooks/useTenant";
 import { showError, showSuccess } from "@/utils/toast";
 import { Button } from "@/components/ui/button";
 import {
@@ -73,6 +73,7 @@ const RevenueForm: React.FC<RevenueFormProps> = ({
   initialData,
 }) => {
   const queryClient = useQueryClient();
+  const { tenantId } = useTenant();
   const isEditMode = !!initialData;
 
   const form = useForm<z.infer<typeof revenueSchema>>({
@@ -126,8 +127,7 @@ const RevenueForm: React.FC<RevenueFormProps> = ({
 
   const mutation = useMutation({
     mutationFn: async (values: z.infer<typeof revenueSchema>) => {
-      const { tenantId, error: tenantError } = await fetchTenantId();
-      if (tenantError) throw new Error(tenantError);
+      if (!tenantId) throw new Error("ID da escola não encontrado.");
 
       const submissionData = {
         ...values,

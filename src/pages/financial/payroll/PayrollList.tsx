@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { fetchTenantId } from "@/lib/tenant";
+import { useTenant } from "@/hooks/useTenant";
 import { showError, showSuccess, showLoading, dismissToast } from "@/utils/toast";
 import { Payroll } from "@/types/financial";
 import { Button } from "@/components/ui/button";
@@ -20,6 +20,7 @@ const PayrollList = () => {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [selectedPayroll, setSelectedPayroll] = useState<Payroll | null>(null);
   const queryClient = useQueryClient();
+  const { tenantId } = useTenant();
 
   const handleEdit = (payroll: Payroll) => {
     setSelectedPayroll(payroll);
@@ -45,8 +46,7 @@ const PayrollList = () => {
     mutationFn: async (month: Date) => {
       const toastId = showLoading("Gerando folha de pagamento...");
       try {
-        const { tenantId, error: tenantError } = await fetchTenantId();
-        if (tenantError) throw new Error(tenantError);
+        if (!tenantId) throw new Error("ID da escola não encontrado.");
 
         const referenceMonth = format(month, "yyyy-MM-dd");
 

@@ -8,9 +8,9 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { Copy, Share2, Loader2 } from "lucide-react";
+import { Copy, Share2 } from "lucide-react";
 import { toast } from "sonner";
-import { fetchTenantId } from "@/lib/tenant";
+import { useTenant } from "@/hooks/useTenant";
 
 interface ShareEnrollmentLinkProps {
   isOpen: boolean;
@@ -23,33 +23,18 @@ const ShareEnrollmentLink: React.FC<ShareEnrollmentLinkProps> = ({
   isOpen,
   onClose,
 }) => {
+  const { tenantId } = useTenant();
   const [link, setLink] = useState("");
-  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    if (isOpen) {
-      setIsLoading(true);
-      const generateLink = async () => {
-        try {
-          const { tenantId, error } = await fetchTenantId();
-          if (error || !tenantId) {
-            throw new Error(error || "Não foi possível obter o ID da escola.");
-          }
-          const fullLink = `${window.location.origin}${PUBLIC_ENROLLMENT_PATH}?tenant_id=${tenantId}`;
-          setLink(fullLink);
-        } catch (err: any) {
-          toast.error(`Erro ao gerar link: ${err.message}`);
-          setLink("Erro ao gerar o link.");
-        } finally {
-          setIsLoading(false);
-        }
-      };
-      generateLink();
+    if (isOpen && tenantId) {
+      const fullLink = `${window.location.origin}${PUBLIC_ENROLLMENT_PATH}?tenant_id=${tenantId}`;
+      setLink(fullLink);
     }
-  }, [isOpen]);
+  }, [isOpen, tenantId]);
 
   const handleCopy = () => {
-    if (link && !isLoading && !link.startsWith("Erro")) {
+    if (link) {
       navigator.clipboard.writeText(link);
       toast.success("Link copiado para a área de transferência!");
     }
@@ -68,19 +53,11 @@ const ShareEnrollmentLink: React.FC<ShareEnrollmentLinkProps> = ({
           </DialogDescription>
         </DialogHeader>
         <div className="flex space-x-2">
-          {isLoading ? (
-            <div className="flex items-center justify-center w-full h-10 rounded-md border bg-muted">
-              <Loader2 className="h-4 w-4 animate-spin" />
-            </div>
-          ) : (
-            <>
-              <Input readOnly value={link} className="flex-1" />
-              <Button type="button" size="icon" onClick={handleCopy} disabled={link.startsWith("Erro")}>
-                <Copy className="h-4 w-4" />
-                <span className="sr-only">Copiar Link</span>
-              </Button>
-            </>
-          )}
+          <Input readOnly value={link} className="flex-1" />
+          <Button type="button" size="icon" onClick={handleCopy} disabled={!link}>
+            <Copy className="h-4 w-4" />
+            <span className="sr-only">Copiar Link</span>
+          </Button>
         </div>
         <p className="text-sm text-muted-foreground mt-2">
           Os dados preenchidos serão salvos na sua seção de Secretaria com o status "Pré-Matriculado".
