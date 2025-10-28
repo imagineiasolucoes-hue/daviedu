@@ -20,10 +20,7 @@ import FinancialDashboard from "@/pages/financial/Dashboard";
 import Revenues from "@/pages/financial/Revenues";
 import Expenses from "@/pages/financial/Expenses";
 import Payroll from "@/pages/financial/Payroll";
-import PreEnrollment from "./pages/PreEnrollment";
-import SuperAdminLayout from "@/components/layout/SuperAdminLayout"; // Import the new SuperAdminLayout
-import SuperAdminDashboard from "@/pages/super-admin/Dashboard"; // Placeholder for Super Admin Dashboard
-import SuperAdminSchools from "@/pages/super-admin/Schools"; // Placeholder for Super Admin Schools
+import PreEnrollment from "./pages/PreEnrollment"; // Import the new public page
 
 const queryClient = new QueryClient();
 
@@ -39,14 +36,15 @@ const App = () => (
             <Route path="/" element={<LandingPage />} />
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
-            <Route path="/pre-matricula" element={<PreEnrollment />} />
+            <Route path="/pre-matricula" element={<PreEnrollment />} /> {/* New Public Route */}
             
-            {/* Protected Routes for Regular Users */}
+            {/* Protected Routes */}
             <Route element={<ProtectedRoute />}>
               <Route element={<AppLayout />}>
                 <Route path="/dashboard" element={<Dashboard />} />
                 <Route path="/secretaria" element={<Secretaria />} />
                 
+                {/* New Financial Module Routes */}
                 <Route path="/financeiro" element={<FinancialLayout />}>
                   <Route index element={<Navigate to="/financeiro/dashboard" replace />} />
                   <Route path="dashboard" element={<FinancialDashboard />} />
@@ -59,14 +57,6 @@ const App = () => (
                 <Route path="/comunicacao" element={<Comunicacao />} />
                 <Route path="/settings" element={<Settings />} />
               </Route>
-            </Route>
-
-            {/* Protected Routes for Super Admin */}
-            <Route path="/super-admin" element={<SuperAdminLayout />}>
-              <Route index element={<Navigate to="/super-admin/dashboard" replace />} />
-              <Route path="dashboard" element={<SuperAdminDashboard />} />
-              <Route path="schools" element={<SuperAdminSchools />} />
-              {/* Add more Super Admin routes here as we build them */}
             </Route>
 
             <Route path="*" element={<NotFound />} />
