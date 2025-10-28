@@ -21,10 +21,10 @@ import { Loader2 } from "lucide-react";
 
 // Definindo o tipo para a configuração JSONB
 interface TenantConfig {
-  cnpj?: string;
-  phone?: string;
-  email?: string;
-  address?: string;
+  cnpj?: string | null;
+  phone?: string | null;
+  email?: string | null;
+  address?: string | null;
 }
 
 // Definindo o tipo para os dados do tenant
@@ -95,10 +95,10 @@ const SchoolInfoForm = () => {
       const { name, cnpj, phone, email, address } = values;
 
       const updatedConfig: TenantConfig = {
-        cnpj: cnpj || undefined,
-        phone: phone || undefined,
-        email: email || undefined,
-        address: address || undefined,
+        cnpj: cnpj || null, // Converte string vazia para null
+        phone: phone || null, // Converte string vazia para null
+        email: email || null, // Converte string vazia para null
+        address: address || null, // Converte string vazia para null
       };
 
       const { error } = await supabase
