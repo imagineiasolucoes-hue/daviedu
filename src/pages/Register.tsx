@@ -18,6 +18,7 @@ import { useState } from "react";
 import { useAuth } from "@/components/auth/SessionContextProvider";
 import { Loader2 } from "lucide-react";
 import { showError, showSuccess } from "@/utils/toast";
+import usePageTitle from "@/hooks/usePageTitle";
 
 // Define o número de telefone para o WhatsApp (substitua pelo seu número)
 const WHATSAPP_NUMBER = "5511999999999"; // Exemplo: 55 (código do país) 11 (DDD) 999999999 (número)
@@ -31,6 +32,7 @@ const registerSchema = z.object({
 });
 
 const Register = () => {
+  usePageTitle("Cadastro");
   const { session } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
 

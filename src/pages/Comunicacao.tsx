@@ -1,4 +1,7 @@
+import usePageTitle from "@/hooks/usePageTitle";
+
 const Comunicacao = () => {
+  usePageTitle("Comunicação");
   return (
     <div>
       <h1 className="text-3xl font-bold tracking-tight">Comunicação</h1>

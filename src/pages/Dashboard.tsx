@@ -9,6 +9,7 @@ import { fetchTenantId } from "@/lib/tenant";
 import StudentForm from "@/components/secretaria/students/StudentForm";
 import ShareEnrollmentLink from "@/components/dashboard/ShareEnrollmentLink"; // Import the new component
 import { format } from "date-fns";
+import usePageTitle from "@/hooks/usePageTitle";
 
 const fetchDashboardData = async () => {
   const { tenantId, error: tenantError } = await fetchTenantId();
@@ -97,6 +98,7 @@ const fetchDashboardData = async () => {
 };
 
 const Dashboard = () => {
+  usePageTitle("Dashboard");
   const [isStudentFormOpen, setIsStudentFormOpen] = useState(false);
   const [isShareLinkOpen, setIsShareLinkOpen] = useState(false);
   

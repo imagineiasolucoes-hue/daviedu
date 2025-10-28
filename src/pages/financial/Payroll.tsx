@@ -2,8 +2,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import Roles from "./payroll/Roles";
 import Employees from "./payroll/Employees";
 import PayrollList from "./payroll/PayrollList";
+import usePageTitle from "@/hooks/usePageTitle";
 
 const Payroll = () => {
+  usePageTitle("Folha de Pagamento");
   return (
     <div className="space-y-6">
       <div>

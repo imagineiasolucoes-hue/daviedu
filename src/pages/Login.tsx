@@ -3,8 +3,10 @@ import { ThemeSupa } from "@supabase/auth-ui-shared";
 import { supabase } from "@/integrations/supabase/client";
 import { Navigate } from "react-router-dom";
 import { useAuth } from "@/components/auth/SessionContextProvider";
+import usePageTitle from "@/hooks/usePageTitle";
 
 const Login = () => {
+  usePageTitle("Login");
   const { session, isLoading } = useAuth();
 
   if (isLoading) {

@@ -29,6 +29,7 @@ import { useState, useEffect } from "react";
 import { useSearchParams, Link } from "react-router-dom";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import usePageTitle from "@/hooks/usePageTitle";
 
 const preEnrollmentSchema = z.object({
   full_name: z.string().min(3, "O nome completo é obrigatório."),
@@ -52,6 +53,7 @@ const preEnrollmentSchema = z.object({
 });
 
 const PreEnrollment = () => {
+  usePageTitle("Pré-Matrícula");
   const [searchParams] = useSearchParams();
   const [tenantId, setTenantId] = useState<string | null>(null);
   const [isSubmitted, setIsSubmitted] = useState(false);

@@ -13,6 +13,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import FinancialPieChart from "@/components/dashboard/FinancialPieChart";
+import usePageTitle from "@/hooks/usePageTitle";
 
 const fetchReportData = async (dateRange?: DateRange) => {
   if (!dateRange?.from || !dateRange?.to) {
@@ -106,6 +107,7 @@ const fetchReportData = async (dateRange?: DateRange) => {
 };
 
 const FinancialDashboard = () => {
+  usePageTitle("Dashboard Financeiro");
   const [date, setDate] = useState<DateRange | undefined>({
     from: startOfMonth(new Date()),
     to: new Date(),

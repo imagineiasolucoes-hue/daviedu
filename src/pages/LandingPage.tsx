@@ -12,6 +12,7 @@ import { Link, Navigate } from "react-router-dom";
 import { useAuth } from "@/components/auth/SessionContextProvider";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import usePageTitle from "@/hooks/usePageTitle";
 
 const targetAudiences = [
   {
@@ -47,6 +48,7 @@ const testimonials = [
 ];
 
 const LandingPage = () => {
+  usePageTitle("Bem-vindo");
   const { session, isLoading } = useAuth();
 
   if (isLoading) {

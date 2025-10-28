@@ -9,8 +9,10 @@ import { Expense } from "@/types/financial";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { showError, showSuccess } from "@/utils/toast";
+import usePageTitle from "@/hooks/usePageTitle";
 
 const Expenses = () => {
+  usePageTitle("Despesas");
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isCategoriesDialogOpen, setIsCategoriesDialogOpen] = useState(false);

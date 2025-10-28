@@ -9,6 +9,7 @@ import {
   LogOut,
   Menu,
   Settings,
+  ChevronDown,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -40,8 +41,8 @@ const NavLink = ({ href, icon: Icon, label }: { href: string; icon: React.Elemen
     <Link
       to={href}
       className={cn(
-        "flex items-center gap-3 rounded-lg px-3 py-2 text-gray-500 transition-all hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-50",
-        isActive && "bg-gray-100 text-gray-900 dark:bg-gray-800 dark:text-gray-50"
+        "flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary",
+        isActive && "bg-primary/10 text-primary"
       )}
     >
       <Icon className="h-4 w-4" />
@@ -59,11 +60,11 @@ const AppLayout = () => {
 
   return (
     <div className="grid min-h-screen w-full md:grid-cols-[220px_1fr] lg:grid-cols-[280px_1fr]">
-      <div className="hidden border-r bg-muted/40 md:block">
+      <div className="hidden border-r bg-background md:block">
         <div className="flex h-full max-h-screen flex-col gap-2">
           <div className="flex h-14 items-center border-b px-4 lg:h-[60px] lg:px-6">
             <Link to="/" className="flex items-center gap-2 font-semibold">
-              <GraduationCap className="h-6 w-6 text-blue-600" />
+              <GraduationCap className="h-6 w-6 text-primary" />
               <span className="">Davi EDU</span>
             </Link>
           </div>
@@ -77,7 +78,7 @@ const AppLayout = () => {
         </div>
       </div>
       <div className="flex flex-col">
-        <header className="flex h-14 items-center gap-4 border-b bg-muted/40 px-4 lg:h-[60px] lg:px-6">
+        <header className="flex h-14 items-center gap-4 border-b bg-background px-4 lg:h-[60px] lg:px-6">
           <Sheet>
             <SheetTrigger asChild>
               <Button variant="outline" size="icon" className="shrink-0 md:hidden">
@@ -88,7 +89,7 @@ const AppLayout = () => {
             <SheetContent side="left" className="flex flex-col">
               <nav className="grid gap-2 text-lg font-medium">
                 <Link to="/" className="flex items-center gap-2 text-lg font-semibold mb-4">
-                  <GraduationCap className="h-6 w-6 text-blue-600" />
+                  <GraduationCap className="h-6 w-6 text-primary" />
                   <span>Davi EDU</span>
                 </Link>
                 {navItems.map((item) => (
@@ -102,15 +103,18 @@ const AppLayout = () => {
           </div>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="secondary" size="icon" className="rounded-full">
-                <Avatar>
+              <Button variant="ghost" className="relative flex items-center gap-2">
+                <Avatar className="h-8 w-8">
                   <AvatarImage src={user?.user_metadata?.avatar_url} />
                   <AvatarFallback>{user?.email?.charAt(0).toUpperCase()}</AvatarFallback>
                 </Avatar>
-                <span className="sr-only">Toggle user menu</span>
+                <div className="hidden md:flex flex-col items-start">
+                    <span className="text-sm font-medium">{user?.user_metadata?.first_name || user?.email}</span>
+                </div>
+                <ChevronDown className="h-4 w-4 text-muted-foreground hidden md:block" />
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
+            <DropdownMenuContent align="end" className="w-56">
               <DropdownMenuLabel>Minha Conta</DropdownMenuLabel>
               <DropdownMenuSeparator />
               <DropdownMenuItem asChild>
@@ -127,7 +131,7 @@ const AppLayout = () => {
             </DropdownMenuContent>
           </DropdownMenu>
         </header>
-        <main className="flex flex-1 flex-col gap-4 p-4 lg:gap-6 lg:p-6 bg-gray-50/50 dark:bg-gray-900/50">
+        <main className="flex flex-1 flex-col gap-4 p-4 lg:gap-6 lg:p-6 bg-muted/40">
           <Outlet />
         </main>
       </div>

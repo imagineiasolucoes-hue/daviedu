@@ -1,8 +1,10 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import SchoolInfoForm from "@/components/settings/SchoolInfoForm";
 import TeachersManagement from "@/components/settings/TeachersManagement";
+import usePageTitle from "@/hooks/usePageTitle";
 
 const Settings = () => {
+  usePageTitle("Configurações");
   return (
     <div className="flex flex-col gap-6">
       <h1 className="text-3xl font-bold tracking-tight">Configurações</h1>
