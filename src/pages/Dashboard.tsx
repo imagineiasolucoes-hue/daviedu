@@ -13,6 +13,8 @@ import { ptBR } from "date-fns/locale";
 import usePageTitle from "@/hooks/usePageTitle";
 import EnrollmentChart from "@/components/dashboard/EnrollmentChart";
 import RecentActivities from "@/components/dashboard/RecentActivities";
+// import { useAuth } from "@/components/auth/SessionContextProvider"; // Não é mais necessário aqui
+// import { toast } from "sonner"; // Não é mais necessário aqui
 
 const fetchDashboardData = async () => {
   const { tenantId, error: tenantError } = await fetchTenantId();
@@ -102,6 +104,9 @@ const Dashboard = () => {
     queryKey: ['dashboardData'],
     queryFn: fetchDashboardData,
   });
+
+  // A lógica de saudação foi movida para AppLayout.tsx
+  // useEffect(() => { ... }, [user]); 
 
   const formatCurrency = (value: number) => new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(value);
 

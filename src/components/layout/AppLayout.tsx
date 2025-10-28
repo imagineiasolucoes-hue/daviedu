@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { Outlet, Link, useLocation, useNavigate } from "react-router-dom";
 import {
   LayoutDashboard,
@@ -54,9 +54,38 @@ const NavLink = ({ href, icon: Icon, label }: { href: string; icon: React.Elemen
 const AppLayout = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const [greetingMessage, setGreetingMessage] = useState<string | null>(null);
+
+  useEffect(() => {
+    const hasShownGreeting = sessionStorage.getItem('hasShownAppLayoutGreeting');
+    if (!hasShownGreeting && user) {
+      const hour = new Date().getHours();
+      let greeting = "";
+      if (hour < 12) {
+        greeting = "Bom dia";
+      } else if (hour < 18) {
+        greeting = "Boa tarde";
+      } else {
+        greeting = "Boa noite";
+      }
+
+      const userName = user.user_metadata?.first_name || user.email?.split('@')[0];
+      const message = `${greeting}, ${userName}!`;
+      setGreetingMessage(message);
+
+      sessionStorage.setItem('hasShownAppLayoutGreeting', 'true');
+
+      const timer = setTimeout(() => {
+        setGreetingMessage(null);
+      }, 7000); // Mensagem desaparece após 7 segundos
+
+      return () => clearTimeout(timer);
+    }
+  }, [user]);
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
+    sessionStorage.removeItem('hasShownAppLayoutGreeting'); // Limpa a flag ao sair
     navigate("/");
   };
 
@@ -98,8 +127,12 @@ const AppLayout = () => {
               </nav>
             </SheetContent>
           </Sheet>
-          <div className="w-full flex-1">
-            {/* Future global search can go here */}
+          <div className="w-full flex-1 flex items-center"> {/* Adicionado flex e items-center aqui */}
+            {greetingMessage && (
+              <span className="text-sm font-medium text-muted-foreground transition-opacity duration-500 ease-in-out opacity-100">
+                {greetingMessage}
+              </span>
+            )}
           </div>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
