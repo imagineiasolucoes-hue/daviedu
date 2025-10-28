@@ -11,6 +11,9 @@ import {
   Megaphone,
   Loader2,
   Check,
+  Instagram, // Importando o ícone do Instagram
+  Facebook,  // Importando o ícone do Facebook
+  Linkedin,  // Importando o ícone do LinkedIn
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Link, Navigate, useNavigate } from "react-router-dom";
@@ -344,9 +347,20 @@ const LandingPage = () => {
       <footer className="border-t">
         <div className="container mx-auto flex flex-col items-center justify-between gap-4 px-4 py-6 md:flex-row">
           <p className="text-sm text-gray-500">&copy; {new Date().getFullYear()} Davi EDU. Todos os direitos reservados.</p>
-          <div className="flex gap-4">
+          <div className="flex gap-4 items-center">
             <a href="#" className="text-sm text-gray-500 hover:text-primary">Termos de Serviço</a>
             <a href="#" className="text-sm text-gray-500 hover:text-primary">Política de Privacidade</a>
+            <div className="flex gap-3 ml-4"> {/* Links para redes sociais */}
+              <a href="https://instagram.com" target="_blank" rel="noopener noreferrer" className="text-gray-500 hover:text-primary">
+                <Instagram className="h-5 w-5" />
+              </a>
+              <a href="https://facebook.com" target="_blank" rel="noopener noreferrer" className="text-gray-500 hover:text-primary">
+                <Facebook className="h-5 w-5" />
+              </a>
+              <a href="https://linkedin.com" target="_blank" rel="noopener noreferrer" className="text-gray-500 hover:text-primary">
+                <Linkedin className="h-5 w-5" />
+              </a>
+            </div>
           </div>
         </div>
       </footer>
