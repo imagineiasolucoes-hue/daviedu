@@ -1,5 +1,5 @@
 import React from "react";
-import { Outlet, Link, useLocation } from "react-router-dom";
+import { Outlet, Link, useLocation, useNavigate } from "react-router-dom";
 import {
   LayoutDashboard,
   GraduationCap,
@@ -53,9 +53,11 @@ const NavLink = ({ href, icon: Icon, label }: { href: string; icon: React.Elemen
 
 const AppLayout = () => {
   const { user } = useAuth();
+  const navigate = useNavigate();
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
+    navigate("/");
   };
 
   return (
