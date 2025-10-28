@@ -54,7 +54,7 @@ const NavLink = ({ href, icon: Icon, label }: { href: string; icon: React.Elemen
 const AppLayout = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
-  const [greetingMessage, setGreetingMessage] = useState<string | null>(null);
+  const [greetingMessage, setGreetingMessage] = useState<React.ReactNode | null>(null); // Alterado para React.ReactNode
 
   useEffect(() => {
     const hasShownGreeting = sessionStorage.getItem('hasShownAppLayoutGreeting');
@@ -70,7 +70,13 @@ const AppLayout = () => {
       }
 
       const userName = user.user_metadata?.first_name || user.email?.split('@')[0];
-      const message = `${greeting}, ${userName}!`;
+      
+      // Criando um ReactNode para a mensagem, permitindo o itálico no nome
+      const message = (
+        <>
+          {greeting}, <i className="italic">{userName}</i>!
+        </>
+      );
       setGreetingMessage(message);
 
       sessionStorage.setItem('hasShownAppLayoutGreeting', 'true');
@@ -127,7 +133,7 @@ const AppLayout = () => {
               </nav>
             </SheetContent>
           </Sheet>
-          <div className="w-full flex-1 flex items-center"> {/* Adicionado flex e items-center aqui */}
+          <div className="w-full flex-1 flex items-center">
             {greetingMessage && (
               <span className="text-sm font-medium text-muted-foreground transition-opacity duration-500 ease-in-out opacity-100">
                 {greetingMessage}
