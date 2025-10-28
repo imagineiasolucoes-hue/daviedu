@@ -11,9 +11,10 @@ import {
   Megaphone,
   Loader2,
   Check,
-  Instagram, // Importando o ícone do Instagram
-  Facebook,  // Importando o ícone do Facebook
-  Linkedin,  // Importando o ícone do LinkedIn
+  Instagram,
+  Facebook,
+  Linkedin,
+  Menu, // Importando o ícone de menu para o hambúrguer
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Link, Navigate, useNavigate } from "react-router-dom";
@@ -33,6 +34,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { showError } from "@/utils/toast";
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"; // Importando Sheet
 
 const WHATSAPP_NUMBER = "5571992059840";
 const WHATSAPP_MESSAGE = "Olá! Gostaria de saber mais sobre o sistema Davi EDU.";
@@ -161,17 +163,56 @@ const LandingPage = () => {
           <Link to="/" className="flex items-center gap-2 font-bold text-xl">
             <img src="/logo-retangular.png" alt="Davi EDU Logo" className="h-12" />
           </Link>
-          <nav className="hidden items-center gap-6 md:flex">
-            <a href="#features" className="text-sm font-medium text-gray-600 hover:text-primary">Funcionalidades</a>
-            <a href="#testimonials" className="text-sm font-medium text-gray-600 hover:text-primary">Depoimentos</a>
-          </nav>
-          <div className="flex items-center gap-2">
-            <Button variant="outline" asChild>
-              <a href={whatsappUrl} target="_blank" rel="noopener noreferrer">Fale Conosco</a>
-            </Button>
-            <Button asChild>
-              <Link to="/register">Comece Agora</Link>
-            </Button>
+          
+          {/* Desktop Navigation and Buttons */}
+          <div className="hidden md:flex items-center gap-6">
+            <nav className="flex items-center gap-6">
+              <a href="#features" className="text-sm font-medium text-gray-600 hover:text-primary">Funcionalidades</a>
+              <a href="#testimonials" className="text-sm font-medium text-gray-600 hover:text-primary">Depoimentos</a>
+            </nav>
+            <div className="flex items-center gap-2">
+              <Button variant="outline" asChild>
+                <a href={whatsappUrl} target="_blank" rel="noopener noreferrer">Fale Conosco</a>
+              </Button>
+              <Button asChild>
+                <Link to="/register">Comece Agora</Link>
+              </Button>
+            </div>
+          </div>
+
+          {/* Mobile Hamburger Menu */}
+          <div className="flex items-center md:hidden">
+            <Sheet>
+              <SheetTrigger asChild>
+                <Button variant="outline" size="icon">
+                  <Menu className="h-5 w-5" />
+                  <span className="sr-only">Abrir menu</span>
+                </Button>
+              </SheetTrigger>
+              <SheetContent side="top" className="h-auto">
+                <nav className="flex flex-col gap-4 p-4">
+                  <Button asChild className="w-full">
+                    <Link to="/register">Comece Agora</Link>
+                  </Button>
+                  <Button variant="outline" asChild className="w-full">
+                    <a href={whatsappUrl} target="_blank" rel="noopener noreferrer">Fale Conosco</a>
+                  </Button>
+                  <a href="#features" className="block py-2 text-center text-lg font-medium text-gray-700 hover:text-primary">Funcionalidades</a>
+                  <a href="#testimonials" className="block py-2 text-center text-lg font-medium text-gray-700 hover:text-primary">Depoimentos</a>
+                  <div className="flex justify-center gap-6 mt-4 border-t pt-4">
+                    <a href="https://instagram.com" target="_blank" rel="noopener noreferrer" className="text-gray-500 hover:text-primary">
+                      <Instagram className="h-6 w-6" />
+                    </a>
+                    <a href="https://facebook.com" target="_blank" rel="noopener noreferrer" className="text-gray-500 hover:text-primary">
+                      <Facebook className="h-6 w-6" />
+                    </a>
+                    <a href="https://linkedin.com" target="_blank" rel="noopener noreferrer" className="text-gray-500 hover:text-primary">
+                      <Linkedin className="h-6 w-6" />
+                    </a>
+                  </div>
+                </nav>
+              </SheetContent>
+            </Sheet>
           </div>
         </div>
       </header>
