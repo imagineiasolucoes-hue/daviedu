@@ -1,6 +1,11 @@
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { fetchTenantId } from "@/lib/tenant";
+import { showError, showSuccess } from "@/utils/toast";
 import { Button } from "@/components/ui/button";
 import {
   Form,
@@ -13,23 +18,50 @@ import {
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { Loader2 } from "lucide-react";
-import { useState } from "react";
-import { showSuccess } from "@/utils/toast";
+
+// Definindo o tipo para a configuração JSONB
+interface TenantConfig {
+  cnpj?: string;
+  phone?: string;
+  email?: string;
+  address?: string;
+}
+
+// Definindo o tipo para os dados do tenant
+interface TenantInfo {
+  id: string;
+  name: string;
+  config: TenantConfig | null;
+}
 
 const schoolInfoSchema = z.object({
   name: z.string().min(3, "O nome da escola é obrigatório."),
   cnpj: z.string().optional(),
   phone: z.string().optional(),
-  email: z.string().email("Email inválido."),
+  email: z.string().email("Email inválido.").optional().or(z.literal("")),
   address: z.string().optional(),
 });
 
+const fetchSchoolInfo = async (): Promise<TenantInfo | null> => {
+  const { tenantId, error: tenantError } = await fetchTenantId();
+  if (tenantError) throw new Error(tenantError);
+  if (!tenantId) return null;
+
+  const { data, error } = await supabase
+    .from("tenants")
+    .select("id, name, config")
+    .eq("id", tenantId)
+    .single();
+
+  if (error) throw new Error(error.message);
+  return data;
+};
+
 const SchoolInfoForm = () => {
-  const [isLoading, setIsLoading] = useState(false);
+  const queryClient = useQueryClient();
 
   const form = useForm<z.infer<typeof schoolInfoSchema>>({
     resolver: zodResolver(schoolInfoSchema),
-    // TODO: Fetch existing data from the database to populate defaultValues
     defaultValues: {
       name: "",
       cnpj: "",
@@ -39,14 +71,69 @@ const SchoolInfoForm = () => {
     },
   });
 
-  function onSubmit(values: z.infer<typeof schoolInfoSchema>) {
-    setIsLoading(true);
-    console.log("School info submitted:", values);
-    // TODO: Implement Supabase update logic here
-    setTimeout(() => {
+  const { data: schoolInfo, isLoading: isFetchingSchoolInfo, error: fetchError } = useQuery({
+    queryKey: ["tenantInfo"],
+    queryFn: fetchSchoolInfo,
+  });
+
+  useEffect(() => {
+    if (schoolInfo) {
+      form.reset({
+        name: schoolInfo.name,
+        cnpj: schoolInfo.config?.cnpj || "",
+        phone: schoolInfo.config?.phone || "",
+        email: schoolInfo.config?.email || "",
+        address: schoolInfo.config?.address || "",
+      });
+    }
+  }, [schoolInfo, form]);
+
+  const updateMutation = useMutation({
+    mutationFn: async (values: z.infer<typeof schoolInfoSchema>) => {
+      const { tenantId, error: tenantError } = await fetchTenantId();
+      if (tenantError) throw new Error(tenantError);
+      if (!tenantId) throw new Error("ID da escola não encontrado.");
+
+      const { name, cnpj, phone, email, address } = values;
+
+      const updatedConfig: TenantConfig = {
+        cnpj: cnpj || undefined,
+        phone: phone || undefined,
+        email: email || undefined,
+        address: address || undefined,
+      };
+
+      const { error } = await supabase
+        .from("tenants")
+        .update({ name, config: updatedConfig })
+        .eq("id", tenantId);
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
       showSuccess("Informações da escola salvas com sucesso!");
-      setIsLoading(false);
-    }, 1000);
+      queryClient.invalidateQueries({ queryKey: ["tenantInfo"] });
+    },
+    onError: (error: any) => {
+      showError(`Erro ao salvar informações da escola: ${error.message}`);
+    },
+  });
+
+  const onSubmit = (values: z.infer<typeof schoolInfoSchema>) => {
+    updateMutation.mutate(values);
+  };
+
+  const isLoading = isFetchingSchoolInfo || updateMutation.isPending;
+
+  if (fetchError) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>Erro ao carregar informações da escola</CardTitle>
+          <CardDescription className="text-red-500">{fetchError.message}</CardDescription>
+        </CardHeader>
+      </Card>
+    );
   }
 
   return (
