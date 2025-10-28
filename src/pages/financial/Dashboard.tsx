@@ -244,7 +244,7 @@ const FinancialDashboard = () => {
                   <TrendingUp className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
-                  <div className={cn("text-2xl font-bold", (data?.netProfit || 0) >= 0 ? "text-blue-600" : "text-red-600")}>
+                  <div className={cn("text-2xl font-bold", (data?.netProfit || 0) >= 0 ? "text-primary" : "text-red-600")}>
                     {formatCurrency(data?.netProfit || 0)}
                   </div>
                 </CardContent>

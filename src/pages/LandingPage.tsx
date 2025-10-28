@@ -36,22 +36,22 @@ const whatsappUrl = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(
 
 const features = [
   {
-    icon: <ClipboardList className="h-10 w-10 text-blue-600" />,
+    icon: <ClipboardList className="h-10 w-10 text-primary" />,
     title: "Matrículas Online",
     description: "Simplifique o processo de matrícula com um formulário público e personalizável para sua escola.",
   },
   {
-    icon: <Banknote className="h-10 w-10 text-blue-600" />,
+    icon: <Banknote className="h-10 w-10 text-primary" />,
     title: "Gestão Financeira",
     description: "Controle receitas, despesas e a folha de pagamento de forma integrada e intuitiva.",
   },
   {
-    icon: <BookCheck className="h-10 w-10 text-blue-600" />,
+    icon: <BookCheck className="h-10 w-10 text-primary" />,
     title: "Boletim Virtual",
     description: "Disponibilize notas e frequência online para fácil acesso de pais e alunos. (Em breve)",
   },
   {
-    icon: <Megaphone className="h-10 w-10 text-blue-600" />,
+    icon: <Megaphone className="h-10 w-10 text-primary" />,
     title: "Comunicação Integrada",
     description: "Envie comunicados e gerencie a agenda escolar, fortalecendo a relação com a comunidade. (Em breve)",
   },
@@ -59,17 +59,17 @@ const features = [
 
 const targetAudiences = [
   {
-    icon: <Building className="h-10 w-10 text-blue-600" />,
+    icon: <Building className="h-10 w-10 text-primary" />,
     title: "Escolas",
     description: "Gestão completa para ensino infantil, fundamental e médio.",
   },
   {
-    icon: <BookMarked className="h-10 w-10 text-blue-600" />,
+    icon: <BookMarked className="h-10 w-10 text-primary" />,
     title: "Cursos Livres",
     description: "Flexibilidade para administrar cursos de curta duração e profissionalizantes.",
   },
   {
-    icon: <Languages className="h-10 w-10 text-blue-600" />,
+    icon: <Languages className="h-10 w-10 text-primary" />,
     title: "Cursos de Idiomas",
     description: "Ferramentas específicas para o gerenciamento de turmas e níveis.",
   },
@@ -138,8 +138,8 @@ const LandingPage = () => {
             <img src="/logo-retangular.png" alt="Davi EDU Logo" className="h-12" />
           </Link>
           <nav className="hidden items-center gap-6 md:flex">
-            <a href="#features" className="text-sm font-medium text-gray-600 hover:text-blue-600">Funcionalidades</a>
-            <a href="#testimonials" className="text-sm font-medium text-gray-600 hover:text-blue-600">Depoimentos</a>
+            <a href="#features" className="text-sm font-medium text-gray-600 hover:text-primary">Funcionalidades</a>
+            <a href="#testimonials" className="text-sm font-medium text-gray-600 hover:text-primary">Depoimentos</a>
           </nav>
           <div className="flex items-center gap-2">
             <Button variant="outline" asChild>
@@ -212,7 +212,7 @@ const LandingPage = () => {
                       </Button>
                       <p className="text-center text-sm text-gray-600">
                         Ainda não tem uma conta?{' '}
-                        <Link to="/register" className="font-semibold text-blue-600 hover:underline">
+                        <Link to="/register" className="font-semibold text-primary hover:underline">
                           Solicite seu acesso
                         </Link>
                       </p>
@@ -292,7 +292,7 @@ const LandingPage = () => {
         </section>
 
         {/* Final CTA Section */}
-        <section className="bg-blue-600 text-white">
+        <section className="bg-primary text-primary-foreground">
             <div className="container mx-auto px-4 py-20 text-center">
                 <h2 className="text-3xl font-bold">Pronto para modernizar sua gestão?</h2>
                 <p className="mt-4 max-w-2xl mx-auto">
@@ -312,8 +312,8 @@ const LandingPage = () => {
         <div className="container mx-auto flex flex-col items-center justify-between gap-4 px-4 py-6 md:flex-row">
           <p className="text-sm text-gray-500">&copy; {new Date().getFullYear()} Davi EDU. Todos os direitos reservados.</p>
           <div className="flex gap-4">
-            <a href="#" className="text-sm text-gray-500 hover:text-blue-600">Termos de Serviço</a>
-            <a href="#" className="text-sm text-gray-500 hover:text-blue-600">Política de Privacidade</a>
+            <a href="#" className="text-sm text-gray-500 hover:text-primary">Termos de Serviço</a>
+            <a href="#" className="text-sm text-gray-500 hover:text-primary">Política de Privacidade</a>
           </div>
         </div>
       </footer>
