@@ -30,11 +30,7 @@ import { useAuth } from "@/components/auth/SessionContextProvider";
 import { useQuery } from "@tanstack/react-query";
 
 const superAdminNavItems = [
-  { label: "Dashboard", icon: LayoutDashboard, href: "/super-admin/dashboard" },
-  { label: "Escolas", icon: Building, href: "/super-admin/schools" },
-  { label: "Assinaturas", icon: CreditCard, href: "/super-admin/subscriptions" },
-  { label: "Relatórios", icon: BarChart3, href: "/super-admin/reports" },
-  { label: "Usuários", icon: Users, href: "/super-admin/users" },
+  // Itens de navegação removidos para começar do zero
 ];
 
 const NavLink = ({ href, icon: Icon, label }: { href: string; icon: React.ElementType; label: string }) => {
