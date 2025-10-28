@@ -10,6 +10,7 @@ import {
   BookCheck,
   Megaphone,
   Loader2,
+  Check,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Link, Navigate, useNavigate } from "react-router-dom";
@@ -36,24 +37,44 @@ const whatsappUrl = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(
 
 const features = [
   {
-    icon: <ClipboardList className="h-10 w-10 text-primary" />,
+    icon: <ClipboardList className="h-8 w-8 text-primary" />,
     title: "Matrículas Online",
-    description: "Simplifique o processo de matrícula com um formulário público e personalizável para sua escola.",
+    description: "Simplifique o processo de matrícula com um formulário público e personalizável.",
+    advantages: [
+      "Reduza a papelada e o trabalho manual.",
+      "Link compartilhável para pré-matrícula.",
+      "Acompanhe novas inscrições em tempo real.",
+    ],
   },
   {
-    icon: <Banknote className="h-10 w-10 text-primary" />,
+    icon: <Banknote className="h-8 w-8 text-primary" />,
     title: "Gestão Financeira",
     description: "Controle receitas, despesas e a folha de pagamento de forma integrada e intuitiva.",
+    advantages: [
+      "Visão clara do fluxo de caixa.",
+      "Relatórios detalhados de receitas e despesas.",
+      "Geração simplificada da folha de pagamento.",
+    ],
   },
   {
-    icon: <BookCheck className="h-10 w-10 text-primary" />,
-    title: "Boletim Virtual",
-    description: "Disponibilize notas e frequência online para fácil acesso de pais e alunos. (Em breve)",
+    icon: <BookCheck className="h-8 w-8 text-primary" />,
+    title: "Boletim Virtual (Em breve)",
+    description: "Disponibilize notas e frequência online para fácil acesso de pais e alunos.",
+    advantages: [
+      "Acesso rápido e seguro para pais e alunos.",
+      "Redução de custos com impressão.",
+      "Histórico acadêmico sempre disponível.",
+    ],
   },
   {
-    icon: <Megaphone className="h-10 w-10 text-primary" />,
-    title: "Comunicação Integrada",
-    description: "Envie comunicados e gerencie a agenda escolar, fortalecendo a relação com a comunidade. (Em breve)",
+    icon: <Megaphone className="h-8 w-8 text-primary" />,
+    title: "Comunicação Integrada (Em breve)",
+    description: "Envie comunicados e gerencie a agenda escolar, fortalecendo a relação com a comunidade.",
+    advantages: [
+      "Centralize os comunicados em um único local.",
+      "Envie avisos para turmas ou toda a escola.",
+      "Agenda de eventos e atividades integrada.",
+    ],
   },
 ];
 
@@ -229,12 +250,24 @@ const LandingPage = () => {
               <h2 className="text-3xl font-bold">Ferramentas poderosas para sua gestão</h2>
               <p className="text-gray-600 mt-2">Tudo o que você precisa em um só lugar.</p>
             </div>
-            <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-4">
+            <div className="grid gap-8 md:grid-cols-2">
               {features.map((feature) => (
-                <div key={feature.title} className="flex flex-col items-center text-center p-6 bg-white rounded-lg shadow-md transition-transform hover:scale-105">
-                  {feature.icon}
-                  <h3 className="mt-4 text-xl font-semibold">{feature.title}</h3>
-                  <p className="mt-2 text-gray-600">{feature.description}</p>
+                <div key={feature.title} className="flex flex-col p-6 bg-white rounded-lg shadow-md transition-shadow hover:shadow-lg">
+                  <div className="flex items-start gap-4">
+                    <div className="flex-shrink-0">{feature.icon}</div>
+                    <div>
+                      <h3 className="text-xl font-semibold">{feature.title}</h3>
+                      <p className="mt-1 text-gray-600">{feature.description}</p>
+                    </div>
+                  </div>
+                  <ul className="mt-6 space-y-3 text-left pl-1">
+                    {feature.advantages.map((advantage, index) => (
+                      <li key={index} className="flex items-start gap-3">
+                        <Check className="h-5 w-5 text-green-500 mt-0.5 flex-shrink-0" />
+                        <span className="text-gray-700">{advantage}</span>
+                      </li>
+                    ))}
+                  </ul>
                 </div>
               ))}
             </div>
