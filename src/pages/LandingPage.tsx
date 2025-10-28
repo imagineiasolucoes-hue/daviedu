@@ -1,3 +1,4 @@
+import React, { useState } from "react";
 import {
   GraduationCap,
   Building,
@@ -8,14 +9,26 @@ import {
   ClipboardList,
   BookCheck,
   Megaphone,
+  Loader2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Link, Navigate } from "react-router-dom";
+import { Link, Navigate, useNavigate } from "react-router-dom";
 import { useAuth } from "@/components/auth/SessionContextProvider";
-import { Card, CardContent } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+  CardFooter,
+} from "@/components/ui/card";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import usePageTitle from "@/hooks/usePageTitle";
 import WhatsAppButton from "@/components/layout/WhatsAppButton";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { supabase } from "@/integrations/supabase/client";
+import { showError } from "@/utils/toast";
 
 const WHATSAPP_NUMBER = "5571992059840";
 const WHATSAPP_MESSAGE = "Olá! Gostaria de saber mais sobre o sistema Davi EDU.";
@@ -79,9 +92,36 @@ const testimonials = [
 
 const LandingPage = () => {
   usePageTitle("Bem-vindo");
-  const { session, isLoading } = useAuth();
+  const { session, isLoading: isAuthLoading } = useAuth();
+  const navigate = useNavigate();
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  if (isLoading) {
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    setError(null);
+    try {
+      const { error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+      if (error) throw error;
+      // O SessionContextProvider irá detectar a mudança de estado e redirecionar para /dashboard
+    } catch (err: any) {
+      const errorMessage = err.message === "Invalid login credentials" 
+        ? "Email ou senha inválidos." 
+        : "Ocorreu um erro. Tente novamente.";
+      setError(errorMessage);
+      showError(errorMessage);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (isAuthLoading) {
     return null; // Or a loading spinner
   }
 
@@ -116,10 +156,10 @@ const LandingPage = () => {
       {/* Main Content */}
       <main className="flex-1">
         {/* Hero Section */}
-        <section className="w-full py-20 md:py-32">
-            <div className="container mx-auto grid gap-6 lg:grid-cols-2 lg:gap-12 px-4">
+        <section className="w-full py-20 md:py-24">
+            <div className="container mx-auto grid gap-10 lg:grid-cols-2 lg:gap-12 px-4 items-center">
                 <div className="flex flex-col justify-center space-y-4">
-                    <h1 className="text-4xl font-extrabold tracking-tight md:text-5xl lg:text-6xl">
+                    <h1 className="text-4xl font-extrabold tracking-tight md:text-5xl">
                         O Sistema de Gestão Escolar que sua instituição merece
                     </h1>
                     <p className="max-w-[600px] text-lg text-gray-600">
@@ -129,18 +169,57 @@ const LandingPage = () => {
                         <Button size="lg" asChild>
                             <Link to="/register">Solicitar Acesso Gratuito</Link>
                         </Button>
-                        <Button size="lg" variant="secondary" asChild>
-                            <a href={whatsappUrl} target="_blank" rel="noopener noreferrer">Falar com um Consultor</a>
-                        </Button>
                     </div>
                 </div>
-                <img
-                    src="/placeholder.svg"
-                    width="550"
-                    height="550"
-                    alt="Hero"
-                    className="mx-auto aspect-square overflow-hidden rounded-xl object-cover sm:w-full lg:order-last"
-                />
+                <Card className="w-full max-w-md mx-auto shadow-lg">
+                  <CardHeader>
+                    <CardTitle className="text-2xl">Acesse sua conta</CardTitle>
+                    <CardDescription>
+                      Já faz parte? Entre com seu email e senha.
+                    </CardDescription>
+                  </CardHeader>
+                  <form onSubmit={handleLogin}>
+                    <CardContent className="space-y-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="email">Email</Label>
+                        <Input
+                          id="email"
+                          type="email"
+                          placeholder="seu@email.com"
+                          required
+                          value={email}
+                          onChange={(e) => setEmail(e.target.value)}
+                          disabled={loading}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="password">Senha</Label>
+                        <Input
+                          id="password"
+                          type="password"
+                          placeholder="••••••••"
+                          required
+                          value={password}
+                          onChange={(e) => setPassword(e.target.value)}
+                          disabled={loading}
+                        />
+                      </div>
+                      {error && <p className="text-sm text-red-500">{error}</p>}
+                    </CardContent>
+                    <CardFooter className="flex flex-col gap-4">
+                      <Button className="w-full" type="submit" disabled={loading}>
+                        {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                        Entrar
+                      </Button>
+                      <p className="text-center text-sm text-gray-600">
+                        Ainda não tem uma conta?{' '}
+                        <Link to="/register" className="font-semibold text-blue-600 hover:underline">
+                          Solicite seu acesso
+                        </Link>
+                      </p>
+                    </CardFooter>
+                  </form>
+                </Card>
             </div>
         </section>
 
