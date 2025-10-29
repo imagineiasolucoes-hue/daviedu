@@ -12,7 +12,7 @@ const WhatsAppButton = () => {
       href={whatsappUrl}
       target="_blank"
       rel="noopener noreferrer"
-      className="fixed bottom-6 right-6 z-50 group flex items-center space-x-2" // Adicionado space-x-2 para espaçamento entre o texto e o botão
+      className="fixed bottom-24 right-6 z-50 group flex items-center space-x-2" // Alterado de bottom-6 para bottom-24
     >
       {/* Texto que aparece ao passar o mouse */}
       <div className="
