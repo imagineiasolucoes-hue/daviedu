@@ -165,6 +165,9 @@ const LandingPage = () => {
               <Button variant="outline" asChild>
                 <a href={whatsappUrl} target="_blank" rel="noopener noreferrer">Fale Conosco</a>
               </Button>
+              <Button asChild className="bg-accent hover:bg-accent/90">
+                <Link to="/login">Login</Link>
+              </Button>
               <Button asChild>
                 <Link to="/register">Teste Grátis</Link>
               </Button>
@@ -184,6 +187,9 @@ const LandingPage = () => {
                 <nav className="flex flex-col gap-4 p-4">
                   <Button asChild className="w-full">
                     <Link to="/register">Teste Grátis</Link>
+                  </Button>
+                  <Button asChild className="w-full bg-accent hover:bg-accent/90">
+                    <Link to="/login">Login</Link>
                   </Button>
                   <Button variant="outline" asChild className="w-full">
                     <a href={whatsappUrl} target="_blank" rel="noopener noreferrer">Fale Conosco</a>
