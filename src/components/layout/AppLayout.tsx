@@ -184,10 +184,10 @@ const AppLayout = () => {
               <a href="#" className="hover:text-primary">Termos de Serviço</a>
               <a href="#" className="hover:text-primary">Política de Privacidade</a>
               <div className="flex gap-3 ml-4"> {/* Links para redes sociais */}
-                <a href="https://instagram.com" target="_blank" rel="noopener noreferrer" className="hover:text-primary">
+                <a href="https://www.instagram.com/imagineiasolucoes/" target="_blank" rel="noopener noreferrer" className="hover:text-primary">
                   <Instagram className="h-5 w-5" />
                 </a>
-                <a href="https://facebook.com" target="_blank" rel="noopener noreferrer" className="hover:text-primary">
+                <a href="https://www.facebook.com/profile.php?id=61582527995208" target="_blank" rel="noopener noreferrer" className="hover:text-primary">
                   <Facebook className="h-5 w-5" />
                 </a>
                 <a href="https://linkedin.com" target="_blank" rel="noopener noreferrer" className="hover:text-primary">

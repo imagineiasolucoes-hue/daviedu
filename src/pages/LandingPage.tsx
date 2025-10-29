@@ -195,10 +195,10 @@ const LandingPage = () => {
                   {/* <a href="#testimonials" className="block py-2 text-center text-lg font-medium text-gray-700 hover:text-primary">Depoimentos</a> */}
                   <a href="#pricing" className="block py-2 text-center text-lg font-medium text-gray-700 hover:text-primary">Planos</a>
                   <div className="flex justify-center gap-6 mt-4 border-t pt-4">
-                    <a href="https://instagram.com" target="_blank" rel="noopener noreferrer" className="text-gray-500 hover:text-primary">
+                    <a href="https://www.instagram.com/imagineiasolucoes/" target="_blank" rel="noopener noreferrer" className="text-gray-500 hover:text-primary">
                       <Instagram className="h-6 w-6" />
                     </a>
-                    <a href="https://facebook.com" target="_blank" rel="noopener noreferrer" className="text-gray-500 hover:text-primary">
+                    <a href="https://www.facebook.com/profile.php?id=61582527995208" target="_blank" rel="noopener noreferrer" className="text-gray-500 hover:text-primary">
                       <Facebook className="h-6 w-6" />
                     </a>
                     <a href="https://linkedin.com" target="_blank" rel="noopener noreferrer" className="text-gray-500 hover:text-primary">
@@ -460,7 +460,7 @@ const LandingPage = () => {
             <p className="mt-4 max-w-2xl mx-auto">
               Junte-se a centenas de instituições que já otimizaram seus processos com nossa plataforma.
             </p>
-            <p className="text-3xl font-extrabold mt-6 mb-8 text-accent"> {/* Alterado aqui */}
+            <p className="text-3xl font-extrabold mt-6 mb-8 text-accent">
               Mais de 50 escolas já confiam no DaviEDU!
             </p>
             <div className="mt-8">
@@ -480,10 +480,10 @@ const LandingPage = () => {
             <a href="#" className="text-sm text-gray-600 hover:text-primary">Termos de Serviço</a>
             <a href="#" className="text-sm text-gray-600 hover:text-primary">Política de Privacidade</a>
             <div className="flex gap-3 ml-4">
-              <a href="https://instagram.com" target="_blank" rel="noopener noreferrer" className="text-gray-500 hover:text-primary">
+              <a href="https://www.instagram.com/imagineiasolucoes/" target="_blank" rel="noopener noreferrer" className="text-gray-500 hover:text-primary">
                 <Instagram className="h-5 w-5" />
               </a>
-              <a href="https://facebook.com" target="_blank" rel="noopener noreferrer" className="text-gray-500 hover:text-primary">
+              <a href="https://www.facebook.com/profile.php?id=61582527995208" target="_blank" rel="noopener noreferrer" className="text-gray-500 hover:text-primary">
                 <Facebook className="h-5 w-5" />
               </a>
               <a href="https://linkedin.com" target="_blank" rel="noopener noreferrer" className="text-gray-500 hover:text-primary">
