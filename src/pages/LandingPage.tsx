@@ -381,9 +381,9 @@ const LandingPage = () => {
             <div className="relative inline-block bg-white text-accent px-6 py-2 rounded-full text-lg font-bold mb-6 shadow-lg">
               OFERTA DE LANÇAMENTO!
             </div>
-            <h2 className="text-4xl font-bold mb-4">Primeiro Mês Grátis!</h2>
+            <h2 className="text-4xl font-bold mb-4">7 Dias Gratuitos!</h2> {/* Alterado aqui */}
             <p className="text-lg max-w-3xl mx-auto mb-8">
-              Experimente o DaviEDU por 30 dias sem custo e descubra como podemos revolucionar a gestão da sua escola. Sem compromisso, sem cartão de crédito.
+              Experimente o DaviEDU por 7 dias sem custo e descubra como podemos revolucionar a gestão da sua escola. Sem compromisso, sem cartão de crédito.
             </p>
             <Button size="lg" asChild className="bg-white text-accent hover:bg-gray-100 text-xl px-8 py-6">
               <Link to="/register">Comece seu Teste Grátis Agora! <ArrowRight className="ml-3 h-5 w-5" /></Link>
