@@ -10,7 +10,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { Loader2, User, Check, ChevronsUpDown } from "lucide-react";
+import { Loader2, User } from "lucide-react";
 import { showError, showSuccess } from "@/utils/toast";
 import {
   Select,
@@ -19,27 +19,35 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { cn } from "@/lib/utils";
 
 interface TenantUsersTableProps {
   tenantId: string;
 }
 
-// Consulta simplificada para diagnóstico
 const fetchTenantUsers = async (tenantId: string): Promise<Profile[]> => {
-  const { data, error } = await supabase
+  // 1. Fetch all profiles for the tenant
+  const { data: profiles, error: profilesError } = await supabase
     .from("profiles")
-    .select("id, tenant_id, first_name, last_name, role, avatar_url, updated_at")
+    .select("id, first_name, last_name, role")
     .eq("tenant_id", tenantId)
     .order("role", { ascending: true });
 
-  if (error) throw new Error(error.message);
-  
-  // Mapeia os dados, definindo o email como 'N/A' temporariamente
-  return data.map((p: any) => ({
-    ...p,
-    email: 'N/A', // Email removido temporariamente para diagnóstico
-  })) as Profile[];
+  if (profilesError) throw new Error(profilesError.message);
+  if (!profiles) return [];
+
+  // 2. For each profile, fetch the email using the secure RPC function
+  const usersWithEmails = await Promise.all(
+    profiles.map(async (profile) => {
+      const { data: email, error: rpcError } = await supabase.rpc('get_user_email_by_id', { user_id: profile.id });
+      if (rpcError) {
+        console.error(`Error fetching email for user ${profile.id}:`, rpcError);
+        return { ...profile, email: 'Erro ao buscar' };
+      }
+      return { ...profile, email: email || 'Não encontrado' };
+    })
+  );
+
+  return usersWithEmails as Profile[];
 };
 
 const userRoles: UserRole[] = ['admin', 'secretary', 'student'];
@@ -52,7 +60,7 @@ const TenantUsersTable: React.FC<TenantUsersTableProps> = ({ tenantId }) => {
   });
 
   const updateRoleMutation = useMutation({
-    mutationFn: async ({ userId, newRole }: { userId: string; newRole: UserRole }) => {
+    mutationFn: async ({ userId, newRole }: { userId:string; newRole: UserRole }) => {
       const { error } = await supabase
         .from("profiles")
         .update({ role: newRole })
