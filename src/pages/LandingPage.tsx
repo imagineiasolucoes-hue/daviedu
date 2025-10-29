@@ -233,37 +233,12 @@ const LandingPage = () => {
                 </Button>
               </div>
             </div>
-            <div className="relative w-full max-w-xl mx-auto lg:mx-0">
-              {/* Mockup do Dashboard */}
-              <Card className="w-full bg-white shadow-xl border-2 border-primary/20">
-                <CardHeader className="flex flex-row items-center justify-between p-4 border-b">
-                  <CardTitle className="text-lg font-semibold text-primary">DaviEDU Dashboard</CardTitle>
-                  <div className="flex items-center gap-2">
-                    <span className="h-2 w-2 rounded-full bg-red-500"></span>
-                    <span className="h-2 w-2 rounded-full bg-yellow-500"></span>
-                    <span className="h-2 w-2 rounded-full bg-green-500"></span>
-                  </div>
-                </CardHeader>
-                <CardContent className="p-6 space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="bg-blue-50 p-3 rounded-md flex items-center justify-between">
-                      <span className="text-sm font-medium text-blue-800">Alunos Ativos</span>
-                      <span className="text-xl font-bold text-blue-900">250</span>
-                    </div>
-                    <div className="bg-green-50 p-3 rounded-md flex items-center justify-between">
-                      <span className="text-sm font-medium text-green-800">Receita Mês</span>
-                      <span className="text-xl font-bold text-green-900">R$ 50.000</span>
-                    </div>
-                  </div>
-                  <div className="bg-gray-50 p-4 rounded-md h-32 flex items-center justify-center text-gray-400">
-                    <BarChart className="h-16 w-16" />
-                    <span className="ml-4 text-lg">Gráfico de Matrículas</span>
-                  </div>
-                  <div className="text-center text-sm text-gray-500">
-                    Visão geral em tempo real da sua escola.
-                  </div>
-                </CardContent>
-              </Card>
+            <div className="relative w-full max-w-2xl mx-auto lg:mx-0">
+              <img
+                src="/dashboard-mockup.png"
+                alt="Dashboard DaviEDU"
+                className="rounded-lg shadow-2xl border-2 border-gray-200"
+              />
             </div>
           </div>
         </section>
