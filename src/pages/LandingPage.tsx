@@ -229,7 +229,14 @@ const LandingPage = () => {
               <p className="max-w-[600px] text-lg text-gray-700 mx-auto lg:mx-0">
                 Experimente por 7 dias grátis, sem compromisso. Simples, rápido e inteligente.
               </p>
-              <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
+            </div>
+            <div className="flex flex-col items-center gap-6 w-full max-w-2xl mx-auto lg:mx-0">
+              <img
+                src="/dashboard-mockup.png"
+                alt="Dashboard DaviEDU"
+                className="rounded-lg shadow-2xl border-2 border-gray-200"
+              />
+              <div className="flex flex-col sm:flex-row gap-4 justify-center">
                 <Button size="lg" asChild className="bg-primary hover:bg-primary/90 text-white">
                   <Link to="/register">Comece seu Teste Grátis <ArrowRight className="ml-2 h-4 w-4" /></Link>
                 </Button>
@@ -237,13 +244,6 @@ const LandingPage = () => {
                   <a href="#pricing">Ver Planos</a>
                 </Button>
               </div>
-            </div>
-            <div className="relative w-full max-w-2xl mx-auto lg:mx-0">
-              <img
-                src="/dashboard-mockup.png"
-                alt="Dashboard DaviEDU"
-                className="rounded-lg shadow-2xl border-2 border-gray-200"
-              />
             </div>
           </div>
         </section>
