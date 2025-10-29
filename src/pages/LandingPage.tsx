@@ -215,9 +215,17 @@ const LandingPage = () => {
         <section className="w-full py-20 md:py-24 bg-gradient-to-b from-white to-blue-50">
           <div className="container mx-auto grid gap-10 lg:grid-cols-2 lg:gap-12 px-4 items-center">
             <div className="flex flex-col justify-center space-y-6 text-center lg:text-left">
-              <h1 className="text-4xl font-extrabold tracking-tight md:text-5xl text-gray-900">
-                Controle total da sua escola em um só lugar
-              </h1>
+              <div className="space-y-4">
+                <h1 className="text-4xl font-extrabold tracking-tight md:text-5xl text-gray-900">
+                  Controle total da sua escola em um só lugar
+                </h1>
+                <div className="flex justify-center lg:justify-start">
+                  <Link to="/register" className="inline-flex items-center rounded-full border border-transparent bg-accent px-4 py-1 text-sm font-semibold text-accent-foreground shadow-sm transition-colors hover:bg-accent/80 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2">
+                    <Sparkles className="mr-2 h-4 w-4" />
+                    Grátis por 7 dias!
+                  </Link>
+                </div>
+              </div>
               <p className="max-w-[600px] text-lg text-gray-700 mx-auto lg:mx-0">
                 Experimente por 7 dias grátis, sem compromisso. Simples, rápido e inteligente.
               </p>
