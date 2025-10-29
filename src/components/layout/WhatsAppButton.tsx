@@ -12,18 +12,16 @@ const WhatsAppButton = () => {
       href={whatsappUrl}
       target="_blank"
       rel="noopener noreferrer"
-      className="fixed bottom-6 right-6 z-50 group flex items-center" // Removido 'justify-center' para permitir o slide do texto
+      className="fixed bottom-6 right-6 z-50 group flex items-center space-x-2" // Adicionado space-x-2 para espaçamento entre o texto e o botão
     >
       {/* Texto que aparece ao passar o mouse */}
-      <div className="absolute top-1/2 -translate-y-1/2
-                      right-0 // Alinha a borda direita do texto com a borda direita do container (onde o botão está)
-                      opacity-0 group-hover:opacity-100
-                      transform translate-x-full // Inicialmente, empurra o texto para a direita por sua própria largura, escondendo-o
-                      group-hover:translate-x-[calc(-100%-8px)] // Ao passar o mouse, desliza o texto para a esquerda por sua largura + 8px de espaçamento
+      <div className="
+                      max-w-0 overflow-hidden // Inicialmente oculto e sem largura
+                      group-hover:max-w-40 group-hover:px-4 // Expande a largura e adiciona padding no hover
                       transition-all duration-300 ease-out
                       text-base font-semibold text-green-800 bg-green-100
-                      px-4 py-2 rounded-full shadow-md whitespace-nowrap
-                      pointer-events-none"
+                      py-2 rounded-full shadow-md whitespace-nowrap
+                      "
       >
         Tire suas dúvidas
       </div>
