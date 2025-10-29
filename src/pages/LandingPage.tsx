@@ -165,11 +165,11 @@ const LandingPage = () => {
               <Button variant="outline" asChild>
                 <a href={whatsappUrl} target="_blank" rel="noopener noreferrer">Fale Conosco</a>
               </Button>
-              <Button asChild className="bg-accent hover:bg-accent/90">
-                <Link to="/login">Login</Link>
-              </Button>
               <Button asChild>
                 <Link to="/register">Teste Grátis</Link>
+              </Button>
+              <Button asChild className="bg-accent hover:bg-accent/90">
+                <Link to="/login">Login</Link>
               </Button>
             </div>
           </div>
