@@ -1,4 +1,4 @@
-import TenantsTable from "@/components/superadmin/TenantsTable";
+import TenantsTable from "../components/superadmin/TenantsTable";
 import usePageTitle from "@/hooks/usePageTitle";
 
 const SuperAdmin = () => {
