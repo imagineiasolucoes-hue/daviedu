@@ -28,7 +28,7 @@ import {
   ShieldCheck, // Para segurança de dados
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Link, Navigate, useNavigate } from "react-router-dom";
+import { Link, Navigate } from "react-router-dom";
 import { useAuth } from "@/components/auth/SessionContextProvider";
 import {
   Card,
@@ -52,6 +52,7 @@ import {
 const WHATSAPP_NUMBER = "5571992059840";
 const WHATSAPP_MESSAGE = "Olá! Gostaria de saber mais sobre o sistema Davi EDU.";
 const whatsappUrl = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(WHATSAPP_MESSAGE)}`;
+const PAYMENT_LINK = "https://pay.kiwify.com.br/r3Ur8To";
 
 const features = [
   {
@@ -127,16 +128,11 @@ const faqs = [
     question: "O suporte técnico está incluído na assinatura?",
     answer: "Sim, todos os nossos planos incluem suporte técnico dedicado em português, via chat e e-mail, para garantir que você aproveite ao máximo o DaviEDU."
   },
-  {
-    question: "Como funciona o teste grátis?",
-    answer: "Ao clicar em 'Teste grátis', você será direcionado para um cadastro rápido. Após o cadastro, você terá acesso total ao sistema por 7 dias, sem compromisso e sem a necessidade de cartão de crédito."
-  },
 ];
 
 const LandingPage = () => {
   usePageTitle("DaviEDU - Gestão Escolar");
   const { session, isLoading: isAuthLoading } = useAuth();
-  const navigate = useNavigate();
 
   if (isAuthLoading) {
     return null; // Or a loading spinner
@@ -160,7 +156,6 @@ const LandingPage = () => {
             <nav className="flex items-center gap-6">
               <a href="#features" className="text-sm font-medium text-gray-600 hover:text-primary">Funcionalidades</a>
               <a href="#why-us" className="text-sm font-medium text-gray-600 hover:text-primary">Por que DaviEDU?</a>
-              {/* <a href="#testimonials" className="text-sm font-medium text-gray-600 hover:text-primary">Depoimentos</a> */}
               <a href="#pricing" className="text-sm font-medium text-gray-600 hover:text-primary">Planos</a>
             </nav>
             <div className="flex items-center gap-2">
@@ -168,7 +163,7 @@ const LandingPage = () => {
                 <a href={whatsappUrl} target="_blank" rel="noopener noreferrer">Fale Conosco</a>
               </Button>
               <Button asChild>
-                <Link to="/register">Teste Grátis</Link>
+                <a href={PAYMENT_LINK} target="_blank" rel="noopener noreferrer">Assine Agora</a>
               </Button>
             </div>
           </div>
@@ -185,14 +180,13 @@ const LandingPage = () => {
               <SheetContent side="top" className="h-auto">
                 <nav className="flex flex-col gap-4 p-4">
                   <Button asChild className="w-full">
-                    <Link to="/register">Teste Grátis</Link>
+                    <a href={PAYMENT_LINK} target="_blank" rel="noopener noreferrer">Assine Agora</a>
                   </Button>
                   <Button variant="outline" asChild className="w-full">
                     <a href={whatsappUrl} target="_blank" rel="noopener noreferrer">Fale Conosco</a>
                   </Button>
                   <a href="#features" className="block py-2 text-center text-lg font-medium text-gray-700 hover:text-primary">Funcionalidades</a>
                   <a href="#why-us" className="block py-2 text-center text-lg font-medium text-gray-700 hover:text-primary">Por que DaviEDU?</a>
-                  {/* <a href="#testimonials" className="block py-2 text-center text-lg font-medium text-gray-700 hover:text-primary">Depoimentos</a> */}
                   <a href="#pricing" className="block py-2 text-center text-lg font-medium text-gray-700 hover:text-primary">Planos</a>
                   <div className="flex justify-center gap-6 mt-4 border-t pt-4">
                     <a href="https://www.instagram.com/imagineiasolucoes/" target="_blank" rel="noopener noreferrer" className="text-gray-500 hover:text-primary">
@@ -226,7 +220,7 @@ const LandingPage = () => {
               </p>
               <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
                 <Button size="lg" asChild className="bg-primary hover:bg-primary/90 text-white">
-                  <Link to="/register">Teste Grátis <ArrowRight className="ml-2 h-4 w-4" /></Link>
+                  <a href={PAYMENT_LINK} target="_blank" rel="noopener noreferrer">Assine Agora <ArrowRight className="ml-2 h-4 w-4" /></a>
                 </Button>
                 <Button size="lg" variant="outline" asChild>
                   <a href="#pricing">Ver Planos</a>
@@ -358,12 +352,12 @@ const LandingPage = () => {
             <div className="relative inline-block bg-white text-accent px-6 py-2 rounded-full text-lg font-bold mb-6 shadow-lg">
               OFERTA DE LANÇAMENTO!
             </div>
-            <h2 className="text-4xl font-bold mb-4">7 Dias Gratuitos!</h2>
+            <h2 className="text-4xl font-bold mb-4">Preço Especial de Lançamento!</h2>
             <p className="text-lg max-w-3xl mx-auto mb-8">
-              Experimente o DaviEDU por 7 dias sem custo e descubra como podemos revolucionar a gestão da sua escola. Sem compromisso, sem cartão de crédito.
+              Assine o DaviEDU com um preço especial de lançamento e descubra como podemos revolucionar a gestão da sua escola.
             </p>
             <Button size="lg" asChild className="bg-white text-accent hover:bg-gray-100 text-xl px-8 py-6">
-              <Link to="/register">Comece seu Teste Grátis Agora! <ArrowRight className="ml-3 h-5 w-5" /></Link>
+              <a href={PAYMENT_LINK} target="_blank" rel="noopener noreferrer">Assine Agora! <ArrowRight className="ml-3 h-5 w-5" /></a>
             </Button>
           </div>
         </section>
@@ -402,7 +396,7 @@ const LandingPage = () => {
                 </CardContent>
                 <CardFooter className="p-6 pt-4">
                   <Button asChild className="w-full bg-accent hover:bg-accent/90 text-white text-lg py-6">
-                    <Link to="/register">Assine Agora</Link>
+                    <a href={PAYMENT_LINK} target="_blank" rel="noopener noreferrer">Assine Agora</a>
                   </Button>
                 </CardFooter>
               </Card>
@@ -440,7 +434,7 @@ const LandingPage = () => {
             </p>
             <div className="mt-8">
               <Button size="lg" variant="secondary" asChild className="text-xl px-8 py-6">
-                <Link to="/register">Comece Agora Gratuitamente <ArrowRight className="ml-3 h-5 w-5" /></Link>
+                <a href={PAYMENT_LINK} target="_blank" rel="noopener noreferrer">Assine Agora <ArrowRight className="ml-3 h-5 w-5" /></a>
               </Button>
             </div>
           </div>
