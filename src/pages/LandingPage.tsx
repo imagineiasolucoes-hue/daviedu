@@ -220,7 +220,7 @@ const LandingPage = () => {
                   Controle total da sua escola em um só lugar
                 </h1>
                 <div className="flex justify-center lg:justify-start">
-                  <Link to="/register" className="inline-flex items-center rounded-full border border-transparent bg-accent px-4 py-1 text-sm font-semibold text-accent-foreground shadow-sm transition-colors hover:bg-accent/80 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2">
+                  <Link to="/register" className="inline-flex items-center rounded-full border border-transparent bg-accent px-6 py-2 text-base font-semibold text-accent-foreground shadow-sm transition-colors hover:bg-accent/80 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2">
                     <Sparkles className="mr-2 h-4 w-4" />
                     Grátis por 7 dias!
                   </Link>
