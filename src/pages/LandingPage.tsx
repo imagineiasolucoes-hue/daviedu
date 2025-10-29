@@ -52,7 +52,6 @@ import {
 const WHATSAPP_NUMBER = "5571992059840";
 const WHATSAPP_MESSAGE = "Olá! Gostaria de saber mais sobre o sistema Davi EDU.";
 const whatsappUrl = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(WHATSAPP_MESSAGE)}`;
-const PAYMENT_LINK = "https://pay.kiwify.com.br/r3Ur8To";
 
 const features = [
   {
@@ -117,6 +116,10 @@ const differentials = [
 
 const faqs = [
   {
+    question: "Como funciona o teste grátis de 7 dias?",
+    answer: "Ao se cadastrar, você solicita a liberação do seu acesso. Nossa equipe irá ativar sua conta e você terá 7 dias para experimentar todas as funcionalidades do sistema, sem compromisso. Se não gostar, não precisa fazer nada e nenhuma cobrança será gerada."
+  },
+  {
     question: "Posso cancelar a qualquer momento?",
     answer: "Sim, nossos planos são mensais e você pode cancelar a qualquer momento, sem multas ou burocracia. Sua satisfação é nossa prioridade."
   },
@@ -163,7 +166,7 @@ const LandingPage = () => {
                 <a href={whatsappUrl} target="_blank" rel="noopener noreferrer">Fale Conosco</a>
               </Button>
               <Button asChild>
-                <a href={PAYMENT_LINK} target="_blank" rel="noopener noreferrer">Assine Agora</a>
+                <Link to="/register">Teste Grátis</Link>
               </Button>
             </div>
           </div>
@@ -180,7 +183,7 @@ const LandingPage = () => {
               <SheetContent side="top" className="h-auto">
                 <nav className="flex flex-col gap-4 p-4">
                   <Button asChild className="w-full">
-                    <a href={PAYMENT_LINK} target="_blank" rel="noopener noreferrer">Assine Agora</a>
+                    <Link to="/register">Teste Grátis</Link>
                   </Button>
                   <Button variant="outline" asChild className="w-full">
                     <a href={whatsappUrl} target="_blank" rel="noopener noreferrer">Fale Conosco</a>
@@ -216,11 +219,11 @@ const LandingPage = () => {
                 Controle total da sua escola em um só lugar
               </h1>
               <p className="max-w-[600px] text-lg text-gray-700 mx-auto lg:mx-0">
-                Assinatura mensal – sem burocracia. Simples, rápido e inteligente.
+                Experimente por 7 dias grátis, sem compromisso. Simples, rápido e inteligente.
               </p>
               <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
                 <Button size="lg" asChild className="bg-primary hover:bg-primary/90 text-white">
-                  <a href={PAYMENT_LINK} target="_blank" rel="noopener noreferrer">Assine Agora <ArrowRight className="ml-2 h-4 w-4" /></a>
+                  <Link to="/register">Comece seu Teste Grátis <ArrowRight className="ml-2 h-4 w-4" /></Link>
                 </Button>
                 <Button size="lg" variant="outline" asChild>
                   <a href="#pricing">Ver Planos</a>
@@ -352,12 +355,12 @@ const LandingPage = () => {
             <div className="relative inline-block bg-white text-accent px-6 py-2 rounded-full text-lg font-bold mb-6 shadow-lg">
               OFERTA DE LANÇAMENTO!
             </div>
-            <h2 className="text-4xl font-bold mb-4">Preço Especial de Lançamento!</h2>
+            <h2 className="text-4xl font-bold mb-4">7 Dias Gratuitos!</h2>
             <p className="text-lg max-w-3xl mx-auto mb-8">
-              Assine o DaviEDU com um preço especial de lançamento e descubra como podemos revolucionar a gestão da sua escola.
+              Experimente o DaviEDU por 7 dias sem custo e descubra como podemos revolucionar a gestão da sua escola. Sem compromisso, sem cartão de crédito.
             </p>
             <Button size="lg" asChild className="bg-white text-accent hover:bg-gray-100 text-xl px-8 py-6">
-              <a href={PAYMENT_LINK} target="_blank" rel="noopener noreferrer">Assine Agora! <ArrowRight className="ml-3 h-5 w-5" /></a>
+              <Link to="/register">Comece seu Teste Grátis Agora! <ArrowRight className="ml-3 h-5 w-5" /></Link>
             </Button>
           </div>
         </section>
@@ -396,7 +399,7 @@ const LandingPage = () => {
                 </CardContent>
                 <CardFooter className="p-6 pt-4">
                   <Button asChild className="w-full bg-accent hover:bg-accent/90 text-white text-lg py-6">
-                    <a href={PAYMENT_LINK} target="_blank" rel="noopener noreferrer">Assine Agora</a>
+                    <Link to="/register">Comece seu Teste Grátis</Link>
                   </Button>
                 </CardFooter>
               </Card>
@@ -434,7 +437,7 @@ const LandingPage = () => {
             </p>
             <div className="mt-8">
               <Button size="lg" variant="secondary" asChild className="text-xl px-8 py-6">
-                <a href={PAYMENT_LINK} target="_blank" rel="noopener noreferrer">Assine Agora <ArrowRight className="ml-3 h-5 w-5" /></a>
+                <Link to="/register">Comece Agora Gratuitamente <ArrowRight className="ml-3 h-5 w-5" /></Link>
               </Button>
             </div>
           </div>

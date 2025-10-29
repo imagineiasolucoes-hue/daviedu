@@ -120,8 +120,8 @@ const Register = () => {
     <div className="flex items-center justify-center min-h-screen bg-gray-50 dark:bg-gray-900 p-4">
       <Card className="w-full max-w-lg">
         <CardHeader className="text-center">
-          <CardTitle className="text-2xl">Crie sua Conta de Administrador</CardTitle>
-          <CardDescription>Preencha os dados abaixo para cadastrar sua escola e criar seu acesso.</CardDescription>
+          <CardTitle className="text-2xl">Comece seu Teste Gratuito de 7 Dias</CardTitle>
+          <CardDescription>Preencha os dados abaixo para iniciar sua avaliação. Não é necessário cartão de crédito.</CardDescription>
         </CardHeader>
         <CardContent>
           <Form {...form}>
