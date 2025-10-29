@@ -306,7 +306,7 @@ const LandingPage = () => {
           <div className="container mx-auto px-4">
             <div className="text-center mb-12">
               <h2 className="text-3xl font-bold text-gray-900">Por que escolher DaviEDU?</h2>
-              <ul className="text-gray-700 mt-4 max-w-2xl mx-auto space-y-2 text-left"> {/* Alterado aqui */}
+              <ul className="text-gray-700 mt-4 max-w-2xl mx-auto space-y-2 text-left">
                 <li className="flex items-start gap-2">
                   <Check className="h-5 w-5 text-green-500 mt-1 flex-shrink-0" />
                   <span>Gestão integrada de secretaria, finanças, pedagógico e comunicação — tudo num só lugar.</span>
@@ -460,7 +460,7 @@ const LandingPage = () => {
             <p className="mt-4 max-w-2xl mx-auto">
               Junte-se a centenas de instituições que já otimizaram seus processos com nossa plataforma.
             </p>
-            <p className="text-xl font-bold mt-6 mb-8">
+            <p className="text-3xl font-extrabold mt-6 mb-8 text-accent"> {/* Alterado aqui */}
               Mais de 50 escolas já confiam no DaviEDU!
             </p>
             <div className="mt-8">
