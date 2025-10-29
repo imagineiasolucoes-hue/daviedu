@@ -10,13 +10,20 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Loader2, Lock, Unlock } from "lucide-react";
-import { format, differenceInDays, formatDistanceToNowStrict } from "date-fns";
+import { Loader2, Lock, Unlock, Pencil, MoreHorizontal } from "lucide-react";
+import { format, differenceInDays } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import { showError, showSuccess } from "@/utils/toast";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
-interface Tenant {
+export interface Tenant {
   id: string;
   name: string;
   status: 'trial' | 'active' | 'blocked';
@@ -64,7 +71,11 @@ const TrialCountdown = ({ expiresAt }: { expiresAt: string | null }) => {
   return <span>{daysRemaining} dias</span>;
 };
 
-const TenantsTable = () => {
+interface TenantsTableProps {
+  onEdit: (tenant: Tenant) => void;
+}
+
+const TenantsTable: React.FC<TenantsTableProps> = ({ onEdit }) => {
   const queryClient = useQueryClient();
   const { data: tenants, isLoading, error } = useQuery({
     queryKey: ["tenants"],
@@ -114,25 +125,37 @@ const TenantsTable = () => {
                 <TableCell><TrialCountdown expiresAt={tenant.trial_expires_at} /></TableCell>
                 <TableCell>{format(new Date(tenant.created_at), "dd/MM/yyyy")}</TableCell>
                 <TableCell>
-                  {tenant.status === 'blocked' ? (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => updateStatusMutation.mutate({ id: tenant.id, status: 'active' })}
-                      disabled={updateStatusMutation.isPending}
-                    >
-                      <Unlock className="mr-2 h-4 w-4" /> Habilitar
-                    </Button>
-                  ) : (
-                    <Button
-                      variant="destructive"
-                      size="sm"
-                      onClick={() => updateStatusMutation.mutate({ id: tenant.id, status: 'blocked' })}
-                      disabled={updateStatusMutation.isPending}
-                    >
-                      <Lock className="mr-2 h-4 w-4" /> Bloquear
-                    </Button>
-                  )}
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" className="h-8 w-8 p-0">
+                        <span className="sr-only">Abrir menu</span>
+                        <MoreHorizontal className="h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuLabel>Ações</DropdownMenuLabel>
+                      <DropdownMenuItem onClick={() => onEdit(tenant)}>
+                        <Pencil className="mr-2 h-4 w-4" />
+                        Editar
+                      </DropdownMenuItem>
+                      {tenant.status === 'blocked' ? (
+                        <DropdownMenuItem
+                          onClick={() => updateStatusMutation.mutate({ id: tenant.id, status: 'active' })}
+                          disabled={updateStatusMutation.isPending}
+                        >
+                          <Unlock className="mr-2 h-4 w-4" /> Habilitar
+                        </DropdownMenuItem>
+                      ) : (
+                        <DropdownMenuItem
+                          onClick={() => updateStatusMutation.mutate({ id: tenant.id, status: 'blocked' })}
+                          disabled={updateStatusMutation.isPending}
+                          className="text-red-600 focus:text-red-600"
+                        >
+                          <Lock className="mr-2 h-4 w-4" /> Bloquear
+                        </DropdownMenuItem>
+                      )}
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 </TableCell>
               </TableRow>
             ))
