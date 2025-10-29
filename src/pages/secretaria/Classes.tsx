@@ -4,15 +4,27 @@ import { supabase } from "@/integrations/supabase/client";
 import { showError, showSuccess } from "@/utils/toast";
 import { Class } from "@/types/academic";
 import { Button } from "@/components/ui/button";
-import { PlusCircle } from "lucide-react";
+import { PlusCircle, Search } from "lucide-react";
 import ClassesTable from "../../components/secretaria/classes/ClassesTable";
 import ClassForm from "../../components/secretaria/classes/ClassForm";
 import DeleteClassDialog from "../../components/secretaria/classes/DeleteClassDialog";
+import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { academicLevels } from "@/lib/academic-options";
 
 const Classes = () => {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [selectedClass, setSelectedClass] = useState<Class | null>(null);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [levelFilter, setLevelFilter] = useState("all");
+  const [periodFilter, setPeriodFilter] = useState("all");
   const queryClient = useQueryClient();
 
   const handleAdd = () => {
@@ -75,7 +87,52 @@ const Classes = () => {
           Adicionar Turma
         </Button>
       </div>
-      <ClassesTable onEdit={handleEdit} onDelete={handleDelete} />
+
+      {/* Filter Section */}
+      <div className="flex flex-col md:flex-row gap-4 mb-4">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Buscar por nome ou sala..."
+            className="pl-9"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
+        </div>
+        <Select value={levelFilter} onValueChange={setLevelFilter}>
+          <SelectTrigger className="w-full md:w-[180px]">
+            <SelectValue placeholder="Filtrar por nível" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Todos os Níveis</SelectItem>
+            {academicLevels.map((level) => (
+              <SelectItem key={level} value={level}>
+                {level}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <Select value={periodFilter} onValueChange={setPeriodFilter}>
+          <SelectTrigger className="w-full md:w-[180px]">
+            <SelectValue placeholder="Filtrar por período" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Todos os Períodos</SelectItem>
+            <SelectItem value="Matutino">Matutino</SelectItem>
+            <SelectItem value="Vespertino">Vespertino</SelectItem>
+            <SelectItem value="Noturno">Noturno</SelectItem>
+            <SelectItem value="Integral">Integral</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+
+      <ClassesTable
+        onEdit={handleEdit}
+        onDelete={handleDelete}
+        searchTerm={searchTerm}
+        levelFilter={levelFilter}
+        periodFilter={periodFilter}
+      />
       <ClassForm
         isOpen={isFormOpen}
         onClose={closeForm}

@@ -18,6 +18,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { MoreHorizontal, Pencil, Trash2, Loader2 } from "lucide-react";
+import { getLevelByClassName } from "@/lib/academic-options";
 
 const fetchClasses = async () => {
   const { data, error } = await supabase
@@ -26,18 +27,39 @@ const fetchClasses = async () => {
     .order("school_year", { ascending: false })
     .order("name");
   if (error) throw new Error(error.message);
-  return data;
+  return data || [];
 };
 
 interface ClassesTableProps {
   onEdit: (classItem: Class) => void;
   onDelete: (classItem: Class) => void;
+  searchTerm: string;
+  levelFilter: string;
+  periodFilter: string;
 }
 
-const ClassesTable: React.FC<ClassesTableProps> = ({ onEdit, onDelete }) => {
+const ClassesTable: React.FC<ClassesTableProps> = ({
+  onEdit,
+  onDelete,
+  searchTerm,
+  levelFilter,
+  periodFilter,
+}) => {
   const { data: classes, isLoading, error } = useQuery({
     queryKey: ["classes"],
     queryFn: fetchClasses,
+  });
+
+  const filteredClasses = classes?.filter((classItem) => {
+    const level = getLevelByClassName(classItem.name);
+    const searchTermMatch =
+      searchTerm === "" ||
+      classItem.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      classItem.room?.toLowerCase().includes(searchTerm.toLowerCase());
+    const levelMatch = levelFilter === "all" || level === levelFilter;
+    const periodMatch = periodFilter === "all" || classItem.period === periodFilter;
+
+    return searchTermMatch && levelMatch && periodMatch;
   });
 
   if (isLoading) {
@@ -62,6 +84,7 @@ const ClassesTable: React.FC<ClassesTableProps> = ({ onEdit, onDelete }) => {
         <TableHeader>
           <TableRow>
             <TableHead>Turma</TableHead>
+            <TableHead>Nível de Ensino</TableHead>
             <TableHead>Ano Letivo</TableHead>
             <TableHead>Período</TableHead>
             <TableHead>Sala</TableHead>
@@ -71,10 +94,11 @@ const ClassesTable: React.FC<ClassesTableProps> = ({ onEdit, onDelete }) => {
           </TableRow>
         </TableHeader>
         <TableBody>
-          {classes && classes.length > 0 ? (
-            classes.map((classItem) => (
+          {filteredClasses && filteredClasses.length > 0 ? (
+            filteredClasses.map((classItem) => (
               <TableRow key={classItem.id}>
                 <TableCell className="font-medium">{classItem.name}</TableCell>
+                <TableCell>{getLevelByClassName(classItem.name) || "N/A"}</TableCell>
                 <TableCell>
                   {classItem.school_year} / {classItem.school_year + 1}
                 </TableCell>
@@ -107,7 +131,7 @@ const ClassesTable: React.FC<ClassesTableProps> = ({ onEdit, onDelete }) => {
             ))
           ) : (
             <TableRow>
-              <TableCell colSpan={5} className="h-24 text-center">
+              <TableCell colSpan={6} className="h-24 text-center">
                 Nenhuma turma encontrada.
               </TableCell>
             </TableRow>
