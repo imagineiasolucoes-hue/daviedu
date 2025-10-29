@@ -40,7 +40,9 @@ import { CalendarIcon, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { format, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { Tenant } from "./TenantsTable"; // Importar o tipo Tenant
+import { Tenant } from "./TenantsTable";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import TenantUsersTable from "./TenantUsersTable";
 
 const tenantSchema = z.object({
   name: z.string().min(3, "O nome da escola é obrigatório."),
@@ -53,7 +55,7 @@ const tenantSchema = z.object({
 interface TenantFormProps {
   isOpen: boolean;
   onClose: () => void;
-  initialData?: Tenant | null; // Usar o tipo Tenant diretamente
+  initialData?: Tenant | null;
 }
 
 const TenantForm: React.FC<TenantFormProps> = ({ isOpen, onClose, initialData }) => {
@@ -119,108 +121,130 @@ const TenantForm: React.FC<TenantFormProps> = ({ isOpen, onClose, initialData })
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-3xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>{isEditMode ? "Editar Cliente" : "Adicionar Novo Cliente"}</DialogTitle>
+          <DialogTitle>{isEditMode ? `Editar Cliente: ${initialData?.name}` : "Adicionar Novo Cliente"}</DialogTitle>
           <DialogDescription>
-            Ajuste os detalhes do cliente, como nome, status e data de expiração da avaliação.
+            Ajuste os detalhes do cliente, status e gerencie os usuários associados.
           </DialogDescription>
         </DialogHeader>
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 py-4">
-            <FormField
-              control={form.control}
-              name="name"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Nome da Escola</FormLabel>
-                  <FormControl>
-                    <Input placeholder="Nome da Escola" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="status"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Status</FormLabel>
-                  <Select onValueChange={field.onChange} value={field.value}>
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Selecione o status" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      <SelectItem value="trial">Avaliação</SelectItem>
-                      <SelectItem value="active">Ativo</SelectItem>
-                      <SelectItem value="blocked">Bloqueado</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="trial_expires_at"
-              render={({ field }) => (
-                <FormItem className="flex flex-col">
-                  <FormLabel>Expira em (Avaliação)</FormLabel>
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <FormControl>
-                        <Button
-                          variant={"outline"}
-                          className={cn(
-                            "w-full pl-3 text-left font-normal",
-                            !field.value && "text-muted-foreground"
-                          )}
-                        >
-                          {field.value ? (
-                            format(field.value, "dd/MM/yyyy", { locale: ptBR })
-                          ) : (
-                            <span>Selecione uma data</span>
-                          )}
-                          <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                        </Button>
-                      </FormControl>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0" align="start">
-                      <Calendar
-                        mode="single"
-                        selected={field.value || undefined}
-                        onSelect={field.onChange}
-                        initialFocus
-                        locale={ptBR}
-                      />
-                    </PopoverContent>
-                  </Popover>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <DialogFooter>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={onClose}
-                disabled={mutation.isPending}
-              >
-                Cancelar
-              </Button>
-              <Button type="submit" disabled={mutation.isPending}>
-                {mutation.isPending ? (
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                ) : (
-                  "Salvar Alterações"
-                )}
-              </Button>
-            </DialogFooter>
-          </form>
-        </Form>
+        
+        {isEditMode && initialData?.id ? (
+          <Tabs defaultValue="info" className="w-full">
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="info">Informações do Cliente</TabsTrigger>
+              <TabsTrigger value="users">Usuários ({initialData.name})</TabsTrigger>
+            </TabsList>
+
+            {/* Tab 1: Informações do Cliente */}
+            <TabsContent value="info" className="pt-4">
+              <Form {...form}>
+                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                  <FormField
+                    control={form.control}
+                    name="name"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Nome da Escola</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Nome da Escola" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="status"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Status</FormLabel>
+                        <Select onValueChange={field.onChange} value={field.value}>
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Selecione o status" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="trial">Avaliação</SelectItem>
+                            <SelectItem value="active">Ativo</SelectItem>
+                            <SelectItem value="blocked">Bloqueado</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="trial_expires_at"
+                    render={({ field }) => (
+                      <FormItem className="flex flex-col">
+                        <FormLabel>Expira em (Avaliação)</FormLabel>
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <FormControl>
+                              <Button
+                                variant={"outline"}
+                                className={cn(
+                                  "w-full pl-3 text-left font-normal",
+                                  !field.value && "text-muted-foreground"
+                                )}
+                              >
+                                {field.value ? (
+                                  format(field.value, "dd/MM/yyyy", { locale: ptBR })
+                                ) : (
+                                  <span>Selecione uma data</span>
+                                )}
+                                <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                              </Button>
+                            </FormControl>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-auto p-0" align="start">
+                            <Calendar
+                              mode="single"
+                              selected={field.value || undefined}
+                              onSelect={field.onChange}
+                              initialFocus
+                              locale={ptBR}
+                            />
+                          </PopoverContent>
+                        </Popover>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <DialogFooter className="mt-6">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={onClose}
+                      disabled={mutation.isPending}
+                    >
+                      Cancelar
+                    </Button>
+                    <Button type="submit" disabled={mutation.isPending}>
+                      {mutation.isPending ? (
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      ) : (
+                        "Salvar Alterações"
+                      )}
+                    </Button>
+                  </DialogFooter>
+                </form>
+              </Form>
+            </TabsContent>
+
+            {/* Tab 2: Gerenciamento de Usuários */}
+            <TabsContent value="users" className="pt-4">
+              <TenantUsersTable tenantId={initialData.id} />
+            </TabsContent>
+          </Tabs>
+        ) : (
+          <div className="text-center p-8">
+            <p className="text-muted-foreground">Selecione um cliente para editar.</p>
+          </div>
+        )}
       </DialogContent>
     </Dialog>
   );

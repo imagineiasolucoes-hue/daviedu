@@ -1,3 +1,5 @@
+import { User } from "@supabase/supabase-js";
+
 export type UserRole = 'student' | 'admin' | 'secretary' | 'super_admin';
 
 export interface Profile {
@@ -8,4 +10,5 @@ export interface Profile {
   avatar_url: string | null;
   role: UserRole;
   updated_at: string | null;
+  email?: string; // Adicionado para o join com auth_users
 }
