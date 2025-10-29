@@ -25,28 +25,20 @@ interface TenantUsersTableProps {
   tenantId: string;
 }
 
+// Consulta simplificada para diagnóstico
 const fetchTenantUsers = async (tenantId: string): Promise<Profile[]> => {
-  // A query deve selecionar explicitamente todos os campos necessários do 'profiles'
-  // e usar 'auth_users (email)' para o join.
   const { data, error } = await supabase
     .from("profiles")
-    .select("id, tenant_id, first_name, last_name, role, avatar_url, updated_at, auth_users (email)")
+    .select("id, tenant_id, first_name, last_name, role, avatar_url, updated_at")
     .eq("tenant_id", tenantId)
     .order("role", { ascending: true });
 
   if (error) throw new Error(error.message);
   
-  // Mapear para o tipo Profile, extraindo o email do objeto aninhado 'auth_users'
+  // Mapeia os dados, definindo o email como 'N/A' temporariamente
   return data.map((p: any) => ({
-    id: p.id,
-    tenant_id: p.tenant_id,
-    first_name: p.first_name,
-    last_name: p.last_name,
-    avatar_url: p.avatar_url,
-    role: p.role,
-    updated_at: p.updated_at,
-    // Acessa o email do objeto aninhado retornado pelo join
-    email: p.auth_users?.email || 'N/A',
+    ...p,
+    email: 'N/A', // Email removido temporariamente para diagnóstico
   })) as Profile[];
 };
 
