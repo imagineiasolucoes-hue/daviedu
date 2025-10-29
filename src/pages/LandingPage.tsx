@@ -201,7 +201,7 @@ const LandingPage = () => {
                     <a href="https://www.facebook.com/profile.php?id=61582527995208" target="_blank" rel="noopener noreferrer" className="text-gray-500 hover:text-primary">
                       <Facebook className="h-6 w-6" />
                     </a>
-                    <a href="https://linkedin.com" target="_blank" rel="noopener noreferrer" className="text-gray-500 hover:text-primary">
+                    <a href="https://www.linkedin.com/company/imagine-ia-solu%C3%A7%C3%B5es/" target="_blank" rel="noopener noreferrer" className="text-gray-500 hover:text-primary">
                       <Linkedin className="h-6 w-6" />
                     </a>
                   </div>
@@ -486,7 +486,7 @@ const LandingPage = () => {
               <a href="https://www.facebook.com/profile.php?id=61582527995208" target="_blank" rel="noopener noreferrer" className="text-gray-500 hover:text-primary">
                 <Facebook className="h-5 w-5" />
               </a>
-              <a href="https://linkedin.com" target="_blank" rel="noopener noreferrer" className="text-gray-500 hover:text-primary">
+              <a href="https://www.linkedin.com/company/imagine-ia-solu%C3%A7%C3%B5es/" target="_blank" rel="noopener noreferrer" className="text-gray-500 hover:text-primary">
                 <Linkedin className="h-5 w-5" />
               </a>
             </div>
