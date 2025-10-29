@@ -26,6 +26,8 @@ interface TenantUsersTableProps {
 }
 
 const fetchTenantUsers = async (tenantId: string): Promise<Profile[]> => {
+  // A query deve selecionar explicitamente todos os campos necessários do 'profiles'
+  // e usar 'auth_users (email)' para o join.
   const { data, error } = await supabase
     .from("profiles")
     .select("id, tenant_id, first_name, last_name, role, avatar_url, updated_at, auth_users (email)")
@@ -34,7 +36,7 @@ const fetchTenantUsers = async (tenantId: string): Promise<Profile[]> => {
 
   if (error) throw new Error(error.message);
   
-  // Mapear para o tipo Profile, extraindo o email do join e garantindo que todos os campos existam.
+  // Mapear para o tipo Profile, extraindo o email do objeto aninhado 'auth_users'
   return data.map((p: any) => ({
     id: p.id,
     tenant_id: p.tenant_id,
@@ -43,6 +45,7 @@ const fetchTenantUsers = async (tenantId: string): Promise<Profile[]> => {
     avatar_url: p.avatar_url,
     role: p.role,
     updated_at: p.updated_at,
+    // Acessa o email do objeto aninhado retornado pelo join
     email: p.auth_users?.email || 'N/A',
   })) as Profile[];
 };
@@ -101,7 +104,7 @@ const TenantUsersTable: React.FC<TenantUsersTableProps> = ({ tenantId }) => {
                     {user.first_name} {user.last_name}
                   </div>
                 </TableCell>
-                <TableCell>{(user as any).email}</TableCell>
+                <TableCell>{user.email}</TableCell>
                 <TableCell>
                   <Select
                     value={user.role}
