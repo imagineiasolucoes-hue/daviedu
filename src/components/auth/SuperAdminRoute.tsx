@@ -15,7 +15,7 @@ const SuperAdminRoute: React.FC = () => {
   }
 
   if (profile?.role !== "super_admin") {
-    // Redirect them to the home page if they are not a super admin.
+    // Redirect them to the dashboard if they are not a super admin.
     return <Navigate to="/dashboard" replace />;
   }
 
