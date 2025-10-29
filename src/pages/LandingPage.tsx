@@ -306,9 +306,32 @@ const LandingPage = () => {
           <div className="container mx-auto px-4">
             <div className="text-center mb-12">
               <h2 className="text-3xl font-bold text-gray-900">Por que escolher DaviEDU?</h2>
-              <p className="text-gray-700 mt-2 max-w-2xl mx-auto">
-                Nossa plataforma é construída pensando nas necessidades reais da sua escola, oferecendo vantagens que você não encontra em outras soluções.
-              </p>
+              <ul className="text-gray-700 mt-4 max-w-2xl mx-auto space-y-2 text-left"> {/* Alterado aqui */}
+                <li className="flex items-start gap-2">
+                  <Check className="h-5 w-5 text-green-500 mt-1 flex-shrink-0" />
+                  <span>Gestão integrada de secretaria, finanças, pedagógico e comunicação — tudo num só lugar.</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <Check className="h-5 w-5 text-green-500 mt-1 flex-shrink-0" />
+                  <span>Dados em tempo real para decisões mais rápidas e estratégicas.</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <Check className="h-5 w-5 text-green-500 mt-1 flex-shrink-0" />
+                  <span>Automação que reduz burocracia, erros e retrabalho.</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <Check className="h-5 w-5 text-green-500 mt-1 flex-shrink-0" />
+                  <span>Plataforma pensada para a realidade da sua escola — não um sistema genérico.</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <Check className="h-5 w-5 text-green-500 mt-1 flex-shrink-0" />
+                  <span>Suporte dedicado, atualizações contínuas e evolução com sua escola.</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <Check className="h-5 w-5 text-green-500 mt-1 flex-shrink-0" />
+                  <span>Alto custo-benefício para escolas médias e pequenas: qualidade profissional com assinatura acessível.</span>
+                </li>
+              </ul>
             </div>
             <div className="grid gap-8 md:grid-cols-3 mb-16">
               {differentials.map((diff) => (
