@@ -8,10 +8,12 @@ import React, {
 import { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import { Loader2 } from "lucide-react";
+import { Profile } from "@/types/user";
 
 interface AuthContextType {
   session: Session | null;
   user: User | null;
+  profile: Profile | null;
   isLoading: boolean;
 }
 
@@ -34,20 +36,66 @@ export const SessionContextProvider: React.FC<SessionContextProviderProps> = ({
 }) => {
   const [session, setSession] = useState<Session | null>(null);
   const [user, setUser] = useState<User | null>(null);
+  const [profile, setProfile] = useState<Profile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    const fetchSessionAndProfile = async () => {
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      if (sessionError) {
+        console.error("Error getting session:", sessionError);
+        setIsLoading(false);
+        return;
+      }
+
       setSession(session);
-      setUser(session?.user ?? null);
+      const currentUser = session?.user ?? null;
+      setUser(currentUser);
+
+      if (currentUser) {
+        const { data: userProfile, error: profileError } = await supabase
+          .from("profiles")
+          .select("*")
+          .eq("id", currentUser.id)
+          .single();
+        
+        if (profileError) {
+          console.error("Error fetching profile:", profileError);
+        } else {
+          setProfile(userProfile);
+        }
+      } else {
+        setProfile(null);
+      }
       setIsLoading(false);
-    });
+    };
+
+    fetchSessionAndProfile();
 
     const { data: authListener } = supabase.auth.onAuthStateChange(
-      (_event, session) => {
+      async (_event, session) => {
         setSession(session);
-        setUser(session?.user ?? null);
-        setIsLoading(false);
+        const currentUser = session?.user ?? null;
+        setUser(currentUser);
+
+        if (currentUser) {
+          setIsLoading(true);
+          const { data: userProfile, error: profileError } = await supabase
+            .from("profiles")
+            .select("*")
+            .eq("id", currentUser.id)
+            .single();
+          
+          if (profileError) {
+            console.error("Error fetching profile on auth change:", profileError);
+            setProfile(null);
+          } else {
+            setProfile(userProfile);
+          }
+          setIsLoading(false);
+        } else {
+          setProfile(null);
+        }
       },
     );
 
@@ -65,7 +113,7 @@ export const SessionContextProvider: React.FC<SessionContextProviderProps> = ({
   }
 
   return (
-    <AuthContext.Provider value={{ session, user, isLoading }}>
+    <AuthContext.Provider value={{ session, user, profile, isLoading }}>
       {children}
     </AuthContext.Provider>
   );

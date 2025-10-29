@@ -21,7 +21,9 @@ import Revenues from "@/pages/financial/Revenues";
 import Expenses from "@/pages/financial/Expenses";
 import Payroll from "@/pages/financial/Payroll";
 import PreEnrollment from "./pages/PreEnrollment";
-import { TenantProvider } from "./hooks/useTenant"; // Importando o novo provedor
+import { TenantProvider } from "./hooks/useTenant";
+import SuperAdmin from "./pages/SuperAdmin";
+import SuperAdminRoute from "./components/auth/SuperAdminRoute";
 
 const queryClient = new QueryClient();
 
@@ -62,6 +64,11 @@ const App = () => (
                 <Route path="/pedagogico" element={<Pedagogico />} />
                 <Route path="/comunicacao" element={<Comunicacao />} />
                 <Route path="/settings" element={<Settings />} />
+                
+                {/* Super Admin Route */}
+                <Route element={<SuperAdminRoute />}>
+                  <Route path="/super-admin" element={<SuperAdmin />} />
+                </Route>
               </Route>
             </Route>
 

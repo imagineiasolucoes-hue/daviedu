@@ -10,9 +10,10 @@ import {
   Menu,
   Settings,
   ChevronDown,
-  Instagram, // Importando o ícone do Instagram
-  Facebook,  // Importando o ícone do Facebook
-  Linkedin,  // Importando o ícone do LinkedIn
+  Instagram,
+  Facebook,
+  Linkedin,
+  Shield, // Ícone para Super Admin
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -55,9 +56,9 @@ const NavLink = ({ href, icon: Icon, label }: { href: string; icon: React.Elemen
 };
 
 const AppLayout = () => {
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const navigate = useNavigate();
-  const [greetingMessage, setGreetingMessage] = useState<React.ReactNode | null>(null); // Alterado para React.ReactNode
+  const [greetingMessage, setGreetingMessage] = useState<React.ReactNode | null>(null);
 
   useEffect(() => {
     const hasShownGreeting = sessionStorage.getItem('hasShownAppLayoutGreeting');
@@ -72,9 +73,8 @@ const AppLayout = () => {
         greeting = "Boa noite";
       }
 
-      const userName = user.user_metadata?.first_name || user.email?.split('@')[0];
+      const userName = profile?.first_name || user.email?.split('@')[0];
       
-      // Criando um ReactNode para a mensagem, permitindo o itálico no nome
       const message = (
         <>
           {greeting}, <i className="italic">{userName}</i>!
@@ -86,15 +86,15 @@ const AppLayout = () => {
 
       const timer = setTimeout(() => {
         setGreetingMessage(null);
-      }, 7000); // Mensagem desaparece após 7 segundos
+      }, 7000);
 
       return () => clearTimeout(timer);
     }
-  }, [user]);
+  }, [user, profile]);
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
-    sessionStorage.removeItem('hasShownAppLayoutGreeting'); // Limpa a flag ao sair
+    sessionStorage.removeItem('hasShownAppLayoutGreeting');
     navigate("/");
   };
 
@@ -151,7 +151,7 @@ const AppLayout = () => {
                   <AvatarFallback>{user?.email?.charAt(0).toUpperCase()}</AvatarFallback>
                 </Avatar>
                 <div className="hidden md:flex flex-col items-start">
-                    <span className="text-sm font-medium">{user?.user_metadata?.first_name || user?.email}</span>
+                    <span className="text-sm font-medium">{profile?.first_name || user?.email}</span>
                 </div>
                 <ChevronDown className="h-4 w-4 text-muted-foreground hidden md:block" />
               </Button>
@@ -159,6 +159,14 @@ const AppLayout = () => {
             <DropdownMenuContent align="end" className="w-56">
               <DropdownMenuLabel>Minha Conta</DropdownMenuLabel>
               <DropdownMenuSeparator />
+              {profile?.role === 'super_admin' && (
+                <DropdownMenuItem asChild>
+                  <Link to="/super-admin" className="cursor-pointer text-yellow-600 focus:text-yellow-700">
+                    <Shield className="mr-2 h-4 w-4" />
+                    <span>Super Admin</span>
+                  </Link>
+                </DropdownMenuItem>
+              )}
               <DropdownMenuItem asChild>
                 <Link to="/settings" className="cursor-pointer">
                   <Settings className="mr-2 h-4 w-4" />
@@ -176,14 +184,13 @@ const AppLayout = () => {
         <main className="flex flex-1 flex-col gap-4 p-4 lg:gap-6 lg:p-6 bg-muted/40">
           <Outlet />
         </main>
-        {/* Rodapé do Sistema */}
         <footer className="border-t bg-background py-4 px-4 lg:px-6 print-hidden">
           <div className="container mx-auto flex flex-col md:flex-row items-center justify-between gap-4 text-sm text-muted-foreground">
             <p>&copy; {new Date().getFullYear()} Davi EDU. Todos os direitos reservados.</p>
             <div className="flex gap-4 items-center">
               <a href="#" className="hover:text-primary">Termos de Serviço</a>
               <a href="#" className="hover:text-primary">Política de Privacidade</a>
-              <div className="flex gap-3 ml-4"> {/* Links para redes sociais */}
+              <div className="flex gap-3 ml-4">
                 <a href="https://www.instagram.com/imagineiasolucoes/" target="_blank" rel="noopener noreferrer" className="hover:text-primary">
                   <Instagram className="h-5 w-5" />
                 </a>
