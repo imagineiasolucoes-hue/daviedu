@@ -22,36 +22,74 @@ import { MoreHorizontal, Pencil, Trash2, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 
-const fetchStudents = async () => {
-  const { data, error } = await supabase
-    .from("students")
-    .select("*")
-    .order("full_name");
+interface StudentsTableProps {
+  onEdit: (student: Student) => void;
+  onDelete: (student: Student) => void;
+  searchTerm: string;
+  statusFilter: string;
+  classFilter: string;
+}
+
+const fetchStudents = async (
+  searchTerm: string,
+  statusFilter: string,
+  classFilter: string
+) => {
+  let query = supabase.from("students").select("*");
+
+  if (searchTerm) {
+    query = query.or(
+      `full_name.ilike.%${searchTerm}%,registration_code.ilike.%${searchTerm}%`
+    );
+  }
+
+  if (statusFilter !== "all") {
+    query = query.eq("status", statusFilter);
+  }
+
+  if (classFilter !== "all") {
+    query = query.eq("class_id", classFilter);
+  }
+
+  const { data, error } = await query.order("full_name");
   if (error) throw new Error(error.message);
   return data;
 };
 
-interface StudentsTableProps {
-  onEdit: (student: Student) => void;
-  onDelete: (student: Student) => void;
-}
-
-const StudentsTable: React.FC<StudentsTableProps> = ({ onEdit, onDelete }) => {
-  const { data: students, isLoading, error } = useQuery({
-    queryKey: ["students"],
-    queryFn: fetchStudents,
+const StudentsTable: React.FC<StudentsTableProps> = ({
+  onEdit,
+  onDelete,
+  searchTerm,
+  statusFilter,
+  classFilter,
+}) => {
+  const {
+    data: students,
+    isLoading,
+    error,
+  } = useQuery({
+    queryKey: ["students", searchTerm, statusFilter, classFilter],
+    queryFn: () => fetchStudents(searchTerm, statusFilter, classFilter),
   });
 
-  const getStatusBadge = (status: Student['status']) => {
+  const getStatusBadge = (status: Student["status"]) => {
     switch (status) {
-      case 'active':
-        return <Badge className="bg-green-500 hover:bg-green-600 text-white">Ativo</Badge>;
-      case 'inactive':
+      case "active":
+        return (
+          <Badge className="bg-green-500 hover:bg-green-600 text-white">
+            Ativo
+          </Badge>
+        );
+      case "inactive":
         return <Badge variant="destructive">Inativo</Badge>;
-      case 'suspended':
+      case "suspended":
         return <Badge variant="secondary">Suspenso</Badge>;
-      case 'pre-enrolled':
-        return <Badge className="bg-blue-500 hover:bg-blue-600 text-white">Pré-Matriculado</Badge>;
+      case "pre-enrolled":
+        return (
+          <Badge className="bg-blue-500 hover:bg-blue-600 text-white">
+            Pré-Matriculado
+          </Badge>
+        );
       default:
         return <Badge variant="secondary">N/A</Badge>;
     }
@@ -91,7 +129,9 @@ const StudentsTable: React.FC<StudentsTableProps> = ({ onEdit, onDelete }) => {
           {students && students.length > 0 ? (
             students.map((student) => (
               <TableRow key={student.id}>
-                <TableCell className="font-medium">{student.full_name}</TableCell>
+                <TableCell className="font-medium">
+                  {student.full_name}
+                </TableCell>
                 <TableCell>{student.registration_code}</TableCell>
                 <TableCell>
                   {student.birth_date
