@@ -142,7 +142,7 @@ const faqs = [
   },
   {
     question: "Quantos usuários podem ter acesso ao sistema?",
-    answer: "O número de usuários varia de acordo com o plano escolhido. O plano Essencial inclui 3 usuários, e o Premium oferece usuários ilimitados. Você pode consultar os detalhes na seção de planos."
+    answer: "O plano inclui usuários ilimitados."
   },
   {
     question: "O suporte técnico está incluído na assinatura?",
@@ -381,7 +381,7 @@ const LandingPage = () => {
             <div className="relative inline-block bg-white text-accent px-6 py-2 rounded-full text-lg font-bold mb-6 shadow-lg">
               OFERTA DE LANÇAMENTO!
             </div>
-            <h2 className="text-4xl font-bold mb-4">7 Dias Gratuitos!</h2> {/* Alterado aqui */}
+            <h2 className="text-4xl font-bold mb-4">7 Dias Gratuitos!</h2>
             <p className="text-lg max-w-3xl mx-auto mb-8">
               Experimente o DaviEDU por 7 dias sem custo e descubra como podemos revolucionar a gestão da sua escola. Sem compromisso, sem cartão de crédito.
             </p>
@@ -436,54 +436,37 @@ const LandingPage = () => {
         <section id="pricing" className="py-20">
           <div className="container mx-auto px-4">
             <div className="text-center mb-12">
-              <h2 className="text-3xl font-bold text-gray-900">Planos Flexíveis para sua Escola</h2>
+              <h2 className="text-3xl font-bold text-gray-900">Plano Flexível para sua Escola</h2>
               <p className="text-gray-700 mt-2 max-w-2xl mx-auto">
-                Escolha o plano que melhor se adapta às necessidades e ao tamanho da sua instituição.
+                Um plano completo que se adapta às necessidades da sua instituição.
               </p>
             </div>
-            <div className="grid gap-8 md:grid-cols-2 max-w-4xl mx-auto mb-16">
-              {/* Plano Essencial */}
-              <Card className="flex flex-col border-2 border-gray-200 shadow-lg">
+            <div className="grid gap-8 md:grid-cols-1 max-w-2xl mx-auto mb-16"> {/* Alterado para grid-cols-1 */}
+              {/* Plano Completo */}
+              <Card className="flex flex-col border-2 border-primary shadow-lg relative"> {/* Mantendo destaque */}
+                <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-accent text-white px-4 py-1 rounded-full text-sm font-bold">
+                  PLANO ÚNICO
+                </div>
                 <CardHeader className="text-center pb-4">
-                  <CardTitle className="text-3xl font-bold text-primary">Essencial</CardTitle>
-                  <CardDescription className="text-lg text-gray-600">Ideal para escolas menores ou em início de digitalização.</CardDescription>
-                  <p className="text-5xl font-extrabold text-gray-900 mt-4">R$ 199<span className="text-xl font-medium text-gray-600">/mês</span></p>
+                  <CardTitle className="text-3xl font-bold text-primary">Plano Completo</CardTitle>
+                  <CardDescription className="text-lg text-gray-600">
+                    Solução completa para escolas que buscam excelência e eficiência.
+                  </CardDescription>
+                  <p className="text-5xl font-extrabold text-gray-900 mt-4">R$ 220<span className="text-xl font-medium text-gray-600">/mês</span></p>
                 </CardHeader>
                 <CardContent className="flex-1 space-y-3 px-6">
                   <p className="flex items-center gap-2 text-gray-700"><Check className="h-5 w-5 text-green-500" /> Gestão de Alunos e Turmas</p>
                   <p className="flex items-center gap-2 text-gray-700"><Check className="h-5 w-5 text-green-500" /> Matrículas Online</p>
-                  <p className="flex items-center gap-2 text-gray-700"><Check className="h-5 w-5 text-green-500" /> Gestão Financeira Básica (Receitas/Despesas)</p>
-                  <p className="flex items-center gap-2 text-gray-700"><Check className="h-5 w-5 text-green-500" /> 3 Usuários Administradores</p>
-                  <p className="flex items-center gap-2 text-gray-700"><Check className="h-5 w-5 text-green-500" /> Suporte via Chat e Email</p>
-                </CardContent>
-                <CardFooter className="p-6 pt-4">
-                  <Button asChild className="w-full bg-primary hover:bg-primary/90 text-white text-lg py-6">
-                    <Link to="/register">Comece no Essencial</Link>
-                  </Button>
-                </CardFooter>
-              </Card>
-
-              {/* Plano Premium */}
-              <Card className="flex flex-col border-2 border-primary shadow-lg relative">
-                <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-accent text-white px-4 py-1 rounded-full text-sm font-bold">
-                  MAIS POPULAR
-                </div>
-                <CardHeader className="text-center pb-4">
-                  <CardTitle className="text-3xl font-bold text-primary">Premium</CardTitle>
-                  <CardDescription className="text-lg text-gray-600">Solução completa para escolas que buscam excelência.</CardDescription>
-                  <p className="text-5xl font-extrabold text-gray-900 mt-4">R$ 399<span className="text-xl font-medium text-gray-600">/mês</span></p>
-                </CardHeader>
-                <CardContent className="flex-1 space-y-3 px-6">
-                  <p className="flex items-center gap-2 text-gray-700"><Check className="h-5 w-5 text-green-500" /> **Tudo do Essencial, mais:**</p>
-                  <p className="flex items-center gap-2 text-gray-700"><Check className="h-5 w-5 text-green-500" /> Folha de Pagamento Completa</p>
+                  <p className="flex items-center gap-2 text-gray-700"><Check className="h-5 w-5 text-green-500" /> Gestão Financeira Completa (Receitas/Despesas)</p>
+                  <p className="flex items-center gap-2 text-gray-700"><Check className="h-5 w-5 text-green-500" /> Folha de Pagamento</p>
                   <p className="flex items-center gap-2 text-gray-700"><Check className="h-5 w-5 text-green-500" /> Relatórios Financeiros Avançados</p>
                   <p className="flex items-center gap-2 text-gray-700"><Check className="h-5 w-5 text-green-500" /> Usuários Administradores Ilimitados</p>
                   <p className="flex items-center gap-2 text-gray-700"><Check className="h-5 w-5 text-green-500" /> Módulos Pedagógico e Comunicação (Em breve)</p>
-                  <p className="flex items-center gap-2 text-gray-700"><Check className="h-5 w-5 text-green-500" /> Prioridade no Suporte</p>
+                  <p className="flex items-center gap-2 text-gray-700"><Check className="h-5 w-5 text-green-500" /> Suporte Dedicado via Chat e Email</p>
                 </CardContent>
                 <CardFooter className="p-6 pt-4">
                   <Button asChild className="w-full bg-accent hover:bg-accent/90 text-white text-lg py-6">
-                    <Link to="/register">Assine o Premium</Link>
+                    <Link to="/register">Assine Agora</Link>
                   </Button>
                 </CardFooter>
               </Card>
