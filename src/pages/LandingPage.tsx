@@ -114,27 +114,6 @@ const differentials = [
   },
 ];
 
-const testimonials = [
-  {
-    quote: "A implementação do DaviEDU transformou nossa secretaria. Os processos estão muito mais ágeis e a comunicação com os pais melhorou 100%.",
-    author: "Maria Almeida",
-    role: "Diretora, Colégio Aprender",
-    avatar: "MA"
-  },
-  {
-    quote: "Finalmente encontramos uma solução que entende as necessidades de um curso profissionalizante. O controle financeiro é simples e eficiente.",
-    author: "João Costa",
-    role: "Coordenador, Cursos Tech",
-    avatar: "JC"
-  },
-  {
-    quote: "Reduzimos em 40% o tempo gasto com planilhas e agora temos relatórios precisos em tempo real. O DaviEDU é um divisor de águas!",
-    author: "Carla Mendes",
-    role: "Administradora Financeira, Escola do Saber",
-    avatar: "CM"
-  }
-];
-
 const faqs = [
   {
     question: "Posso cancelar a qualquer momento?",
@@ -181,7 +160,7 @@ const LandingPage = () => {
             <nav className="flex items-center gap-6">
               <a href="#features" className="text-sm font-medium text-gray-600 hover:text-primary">Funcionalidades</a>
               <a href="#why-us" className="text-sm font-medium text-gray-600 hover:text-primary">Por que DaviEDU?</a>
-              <a href="#testimonials" className="text-sm font-medium text-gray-600 hover:text-primary">Depoimentos</a>
+              {/* <a href="#testimonials" className="text-sm font-medium text-gray-600 hover:text-primary">Depoimentos</a> */}
               <a href="#pricing" className="text-sm font-medium text-gray-600 hover:text-primary">Planos</a>
             </nav>
             <div className="flex items-center gap-2">
@@ -213,7 +192,7 @@ const LandingPage = () => {
                   </Button>
                   <a href="#features" className="block py-2 text-center text-lg font-medium text-gray-700 hover:text-primary">Funcionalidades</a>
                   <a href="#why-us" className="block py-2 text-center text-lg font-medium text-gray-700 hover:text-primary">Por que DaviEDU?</a>
-                  <a href="#testimonials" className="block py-2 text-center text-lg font-medium text-gray-700 hover:text-primary">Depoimentos</a>
+                  {/* <a href="#testimonials" className="block py-2 text-center text-lg font-medium text-gray-700 hover:text-primary">Depoimentos</a> */}
                   <a href="#pricing" className="block py-2 text-center text-lg font-medium text-gray-700 hover:text-primary">Planos</a>
                   <div className="flex justify-center gap-6 mt-4 border-t pt-4">
                     <a href="https://instagram.com" target="_blank" rel="noopener noreferrer" className="text-gray-500 hover:text-primary">
@@ -391,47 +370,6 @@ const LandingPage = () => {
           </div>
         </section>
 
-        {/* Prova Social / Depoimentos Section */}
-        <section id="testimonials" className="bg-gray-50 py-20">
-          <div className="container mx-auto px-4">
-            <div className="text-center mb-12">
-              <h2 className="text-3xl font-bold text-gray-900">O que nossos clientes dizem</h2>
-              <p className="text-gray-700 mt-2">A satisfação de quem já transformou sua gestão.</p>
-            </div>
-            <div className="grid gap-8 md:grid-cols-3">
-              {testimonials.map((testimonial) => (
-                <Card key={testimonial.author} className="bg-white shadow-md">
-                  <CardContent className="pt-6">
-                    <div className="space-y-4">
-                      <Quote className="h-8 w-8 text-gray-300" />
-                      <p className="text-lg text-gray-700">"{testimonial.quote}"</p>
-                      <div className="flex items-center gap-4">
-                        <Avatar>
-                          <AvatarFallback className="bg-primary text-white">{testimonial.avatar}</AvatarFallback>
-                        </Avatar>
-                        <div>
-                          <p className="font-semibold text-gray-900">{testimonial.author}</p>
-                          <p className="text-sm text-gray-600">{testimonial.role}</p>
-                        </div>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-            <div className="mt-16 text-center">
-              <p className="text-lg font-semibold text-gray-800 mb-4">Junte-se a escolas que confiam no DaviEDU:</p>
-              <div className="flex flex-wrap justify-center items-center gap-8">
-                {/* Placeholder para logotipos de escolas */}
-                <div className="h-12 w-32 bg-gray-200 rounded-md flex items-center justify-center text-gray-500 text-sm">Logo Escola 1</div>
-                <div className="h-12 w-32 bg-gray-200 rounded-md flex items-center justify-center text-gray-500 text-sm">Logo Escola 2</div>
-                <div className="h-12 w-32 bg-gray-200 rounded-md flex items-center justify-center text-gray-500 text-sm">Logo Escola 3</div>
-                <div className="h-12 w-32 bg-gray-200 rounded-md flex items-center justify-center text-gray-500 text-sm">Logo Escola 4</div>
-              </div>
-            </div>
-          </div>
-        </section>
-
         {/* Preço / Planos claros Section */}
         <section id="pricing" className="py-20">
           <div className="container mx-auto px-4">
@@ -441,9 +379,9 @@ const LandingPage = () => {
                 Um plano completo que se adapta às necessidades da sua instituição.
               </p>
             </div>
-            <div className="grid gap-8 md:grid-cols-1 max-w-2xl mx-auto mb-16"> {/* Alterado para grid-cols-1 */}
+            <div className="grid gap-8 md:grid-cols-1 max-w-2xl mx-auto mb-16">
               {/* Plano Completo */}
-              <Card className="flex flex-col border-2 border-primary shadow-lg relative"> {/* Mantendo destaque */}
+              <Card className="flex flex-col border-2 border-primary shadow-lg relative">
                 <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-accent text-white px-4 py-1 rounded-full text-sm font-bold">
                   PLANO ÚNICO
                 </div>
@@ -498,6 +436,9 @@ const LandingPage = () => {
             <h2 className="text-3xl font-bold">Pronto para modernizar sua gestão?</h2>
             <p className="mt-4 max-w-2xl mx-auto">
               Junte-se a centenas de instituições que já otimizaram seus processos com nossa plataforma.
+            </p>
+            <p className="text-xl font-bold mt-6 mb-8">
+              Mais de 50 escolas já confiam no DaviEDU!
             </p>
             <div className="mt-8">
               <Button size="lg" variant="secondary" asChild className="text-xl px-8 py-6">
