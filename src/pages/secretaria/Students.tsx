@@ -12,7 +12,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 const fetchClasses = async (): Promise<Class[]> => {
-  const { data, error } = await supabase.from("classes").select("id, name, school_year").order("name");
+  const { data, error } = await supabase.from("classes").select("*").order("name");
   if (error) throw new Error(error.message);
   return data || [];
 };
