@@ -61,6 +61,7 @@ export const SessionContextProvider: React.FC<SessionContextProviderProps> = ({
         
         if (profileError) {
           console.error("Error fetching profile:", profileError);
+          setProfile(null); // Explicitly set profile to null on error
         } else {
           setProfile(userProfile);
         }
