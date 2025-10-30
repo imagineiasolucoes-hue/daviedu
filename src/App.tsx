@@ -12,7 +12,8 @@ import { SessionContextProvider } from "./components/auth/SessionContextProvider
 import ProtectedRoute from "./components/auth/ProtectedRoute";
 import Dashboard from "./pages/Dashboard";
 import AppLayout from "./components/layout/AppLayout";
-import TenantsPage from "./pages/super-admin/TenantsPage"; // Corrected import path
+import TenantsPage from "./pages/super-admin/TenantsPage";
+import StudentsPage from "./pages/StudentsPage"; // Novo import
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -42,6 +43,7 @@ const App = () => {
               <Route element={<ProtectedRoute />}>
                 <Route element={<AppLayout />}>
                   <Route path="/dashboard" element={<Dashboard />} />
+                  <Route path="/students" element={<StudentsPage />} /> {/* Nova Rota */}
                   
                   {/* Super Admin Routes */}
                   <Route path="/super-admin/tenants" element={<TenantsPage />} />

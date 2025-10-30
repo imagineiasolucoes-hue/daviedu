@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Home, Users, Settings, LogOut, School } from 'lucide-react';
+import { Home, Users, Settings, LogOut, School, BookOpen } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { cn } from '@/lib/utils';
@@ -41,7 +41,8 @@ interface SidebarProps {
 const Sidebar: React.FC<SidebarProps> = ({ isSuperAdmin, displayName, roleDisplay, onLogout }) => {
   const adminNavItems = [
     { to: "/dashboard", icon: <Home className="h-5 w-5" />, label: "Dashboard" },
-    { to: "/students", icon: <Users className="h-5 w-5" />, label: "Alunos" },
+    { to: "/students", icon: <Users className="h-5 w-5" />, label: "Alunos" }, // Adicionado
+    { to: "/classes", icon: <BookOpen className="h-5 w-5" />, label: "Turmas" }, // Placeholder para próxima etapa
     { to: "/settings", icon: <Settings className="h-5 w-5" />, label: "Configurações" },
   ];
 
