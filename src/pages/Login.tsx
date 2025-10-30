@@ -1,23 +1,69 @@
 import React from 'react';
+import { Auth } from '@supabase/auth-ui-react';
+import { ThemeSupa } from '@supabase/auth-ui-shared';
+import { supabase } from '@/integrations/supabase/client';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Link } from 'react-router-dom';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
 
 const Login = () => {
   return (
     <div className="flex items-center justify-center min-h-screen bg-gray-50 dark:bg-gray-900 p-4">
-      <Card className="w-full max-w-md text-center">
-        <CardHeader>
-          <CardTitle>Login</CardTitle>
-          <CardDescription>Acesso temporariamente desativado para depuração.</CardDescription>
+      <Card className="w-full max-w-md">
+        <CardHeader className="text-center">
+          <CardTitle className="text-2xl font-bold text-primary">Acesso Davi EDU</CardTitle>
         </CardHeader>
         <CardContent>
-          <p className="text-muted-foreground mb-4">
-            O componente de autenticação será reconstruído aqui.
-          </p>
-          <Button asChild variant="outline">
-            <Link to="/">Voltar para o Início</Link>
-          </Button>
+          <Auth
+            supabaseClient={supabase}
+            providers={[]}
+            appearance={{
+              theme: ThemeSupa,
+              variables: {
+                default: {
+                  colors: {
+                    brand: 'hsl(var(--primary))',
+                    brandAccent: 'hsl(var(--accent))',
+                    inputBackground: 'hsl(var(--input))',
+                    inputBorder: 'hsl(var(--border))',
+                    inputBorderHover: 'hsl(var(--ring))',
+                    inputBorderFocus: 'hsl(var(--ring))',
+                    inputText: 'hsl(var(--foreground))',
+                  },
+                },
+              },
+            }}
+            theme="light"
+            localization={{
+              variables: {
+                sign_in: {
+                  email_label: 'Email',
+                  password_label: 'Senha',
+                  button_label: 'Entrar',
+                  social_provider_text: 'Ou entre com',
+                  link_text: 'Já tem uma conta? Entre',
+                },
+                sign_up: {
+                  email_label: 'Email',
+                  password_label: 'Criar Senha',
+                  button_label: 'Cadastrar',
+                  social_provider_text: 'Ou cadastre-se com',
+                  link_text: 'Não tem uma conta? Cadastre-se',
+                },
+                forgotten_password: {
+                  link_text: 'Esqueceu sua senha?',
+                },
+                magic_link: {
+                  link_text: 'Entrar com link mágico',
+                },
+              },
+            }}
+          />
+          <div className="mt-4 text-center text-sm text-muted-foreground">
+            Não tem uma escola cadastrada?{' '}
+            <Link to="/register" className="text-primary hover:underline">
+              Cadastre-se aqui
+            </Link>
+          </div>
         </CardContent>
       </Card>
     </div>
