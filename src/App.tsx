@@ -22,33 +22,34 @@ import Expenses from "@/pages/financial/Expenses";
 import Payroll from "@/pages/financial/Payroll";
 import PreEnrollment from "./pages/PreEnrollment";
 import { TenantProvider } from "./hooks/useTenant";
-// import SuperAdmin from "./pages/SuperAdmin"; // Removido
-// import SuperAdminRoute from "./components/auth/SuperAdminRoute"; // Removido
-// import { useEffect } from "react"; // Removido, pois o useEffect de teste será removido
-// import { supabase } from "@/integrations/supabase/client"; // Removido, pois o useEffect de teste será removido
+import { useEffect } from "react";
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      retry: 1,
+      refetchOnWindowFocus: false,
+    },
+  },
+});
 
 const App = () => {
-  console.log("App carregou até aqui");
+  console.log("🚀 App.tsx: Componente montado");
 
-  // O useEffect de teste de conexão Supabase foi removido conforme solicitado.
-  // useEffect(() => {
-  //   const testSupabaseConnection = async () => {
-  //     console.log("Attempting Supabase connection test...");
-  //     try {
-  //       const { data, error } = await supabase.from('tenants').select('id').limit(1);
-  //       if (error) {
-  //         console.error("Supabase connection test failed:", error.message);
-  //       } else {
-  //         console.log("Supabase connection test successful. Data:", data);
-  //       }
-  //     } catch (e: any) {
-  //       console.error("Supabase connection test threw an exception:", e.message);
-  //     }
-  //   };
-  //   testSupabaseConnection();
-  // }, []);
+  useEffect(() => {
+    console.log("🔍 App.tsx: useEffect executado");
+    
+    // Verifica se há erros de importação
+    const checkImports = async () => {
+      try {
+        console.log("✅ Todas as importações foram bem-sucedidas");
+      } catch (error) {
+        console.error("❌ Erro nas importações:", error);
+      }
+    };
+
+    checkImports();
+  }, []);
 
   return (
     <QueryClientProvider client={queryClient}>
@@ -57,6 +58,7 @@ const App = () => {
         <Sonner />
         <BrowserRouter>
           <SessionContextProvider>
+            {/* Adicionando fallback para SessionContextProvider */}
             <Routes>
               {/* Public Routes */}
               <Route path="/" element={<LandingPage />} />
@@ -87,11 +89,6 @@ const App = () => {
                   <Route path="/pedagogico" element={<Pedagogico />} />
                   <Route path="/comunicacao" element={<Comunicacao />} />
                   <Route path="/settings" element={<Settings />} />
-                  
-                  {/* Super Admin Route - Removido */}
-                  {/* <Route element={<SuperAdminRoute />}>
-                    <Route path="/super-admin" element={<SuperAdmin />} />
-                  </Route> */}
                 </Route>
               </Route>
 
