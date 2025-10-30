@@ -10,7 +10,9 @@ import Register from "./pages/Register";
 import PreEnrollment from "./pages/PreEnrollment";
 import { SessionContextProvider } from "./components/auth/SessionContextProvider";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
-import Dashboard from "./pages/Dashboard"; // We need to create this page
+import Dashboard from "./pages/Dashboard";
+import AppLayout from "./components/layout/AppLayout";
+import TenantsPage from "./pages/super-admin/TenantsPage"; // Corrected import path
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -36,10 +38,16 @@ const App = () => {
               <Route path="/register" element={<Register />} />
               <Route path="/pre-matricula" element={<PreEnrollment />} />
 
-              {/* Protected Routes */}
+              {/* Protected Routes using AppLayout */}
               <Route element={<ProtectedRoute />}>
-                <Route path="/dashboard" element={<Dashboard />} />
-                {/* Add other protected routes here later */}
+                <Route element={<AppLayout />}>
+                  <Route path="/dashboard" element={<Dashboard />} />
+                  
+                  {/* Super Admin Routes */}
+                  <Route path="/super-admin/tenants" element={<TenantsPage />} />
+                  
+                  {/* Add other protected routes here later */}
+                </Route>
               </Route>
 
               {/* Fallback Route */}
