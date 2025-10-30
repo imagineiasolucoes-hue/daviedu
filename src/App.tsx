@@ -24,60 +24,81 @@ import PreEnrollment from "./pages/PreEnrollment";
 import { TenantProvider } from "./hooks/useTenant";
 import SuperAdmin from "./pages/SuperAdmin";
 import SuperAdminRoute from "./components/auth/SuperAdminRoute";
+import { useEffect } from "react"; // Importar useEffect
+import { supabase } from "@/integrations/supabase/client"; // Importar supabase client
 
 const queryClient = new QueryClient();
 
-const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <BrowserRouter>
-        <SessionContextProvider>
-          <Routes>
-            {/* Public Routes */}
-            <Route path="/" element={<LandingPage />} />
-            <Route path="/login" element={<Login />} />
-            <Route path="/register" element={<Register />} />
-            <Route path="/pre-matricula" element={<PreEnrollment />} />
+const App = () => {
+  useEffect(() => {
+    const testSupabaseConnection = async () => {
+      console.log("Attempting Supabase connection test...");
+      try {
+        const { data, error } = await supabase.from('tenants').select('id').limit(1);
+        if (error) {
+          console.error("Supabase connection test failed:", error.message);
+        } else {
+          console.log("Supabase connection test successful. Data:", data);
+        }
+      } catch (e: any) {
+        console.error("Supabase connection test threw an exception:", e.message);
+      }
+    };
+    testSupabaseConnection();
+  }, []);
 
-            {/* Protected Routes */}
-            <Route element={<ProtectedRoute />}>
-              <Route
-                element={
-                  <TenantProvider>
-                    <AppLayout />
-                  </TenantProvider>
-                }
-              >
-                <Route path="/dashboard" element={<Dashboard />} />
-                <Route path="/secretaria" element={<Secretaria />} />
+  return (
+    <QueryClientProvider client={queryClient}>
+      <TooltipProvider>
+        <Toaster />
+        <Sonner />
+        <BrowserRouter>
+          <SessionContextProvider>
+            <Routes>
+              {/* Public Routes */}
+              <Route path="/" element={<LandingPage />} />
+              <Route path="/login" element={<Login />} />
+              <Route path="/register" element={<Register />} />
+              <Route path="/pre-matricula" element={<PreEnrollment />} />
 
-                <Route path="/financeiro" element={<FinancialLayout />}>
-                  <Route index element={<Navigate to="/financeiro/dashboard" replace />} />
-                  <Route path="dashboard" element={<FinancialDashboard />} />
-                  <Route path="receitas" element={<Revenues />} />
-                  <Route path="despesas" element={<Expenses />} />
-                  <Route path="folha-de-pagamento" element={<Payroll />} />
-                </Route>
+              {/* Protected Routes */}
+              <Route element={<ProtectedRoute />}>
+                <Route
+                  element={
+                    <TenantProvider>
+                      <AppLayout />
+                    </TenantProvider>
+                  }
+                >
+                  <Route path="/dashboard" element={<Dashboard />} />
+                  <Route path="/secretaria" element={<Secretaria />} />
 
-                <Route path="/pedagogico" element={<Pedagogico />} />
-                <Route path="/comunicacao" element={<Comunicacao />} />
-                <Route path="/settings" element={<Settings />} />
-                
-                {/* Super Admin Route */}
-                <Route element={<SuperAdminRoute />}>
-                  <Route path="/super-admin" element={<SuperAdmin />} />
+                  <Route path="/financeiro" element={<FinancialLayout />}>
+                    <Route index element={<Navigate to="/financeiro/dashboard" replace />} />
+                    <Route path="dashboard" element={<FinancialDashboard />} />
+                    <Route path="receitas" element={<Revenues />} />
+                    <Route path="despesas" element={<Expenses />} />
+                    <Route path="folha-de-pagamento" element={<Payroll />} />
+                  </Route>
+
+                  <Route path="/pedagogico" element={<Pedagogico />} />
+                  <Route path="/comunicacao" element={<Comunicacao />} />
+                  <Route path="/settings" element={<Settings />} />
+                  
+                  {/* Super Admin Route */}
+                  <Route element={<SuperAdminRoute />}>
+                    <Route path="/super-admin" element={<SuperAdmin />} />
+                  </Route>
                 </Route>
               </Route>
-            </Route>
 
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </SessionContextProvider>
-      </BrowserRouter>
-    </TooltipProvider>
-  </QueryClientProvider>
-);
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </SessionContextProvider>
+        </BrowserRouter>
+      </TooltipProvider>
+    </QueryClientProvider>
+  );
+};
 
 export default App;
