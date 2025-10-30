@@ -13,7 +13,11 @@ import ProtectedRoute from "./components/auth/ProtectedRoute";
 import Dashboard from "./pages/Dashboard";
 import AppLayout from "./components/layout/AppLayout";
 import TenantsPage from "./pages/super-admin/TenantsPage";
-import StudentsPage from "./pages/StudentsPage"; // Novo import
+import StudentsPage from "./pages/StudentsPage";
+import ClassesPage from "./pages/ClassesPage"; // Novo import
+import FinancePage from "./pages/FinancePage"; // Novo import
+import RevenuesPage from "./pages/RevenuesPage"; // Novo import
+import ExpensesPage from "./pages/ExpensesPage"; // Novo import
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -43,7 +47,11 @@ const App = () => {
               <Route element={<ProtectedRoute />}>
                 <Route element={<AppLayout />}>
                   <Route path="/dashboard" element={<Dashboard />} />
-                  <Route path="/students" element={<StudentsPage />} /> {/* Nova Rota */}
+                  <Route path="/students" element={<StudentsPage />} />
+                  <Route path="/classes" element={<ClassesPage />} /> {/* Nova Rota */}
+                  <Route path="/finance" element={<FinancePage />} /> {/* Nova Rota */}
+                  <Route path="/revenues" element={<RevenuesPage />} /> {/* Nova Rota */}
+                  <Route path="/expenses" element={<ExpensesPage />} /> {/* Nova Rota */}
                   
                   {/* Super Admin Routes */}
                   <Route path="/super-admin/tenants" element={<TenantsPage />} />
