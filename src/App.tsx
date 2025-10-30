@@ -14,10 +14,11 @@ import Dashboard from "./pages/Dashboard";
 import AppLayout from "./components/layout/AppLayout";
 import TenantsPage from "./pages/super-admin/TenantsPage";
 import StudentsPage from "./pages/StudentsPage";
-import ClassesPage from "./pages/ClassesPage"; // Novo import
-import FinancePage from "./pages/FinancePage"; // Novo import
-import RevenuesPage from "./pages/RevenuesPage"; // Novo import
-import ExpensesPage from "./pages/ExpensesPage"; // Novo import
+import ClassesPage from "./pages/ClassesPage";
+import FinancePage from "./pages/FinancePage";
+import RevenuesPage from "./pages/RevenuesPage";
+import ExpensesPage from "./pages/ExpensesPage";
+import SettingsPage from "./pages/SettingsPage"; // Novo import
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -48,10 +49,11 @@ const App = () => {
                 <Route element={<AppLayout />}>
                   <Route path="/dashboard" element={<Dashboard />} />
                   <Route path="/students" element={<StudentsPage />} />
-                  <Route path="/classes" element={<ClassesPage />} /> {/* Nova Rota */}
-                  <Route path="/finance" element={<FinancePage />} /> {/* Nova Rota */}
-                  <Route path="/revenues" element={<RevenuesPage />} /> {/* Nova Rota */}
-                  <Route path="/expenses" element={<ExpensesPage />} /> {/* Nova Rota */}
+                  <Route path="/classes" element={<ClassesPage />} />
+                  <Route path="/finance" element={<FinancePage />} />
+                  <Route path="/revenues" element={<RevenuesPage />} />
+                  <Route path="/expenses" element={<ExpensesPage />} />
+                  <Route path="/settings" element={<SettingsPage />} /> {/* Nova Rota */}
                   
                   {/* Super Admin Routes */}
                   <Route path="/super-admin/tenants" element={<TenantsPage />} />
