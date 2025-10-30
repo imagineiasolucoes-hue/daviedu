@@ -13,7 +13,7 @@ import {
   Instagram,
   Facebook,
   Linkedin,
-  Shield, // Ícone para Super Admin
+  // Shield, // Ícone para Super Admin - Removido
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -159,14 +159,15 @@ const AppLayout = () => {
             <DropdownMenuContent align="end" className="w-56">
               <DropdownMenuLabel>Minha Conta</DropdownMenuLabel>
               <DropdownMenuSeparator />
-              {profile?.role === 'super_admin' && (
+              {/* Super Admin Link - Removido */}
+              {/* {profile?.role === 'super_admin' && (
                 <DropdownMenuItem asChild>
                   <Link to="/super-admin" className="cursor-pointer text-yellow-600 focus:text-yellow-700">
                     <Shield className="mr-2 h-4 w-4" />
                     <span>Super Admin</span>
                   </Link>
                 </DropdownMenuItem>
-              )}
+              )} */}
               <DropdownMenuItem asChild>
                 <Link to="/settings" className="cursor-pointer">
                   <Settings className="mr-2 h-4 w-4" />

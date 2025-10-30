@@ -22,30 +22,31 @@ import Expenses from "@/pages/financial/Expenses";
 import Payroll from "@/pages/financial/Payroll";
 import PreEnrollment from "./pages/PreEnrollment";
 import { TenantProvider } from "./hooks/useTenant";
-import SuperAdmin from "./pages/SuperAdmin";
-import SuperAdminRoute from "./components/auth/SuperAdminRoute";
-import { useEffect } from "react"; // Importar useEffect
-import { supabase } from "@/integrations/supabase/client"; // Importar supabase client
+// import SuperAdmin from "./pages/SuperAdmin"; // Removido
+// import SuperAdminRoute from "./components/auth/SuperAdminRoute"; // Removido
+// import { useEffect } from "react"; // Removido, pois o useEffect de teste será removido
+// import { supabase } from "@/integrations/supabase/client"; // Removido, pois o useEffect de teste será removido
 
 const queryClient = new QueryClient();
 
 const App = () => {
-  useEffect(() => {
-    const testSupabaseConnection = async () => {
-      console.log("Attempting Supabase connection test...");
-      try {
-        const { data, error } = await supabase.from('tenants').select('id').limit(1);
-        if (error) {
-          console.error("Supabase connection test failed:", error.message);
-        } else {
-          console.log("Supabase connection test successful. Data:", data);
-        }
-      } catch (e: any) {
-        console.error("Supabase connection test threw an exception:", e.message);
-      }
-    };
-    testSupabaseConnection();
-  }, []);
+  // O useEffect de teste de conexão Supabase foi removido conforme solicitado.
+  // useEffect(() => {
+  //   const testSupabaseConnection = async () => {
+  //     console.log("Attempting Supabase connection test...");
+  //     try {
+  //       const { data, error } = await supabase.from('tenants').select('id').limit(1);
+  //       if (error) {
+  //         console.error("Supabase connection test failed:", error.message);
+  //       } else {
+  //         console.log("Supabase connection test successful. Data:", data);
+  //       }
+  //     } catch (e: any) {
+  //       console.error("Supabase connection test threw an exception:", e.message);
+  //     }
+  //   };
+  //   testSupabaseConnection();
+  // }, []);
 
   return (
     <QueryClientProvider client={queryClient}>
@@ -85,10 +86,10 @@ const App = () => {
                   <Route path="/comunicacao" element={<Comunicacao />} />
                   <Route path="/settings" element={<Settings />} />
                   
-                  {/* Super Admin Route */}
-                  <Route element={<SuperAdminRoute />}>
+                  {/* Super Admin Route - Removido */}
+                  {/* <Route element={<SuperAdminRoute />}>
                     <Route path="/super-admin" element={<SuperAdmin />} />
-                  </Route>
+                  </Route> */}
                 </Route>
               </Route>
 

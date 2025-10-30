@@ -1,6 +1,6 @@
 import { User } from "@supabase/supabase-js";
 
-export type UserRole = 'student' | 'admin' | 'secretary' | 'super_admin';
+export type UserRole = 'student' | 'admin' | 'secretary'; // 'super_admin' removido
 
 export interface Profile {
   id: string;
