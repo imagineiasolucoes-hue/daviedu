@@ -30,6 +30,8 @@ import { TenantProvider } from "./hooks/useTenant";
 const queryClient = new QueryClient();
 
 const App = () => {
+  console.log("App carregou até aqui");
+
   // O useEffect de teste de conexão Supabase foi removido conforme solicitado.
   // useEffect(() => {
   //   const testSupabaseConnection = async () => {
