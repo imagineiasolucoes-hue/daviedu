@@ -89,6 +89,7 @@ const StudentsPage: React.FC = () => {
             <Table>
               <TableHeader>
                 <TableRow>
+                  <TableHead>ID</TableHead> {/* Nova Coluna */}
                   <TableHead>Nome Completo</TableHead>
                   <TableHead>Matrícula</TableHead>
                   <TableHead>Telefone</TableHead>
@@ -100,6 +101,7 @@ const StudentsPage: React.FC = () => {
               <TableBody>
                 {students?.map((student) => (
                   <TableRow key={student.id}>
+                    <TableCell className="text-xs text-muted-foreground font-mono max-w-[100px] truncate">{student.id}</TableCell> {/* Exibindo o ID */}
                     <TableCell className="font-medium">{student.full_name}</TableCell>
                     <TableCell>{student.registration_code}</TableCell>
                     <TableCell>{student.phone || 'N/A'}</TableCell>
