@@ -239,7 +239,7 @@ const SchoolSettingsForm: React.FC = () => {
                 <AvatarFallback><School className="h-10 w-10 text-muted-foreground" /></AvatarFallback>
               </Avatar>
               <Label htmlFor="logo-upload" className="cursor-pointer">
-                <Button type="button" variant="outline" as="div">
+                <Button type="button" variant="outline">
                   <Upload className="mr-2 h-4 w-4" />
                   {logoFile ? "Alterar Imagem" : "Enviar Imagem"}
                 </Button>
