@@ -19,6 +19,8 @@ import FinancePage from "./pages/FinancePage";
 import RevenuesPage from "./pages/RevenuesPage";
 import ExpensesPage from "./pages/ExpensesPage";
 import SettingsPage from "./pages/SettingsPage";
+import CalendarPage from "./pages/CalendarPage";
+import DocumentsPage from "./pages/DocumentsPage";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -50,6 +52,8 @@ const App = () => {
                   <Route path="/dashboard" element={<Dashboard />} />
                   <Route path="/students" element={<StudentsPage />} />
                   <Route path="/classes" element={<ClassesPage />} />
+                  <Route path="/calendar" element={<CalendarPage />} />
+                  <Route path="/documents" element={<DocumentsPage />} />
                   <Route path="/finance" element={<FinancePage />} />
                   <Route path="/revenues" element={<RevenuesPage />} />
                   <Route path="/expenses" element={<ExpensesPage />} />

@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Home, Users, Settings, LogOut, School, BookOpen, DollarSign, TrendingUp, TrendingDown } from 'lucide-react';
+import { Home, Users, Settings, LogOut, School, BookOpen, DollarSign, TrendingUp, TrendingDown, CalendarDays, FileText } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { cn } from '@/lib/utils';
@@ -41,14 +41,16 @@ interface SidebarProps {
 const Sidebar: React.FC<SidebarProps> = ({ isSuperAdmin, displayName, roleDisplay, onLogout }) => {
   const adminNavItems = [
     { to: "/dashboard", icon: <Home className="h-5 w-5" />, label: "Dashboard" },
+    // Secretaria
     { to: "/students", icon: <Users className="h-5 w-5" />, label: "Alunos" },
     { to: "/classes", icon: <BookOpen className="h-5 w-5" />, label: "Turmas" },
-    
-    // Seção Financeira
+    { to: "/calendar", icon: <CalendarDays className="h-5 w-5" />, label: "Calendário" },
+    { to: "/documents", icon: <FileText className="h-5 w-5" />, label: "Documentos" },
+    // Financeiro
     { to: "/finance", icon: <DollarSign className="h-5 w-5" />, label: "Financeiro" },
     { to: "/revenues", icon: <TrendingUp className="h-5 w-5 ml-4" />, label: "Receitas" },
     { to: "/expenses", icon: <TrendingDown className="h-5 w-5 ml-4" />, label: "Despesas" },
-    
+    // Geral
     { to: "/settings", icon: <Settings className="h-5 w-5" />, label: "Configurações" },
   ];
 

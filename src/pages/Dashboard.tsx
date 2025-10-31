@@ -6,6 +6,7 @@ import MetricCard from '@/components/dashboard/MetricCard';
 import RecentActivity from '@/components/dashboard/RecentActivity';
 import { Button } from '@/components/ui/button';
 import { Link } from 'react-router-dom';
+import SecretaryDashboardSection from '@/components/dashboard/SecretaryDashboardSection';
 
 // Componente Placeholder para o Gráfico
 const EnrollmentChartPlaceholder: React.FC = () => (
@@ -155,6 +156,9 @@ const Dashboard: React.FC = () => {
           iconColor="text-red-600"
         />
       </div>
+
+      {/* Nova Seção: Secretaria */}
+      <SecretaryDashboardSection />
 
       {/* Linha 3: Gráfico e Atividades Recentes */}
       <div className="grid gap-4 lg:grid-cols-3">
