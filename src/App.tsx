@@ -8,6 +8,7 @@ import NotFound from "./pages/NotFound";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import PreEnrollment from "./pages/PreEnrollment";
+import PreEnrollmentInfoPage from "./pages/PreEnrollmentInfoPage";
 import { SessionContextProvider } from "./components/auth/SessionContextProvider";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
 import Dashboard from "./pages/Dashboard";
@@ -44,7 +45,8 @@ const App = () => {
               <Route path="/" element={<Index />} />
               <Route path="/login" element={<Login />} />
               <Route path="/register" element={<Register />} />
-              <Route path="/pre-matricula" element={<PreEnrollment />} />
+              <Route path="/pre-matricula" element={<PreEnrollmentInfoPage />} />
+              <Route path="/pre-matricula/:tenantId" element={<PreEnrollment />} />
 
               {/* Protected Routes using AppLayout */}
               <Route element={<ProtectedRoute />}>

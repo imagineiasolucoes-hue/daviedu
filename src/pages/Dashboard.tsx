@@ -7,6 +7,7 @@ import RecentActivity from '@/components/dashboard/RecentActivity';
 import { Button } from '@/components/ui/button';
 import { Link } from 'react-router-dom';
 import SecretaryDashboardSection from '@/components/dashboard/SecretaryDashboardSection';
+import { toast } from 'sonner';
 
 // Componente Placeholder para o Gráfico
 const EnrollmentChartPlaceholder: React.FC = () => (
@@ -33,6 +34,15 @@ const EnrollmentChartPlaceholder: React.FC = () => (
 
 const Dashboard: React.FC = () => {
   const { profile, isLoading, isSuperAdmin, isSchoolUser } = useProfile();
+
+  const handleCopyLink = () => {
+    if (!profile?.tenant_id) return;
+    const link = `${window.location.origin}/pre-matricula/${profile.tenant_id}`;
+    navigator.clipboard.writeText(link);
+    toast.success("Link Copiado!", {
+      description: "O link de pré-matrícula foi copiado para a área de transferência.",
+    });
+  };
 
   if (isLoading) {
     return (
@@ -86,11 +96,9 @@ const Dashboard: React.FC = () => {
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <h1 className="text-3xl font-bold">Dashboard</h1>
         <div className="flex gap-2 flex-wrap">
-          <Button variant="outline" asChild>
-            <Link to="/pre-matricula">
-              <Share2 className="mr-2 h-4 w-4" />
-              Link Pré-Matrícula
-            </Link>
+          <Button variant="outline" onClick={handleCopyLink}>
+            <Share2 className="mr-2 h-4 w-4" />
+            Copiar Link de Pré-Matrícula
           </Button>
           <Button asChild>
             <Link to="/students">
