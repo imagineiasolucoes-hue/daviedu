@@ -83,7 +83,7 @@ const EditStudentSheet: React.FC<EditStudentSheetProps> = ({ studentId, open, on
         birth_date: student.birth_date,
         phone: student.phone || '',
         email: student.email || '',
-        class_id: student.class_id || '', // Use '' para Selects vazios
+        class_id: student.class_id || null,
         status: student.status,
       });
     }
@@ -96,7 +96,7 @@ const EditStudentSheet: React.FC<EditStudentSheetProps> = ({ studentId, open, on
           ...data, 
           student_id: studentId, 
           tenant_id: tenantId,
-          class_id: data.class_id || null, // Garante que string vazia vire null
+          class_id: data.class_id || null,
           email: data.email || null,
         }),
       });
@@ -153,8 +153,8 @@ const EditStudentSheet: React.FC<EditStudentSheetProps> = ({ studentId, open, on
             <div className="space-y-2">
               <Label htmlFor="class_id">Turma</Label>
               <Select 
-                onValueChange={(value) => form.setValue('class_id', value)} 
-                value={form.watch('class_id') || ''}
+                onValueChange={(value) => form.setValue('class_id', value === 'none' ? null : value)} 
+                value={form.watch('class_id') || 'none'}
                 disabled={isLoadingClasses}
               >
                 <SelectTrigger>
@@ -162,7 +162,7 @@ const EditStudentSheet: React.FC<EditStudentSheetProps> = ({ studentId, open, on
                 </SelectTrigger>
                 <SelectContent>
                   {/* Opção para desvincular a turma */}
-                  <SelectItem value="">Nenhuma Turma (Desvincular)</SelectItem>
+                  <SelectItem value="none">Nenhuma Turma (Desvincular)</SelectItem>
                   {classes?.map((c) => (
                     <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
                   ))}

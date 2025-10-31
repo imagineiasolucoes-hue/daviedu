@@ -247,14 +247,14 @@ const AddRevenueSheet: React.FC = () => {
             <div className="space-y-2">
               <Label htmlFor="student_id">Vincular Aluno (Opcional)</Label>
               <Select 
-                onValueChange={(value) => form.setValue('student_id', value === "" ? null : value)} 
-                value={form.watch('student_id') || ''}
+                onValueChange={(value) => form.setValue('student_id', value === "none" ? null : value)} 
+                value={form.watch('student_id') || 'none'}
               >
                 <SelectTrigger disabled={isLoadingStudents}>
                   <SelectValue placeholder={isLoadingStudents ? "Carregando Alunos..." : "Selecione um aluno"} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Nenhum Aluno</SelectItem>
+                  <SelectItem value="none">Nenhum Aluno</SelectItem>
                   {students?.map((s) => (
                     <SelectItem key={s.id} value={s.id}>{s.full_name} ({s.registration_code})</SelectItem>
                   ))}
