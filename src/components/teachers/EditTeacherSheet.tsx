@@ -46,6 +46,7 @@ interface Class {
   name: string;
   school_year: number;
   period: string;
+  courses: { name: string } | null; // Adicionado o nome do curso
 }
 
 interface TeacherDetails extends TeacherFormData {
@@ -57,6 +58,7 @@ interface TeacherDetails extends TeacherFormData {
     classes: {
       name: string;
       school_year: number;
+      courses: { name: string } | null; // Adicionado o nome do curso
     } | null;
   }[];
 }
@@ -82,7 +84,8 @@ const fetchTeacherDetails = async (teacherId: string): Promise<TeacherDetails> =
         period,
         classes (
           name,
-          school_year
+          school_year,
+          courses (name)
         )
       )
     `)
@@ -95,11 +98,11 @@ const fetchTeacherDetails = async (teacherId: string): Promise<TeacherDetails> =
 const fetchClasses = async (tenantId: string): Promise<Class[]> => {
   const { data, error } = await supabase
     .from('classes')
-    .select('id, name, school_year, period')
+    .select('id, name, school_year, period, courses (name)') // Incluindo courses(name)
     .eq('tenant_id', tenantId)
     .order('name');
   if (error) throw new Error(error.message);
-  return data as Class[];
+  return data as unknown as Class[];
 };
 
 const EditTeacherSheet: React.FC<EditTeacherSheetProps> = ({ teacherId, open, onOpenChange }) => {
@@ -153,11 +156,14 @@ const EditTeacherSheet: React.FC<EditTeacherSheetProps> = ({ teacherId, open, on
       // Inicializa as turmas
       const initialClasses: ClassAssignment[] = teacher.teacher_classes
         .filter(tc => tc.classes)
-        .map(tc => ({
-          class_id: tc.class_id,
-          period: tc.period,
-          className: `${tc.classes!.name} (${tc.classes!.school_year})`,
-        }));
+        .map(tc => {
+          const courseName = tc.classes?.courses?.name ? ` - ${tc.classes.courses.name}` : '';
+          return {
+            class_id: tc.class_id,
+            period: tc.period,
+            className: `${tc.classes!.name} (${tc.classes!.school_year})${courseName}`, // Adicionando o nome do curso
+          };
+        });
       setClassesToTeach(initialClasses);
     }
   }, [teacher, form, open]);
@@ -166,12 +172,13 @@ const EditTeacherSheet: React.FC<EditTeacherSheetProps> = ({ teacherId, open, on
     if (selectedClassId && selectedPeriod) {
       const classDetails = allClasses?.find(c => c.id === selectedClassId);
       if (classDetails) {
+        const courseName = classDetails.courses?.name ? ` - ${classDetails.courses.name}` : '';
         setClassesToTeach(prev => [
           ...prev,
           {
             class_id: selectedClassId,
             period: selectedPeriod as ClassAssignment['period'],
-            className: `${classDetails.name} (${classDetails.school_year})`,
+            className: `${classDetails.name} (${classDetails.school_year})${courseName}`, // Adicionando o nome do curso
           }
         ]);
         setSelectedClassId('');
@@ -351,7 +358,9 @@ const EditTeacherSheet: React.FC<EditTeacherSheetProps> = ({ teacherId, open, on
                     </SelectTrigger>
                     <SelectContent>
                       {availableClasses.map((c) => (
-                        <SelectItem key={c.id} value={c.id}>{c.name} ({c.school_year})</SelectItem>
+                        <SelectItem key={c.id} value={c.id}>
+                          {c.name} ({c.school_year}) {c.courses?.name ? ` - ${c.courses.name}` : ''}
+                        </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>

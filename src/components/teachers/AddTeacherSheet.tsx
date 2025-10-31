@@ -45,6 +45,7 @@ interface Class {
   name: string;
   school_year: number;
   period: string; // Período padrão da turma
+  courses: { name: string } | null; // Adicionado o nome do curso
 }
 
 interface ClassAssignment extends z.infer<typeof classAssignmentSchema> {
@@ -55,11 +56,11 @@ interface ClassAssignment extends z.infer<typeof classAssignmentSchema> {
 const fetchClasses = async (tenantId: string): Promise<Class[]> => {
   const { data, error } = await supabase
     .from('classes')
-    .select('id, name, school_year, period')
+    .select('id, name, school_year, period, courses (name)') // Incluindo courses(name)
     .eq('tenant_id', tenantId)
     .order('name');
   if (error) throw new Error(error.message);
-  return data as Class[];
+  return data as unknown as Class[];
 };
 
 const AddTeacherSheet: React.FC = () => {
@@ -98,12 +99,13 @@ const AddTeacherSheet: React.FC = () => {
     if (selectedClassId && selectedPeriod) {
       const classDetails = allClasses?.find(c => c.id === selectedClassId);
       if (classDetails) {
+        const courseName = classDetails.courses?.name ? ` - ${classDetails.courses.name}` : '';
         setClassesToTeach(prev => [
           ...prev,
           {
             class_id: selectedClassId,
             period: selectedPeriod as ClassAssignment['period'],
-            className: `${classDetails.name} (${classDetails.school_year})`,
+            className: `${classDetails.name} (${classDetails.school_year})${courseName}`, // Adicionando o nome do curso
           }
         ]);
         setSelectedClassId('');
@@ -275,7 +277,9 @@ const AddTeacherSheet: React.FC = () => {
                   </SelectTrigger>
                   <SelectContent>
                     {availableClasses.map((c) => (
-                      <SelectItem key={c.id} value={c.id}>{c.name} ({c.school_year})</SelectItem>
+                      <SelectItem key={c.id} value={c.id}>
+                        {c.name} ({c.school_year}) {c.courses?.name ? ` - ${c.courses.name}` : ''}
+                      </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
