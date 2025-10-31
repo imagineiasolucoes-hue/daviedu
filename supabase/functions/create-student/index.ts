@@ -75,11 +75,29 @@ serve(async (req) => {
 
     const registration_code = await generateNextRegistrationCode(supabaseAdmin, tenant_id);
 
+    // Filtra e prepara os dados para inserção, garantindo que todos os campos sejam aceitos
     const studentData = {
       ...studentInfo,
       tenant_id: tenant_id,
       registration_code: registration_code,
       status: "active", // Define o status como 'ativo'
+      
+      // Campos adicionais
+      gender: studentInfo.gender || null,
+      nationality: studentInfo.nationality || null,
+      naturality: studentInfo.naturality || null,
+      cpf: studentInfo.cpf || null,
+      rg: studentInfo.rg || null,
+      zip_code: studentInfo.zip_code || null,
+      address_street: studentInfo.address_street || null,
+      address_number: studentInfo.address_number || null,
+      address_neighborhood: studentInfo.address_neighborhood || null,
+      address_city: studentInfo.address_city || null,
+      address_state: studentInfo.address_state || null,
+      guardian_name: studentInfo.guardian_name || null,
+      special_needs: studentInfo.special_needs || null,
+      medication_use: studentInfo.medication_use || null,
+      class_id: studentInfo.class_id || null,
     };
 
     const { data, error: insertError } = await supabaseAdmin
