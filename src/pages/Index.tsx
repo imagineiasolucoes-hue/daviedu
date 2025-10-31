@@ -54,7 +54,7 @@ const Index = () => {
               <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start pt-4">
                 <Button asChild size="lg" className="text-lg px-8 py-6">
                   <Link to="/register">
-                    Iniciar Teste Grátis de 30 Dias
+                    Iniciar Teste Grátis de 7 Dias
                     <ArrowRight className="ml-2 h-5 w-5" />
                   </Link>
                 </Button>

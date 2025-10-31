@@ -113,7 +113,7 @@ const Register = () => {
       <Card className="w-full max-w-md">
         <CardHeader>
           <CardTitle className="text-2xl font-bold text-primary">Cadastrar Escola</CardTitle>
-          <CardDescription>Inicie seu teste grátis de 30 dias.</CardDescription>
+          <CardDescription>Inicie seu teste grátis de 7 dias.</CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
