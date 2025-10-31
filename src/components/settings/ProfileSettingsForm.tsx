@@ -15,6 +15,7 @@ import { Loader2 } from 'lucide-react';
 const profileSchema = z.object({
   first_name: z.string().min(2, "O nome é obrigatório."),
   last_name: z.string().min(2, "O sobrenome é obrigatório."),
+  phone: z.string().optional(),
 });
 
 type ProfileFormData = z.infer<typeof profileSchema>;
@@ -32,6 +33,7 @@ const ProfileSettingsForm: React.FC = () => {
       form.reset({
         first_name: profile.first_name || '',
         last_name: profile.last_name || '',
+        phone: profile.phone || '',
       });
     }
   }, [profile, form]);
@@ -39,20 +41,13 @@ const ProfileSettingsForm: React.FC = () => {
   const onSubmit = async (data: ProfileFormData) => {
     if (!profile) return;
 
-    // Atualiza os dados no Auth
-    await supabase.auth.updateUser({
-      data: {
-        first_name: data.first_name,
-        last_name: data.last_name,
-      }
-    });
-
     // Atualiza os dados na tabela de profiles
     const { error: profileUpdateError } = await supabase
       .from('profiles')
       .update({
         first_name: data.first_name,
         last_name: data.last_name,
+        phone: data.phone,
         updated_at: new Date().toISOString(),
       })
       .eq('id', profile.id);
@@ -80,7 +75,7 @@ const ProfileSettingsForm: React.FC = () => {
           <div className="grid md:grid-cols-3 gap-6 items-start">
             <div className="md:col-span-1">
               <h3 className="font-semibold">Informações Pessoais</h3>
-              <p className="text-sm text-muted-foreground">Seu nome, sobrenome e e-mail de acesso.</p>
+              <p className="text-sm text-muted-foreground">Seu nome, sobrenome e contatos.</p>
             </div>
             <div className="md:col-span-2 grid gap-4">
               <div className="grid sm:grid-cols-2 gap-4">
@@ -95,10 +90,16 @@ const ProfileSettingsForm: React.FC = () => {
                   {form.formState.errors.last_name && <p className="text-sm text-destructive">{form.formState.errors.last_name.message}</p>}
                 </div>
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="email">E-mail de Cadastro</Label>
-                <Input id="email" type="email" value={user?.email || ''} disabled />
-                <p className="text-xs text-muted-foreground">O e-mail de cadastro não pode ser alterado.</p>
+              <div className="grid sm:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="email">E-mail de Cadastro</Label>
+                  <Input id="email" type="email" value={user?.email || ''} disabled />
+                  <p className="text-xs text-muted-foreground">O e-mail não pode ser alterado.</p>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="phone">Telefone de Contato</Label>
+                  <Input id="phone" type="tel" {...form.register("phone")} />
+                </div>
               </div>
             </div>
           </div>

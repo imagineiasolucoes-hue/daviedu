@@ -12,6 +12,7 @@ export interface Profile {
   avatar_url: string | null;
   role: UserRole;
   updated_at: string | null;
+  phone: string | null;
 }
 
 const fetchProfile = async (userId: string): Promise<Profile> => {
