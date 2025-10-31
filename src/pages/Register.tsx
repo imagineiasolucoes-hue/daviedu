@@ -183,7 +183,7 @@ const Register = () => {
               )}
             </div>
 
-            <Button type="submit" className="w-full bg-accent text-accent-foreground hover:bg-accent/90" disabled={isSubmitting}>
+            <Button type="submit" className="w-full bg-accent hover:bg-accent/90" disabled={isSubmitting}>
               {isSubmitting ? (
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
               ) : (

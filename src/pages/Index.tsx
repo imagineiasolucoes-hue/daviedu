@@ -15,7 +15,7 @@ const Header: React.FC = () => (
         <Button variant="ghost" asChild size="sm">
           <a href="https://wa.me/5571992059840" target="_blank" rel="noopener noreferrer">Fale com um consultor</a>
         </Button>
-        <Button asChild size="sm" className="bg-accent text-accent-foreground hover:bg-accent/90">
+        <Button asChild size="sm" className="bg-accent hover:bg-accent/90">
           <Link to="/register">
             Iniciar Teste Grátis
           </Link>
@@ -72,7 +72,7 @@ const Index = () => {
                   Tudo que sua escola precisa – matrícula, notas, financeiro e comunicação – por apenas R$ 220/mês.
                 </p>
                 <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start pt-4">
-                  <Button asChild size="lg" className="text-lg px-8 py-6 bg-accent text-accent-foreground hover:bg-accent/90">
+                  <Button asChild size="lg" className="text-lg px-8 py-6 bg-accent hover:bg-accent/90">
                     <Link to="/register">
                       Iniciar teste grátis de 7 dias
                       <ArrowRight className="ml-2 h-5 w-5" />
@@ -230,7 +230,7 @@ const Index = () => {
                   <li className="flex items-center"><CheckCircle className="h-5 w-5 text-green-500 mr-2" /> Comunicação com pais e alunos</li>
                   <li className="flex items-center"><CheckCircle className="h-5 w-5 text-green-500 mr-2" /> Suporte completo</li>
                 </ul>
-                <Button asChild size="lg" className="w-full text-lg bg-accent text-accent-foreground hover:bg-accent/90">
+                <Button asChild size="lg" className="w-full text-lg bg-accent hover:bg-accent/90">
                   <Link to="/register">Iniciar teste grátis de 7 dias</Link>
                 </Button>
               </CardContent>
@@ -271,7 +271,7 @@ const Index = () => {
         <section className="py-20 md:py-24 px-4 text-center">
           <div className="max-w-3xl mx-auto">
             <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-6">Transforme a gestão da sua escola hoje mesmo</h2>
-            <Button asChild size="lg" className="text-lg px-10 py-7 bg-accent text-accent-foreground hover:bg-accent/90">
+            <Button asChild size="lg" className="text-lg px-10 py-7 bg-accent hover:bg-accent/90">
               <Link to="/register">Iniciar teste grátis de 7 dias</Link>
             </Button>
             <p className="text-muted-foreground mt-4">Sem fidelidade. Experimente e decida depois.</p>
