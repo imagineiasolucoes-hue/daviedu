@@ -22,6 +22,7 @@ import ExpensesPage from "./pages/ExpensesPage";
 import SettingsPage from "./pages/SettingsPage";
 import CalendarPage from "./pages/CalendarPage";
 import DocumentsPage from "./pages/DocumentsPage";
+import TeachersPage from "./pages/TeachersPage";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -53,6 +54,7 @@ const App = () => {
                 <Route element={<AppLayout />}>
                   <Route path="/dashboard" element={<Dashboard />} />
                   <Route path="/students" element={<StudentsPage />} />
+                  <Route path="/teachers" element={<TeachersPage />} />
                   <Route path="/classes" element={<ClassesPage />} />
                   <Route path="/calendar" element={<CalendarPage />} />
                   <Route path="/documents" element={<DocumentsPage />} />

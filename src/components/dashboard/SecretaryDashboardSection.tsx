@@ -2,7 +2,7 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Users, BookOpen, UserPlus, CalendarDays, FileText, FolderKanban } from 'lucide-react';
+import { Users, BookOpen, UserPlus, CalendarDays, FileText, FolderKanban, UserCheck } from 'lucide-react';
 
 const secretaryActions = [
   {
@@ -10,6 +10,12 @@ const secretaryActions = [
     icon: Users,
     to: '/students',
     description: 'Gerenciar fichas e matrículas.',
+  },
+  {
+    label: 'Professores',
+    icon: UserCheck,
+    to: '/teachers',
+    description: 'Gerenciar corpo docente.',
   },
   {
     label: 'Turmas',
@@ -47,7 +53,7 @@ const SecretaryDashboardSection: React.FC = () => {
         </CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
           {secretaryActions.map((action) => (
             <Button
               key={action.label}
