@@ -8,6 +8,10 @@ import { Button } from '@/components/ui/button';
 import { Link } from 'react-router-dom';
 import SecretaryDashboardSection from '@/components/dashboard/SecretaryDashboardSection';
 import { toast } from 'sonner';
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
+import { formatCurrency } from '@/lib/utils';
+import { Skeleton } from '@/components/ui/skeleton';
 
 // Componente Placeholder para o Gráfico
 const EnrollmentChartPlaceholder: React.FC = () => (
@@ -31,9 +35,37 @@ const EnrollmentChartPlaceholder: React.FC = () => (
   </Card>
 );
 
+const MetricCardSkeleton: React.FC = () => (
+  <Card>
+    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+      <Skeleton className="h-4 w-24" />
+      <Skeleton className="h-4 w-4 rounded-full" />
+    </CardHeader>
+    <CardContent>
+      <Skeleton className="h-7 w-32" />
+    </CardContent>
+  </Card>
+);
 
 const Dashboard: React.FC = () => {
-  const { profile, isLoading, isSuperAdmin, isSchoolUser } = useProfile();
+  const { profile, isLoading: isProfileLoading, isSuperAdmin, isSchoolUser } = useProfile();
+  const tenantId = profile?.tenant_id;
+
+  const fetchDashboardMetrics = async (tenantId: string) => {
+    const { data, error } = await supabase.functions.invoke('get-dashboard-metrics', {
+      body: JSON.stringify({ tenant_id: tenantId }),
+    });
+    if (error) throw new Error(error.message);
+    // @ts-ignore
+    if (data.error) throw new Error(data.error);
+    return data;
+  };
+
+  const { data: metrics, isLoading: areMetricsLoading } = useQuery({
+    queryKey: ['dashboardMetrics', tenantId],
+    queryFn: () => fetchDashboardMetrics(tenantId!),
+    enabled: !!tenantId,
+  });
 
   const handleCopyLink = () => {
     if (!profile?.tenant_id) return;
@@ -44,7 +76,7 @@ const Dashboard: React.FC = () => {
     });
   };
 
-  if (isLoading) {
+  if (isProfileLoading) {
     return (
       <div className="flex items-center justify-center h-full min-h-[50vh]">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -89,10 +121,8 @@ const Dashboard: React.FC = () => {
     );
   }
 
-  // Dashboard para Admin de Escola
   return (
     <div className="space-y-6">
-      {/* Header com Título e Ações */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <h1 className="text-3xl font-bold">Dashboard</h1>
         <div className="flex gap-2 flex-wrap">
@@ -109,66 +139,23 @@ const Dashboard: React.FC = () => {
         </div>
       </div>
 
-      {/* Linha 1: Métricas de Pessoas */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <MetricCard 
-          title="Alunos Ativos" 
-          value="22" 
-          icon={Users} 
-          iconColor="text-primary"
-        />
-        <MetricCard 
-          title="Pré-Matriculados" 
-          value="2" 
-          icon={UserPlus} 
-          iconColor="text-yellow-500"
-        />
-        <MetricCard 
-          title="Turmas Ativas" 
-          value="9" 
-          icon={GraduationCap} 
-          iconColor="text-green-500"
-        />
-        <MetricCard 
-          title="Professores Ativos" 
-          value="3" 
-          icon={User} 
-          iconColor="text-indigo-500"
-        />
+        {areMetricsLoading ? Array.from({ length: 8 }).map((_, i) => <MetricCardSkeleton key={i} />) : (
+          <>
+            <MetricCard title="Alunos Ativos" value={metrics?.activeStudents ?? 0} icon={Users} iconColor="text-primary" />
+            <MetricCard title="Pré-Matriculados" value={metrics?.preEnrolledStudents ?? 0} icon={UserPlus} iconColor="text-yellow-500" />
+            <MetricCard title="Turmas Ativas" value={metrics?.activeClasses ?? 0} icon={GraduationCap} iconColor="text-green-500" />
+            <MetricCard title="Professores Ativos" value={metrics?.activeTeachers ?? 0} icon={User} iconColor="text-indigo-500" />
+            <MetricCard title="Funcionários Ativos" value={metrics?.activeEmployees ?? 0} icon={Briefcase} iconColor="text-primary" />
+            <MetricCard title="Receita Paga (Mês)" value={formatCurrency(metrics?.paidRevenueMonth)} icon={DollarSign} iconColor="text-green-600" />
+            <MetricCard title="Receita Pendente (Mês)" value={formatCurrency(metrics?.pendingRevenueMonth)} icon={Clock} iconColor="text-yellow-600" />
+            <MetricCard title="Despesa Paga (Mês)" value={formatCurrency(metrics?.paidExpenseMonth)} icon={ArrowDownCircle} iconColor="text-red-600" />
+          </>
+        )}
       </div>
 
-      {/* Linha 2: Métricas Financeiras */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <MetricCard 
-          title="Funcionários Ativos" 
-          value="6" 
-          icon={Briefcase} 
-          iconColor="text-primary"
-        />
-        <MetricCard 
-          title="Receita Paga (Mês)" 
-          value="R$ 11.150,00" 
-          icon={DollarSign} 
-          iconColor="text-green-600"
-        />
-        <MetricCard 
-          title="Receita Pendente (Mês)" 
-          value="R$ 430,00" 
-          icon={Clock} 
-          iconColor="text-yellow-600"
-        />
-        <MetricCard 
-          title="Despesa Paga (Mês)" 
-          value="R$ 7.200,00" 
-          icon={ArrowDownCircle} 
-          iconColor="text-red-600"
-        />
-      </div>
-
-      {/* Nova Seção: Secretaria */}
       <SecretaryDashboardSection />
 
-      {/* Linha 3: Gráfico e Atividades Recentes */}
       <div className="grid gap-4 lg:grid-cols-3">
         <div className="lg:col-span-2">
           <EnrollmentChartPlaceholder />
