@@ -112,7 +112,7 @@ const Register = () => {
     <div className="flex items-center justify-center min-h-screen bg-gray-50 dark:bg-gray-900 p-4">
       <Card className="w-full max-w-md">
         <CardHeader>
-          <CardTitle className="text-2xl font-bold text-primary">Inicie seu Teste Grátis</CardTitle>
+          <CardTitle className="text-2xl font-bold text-accent">Inicie seu Teste Grátis</CardTitle>
           <CardDescription>Inicie seu teste grátis de 7 dias.</CardDescription>
         </CardHeader>
         <CardContent>
@@ -183,7 +183,7 @@ const Register = () => {
               )}
             </div>
 
-            <Button type="submit" className="w-full" disabled={isSubmitting}>
+            <Button type="submit" className="w-full bg-accent hover:bg-accent/90" disabled={isSubmitting}>
               {isSubmitting ? (
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
               ) : (
@@ -193,7 +193,7 @@ const Register = () => {
           </form>
           <div className="mt-4 text-center text-sm text-muted-foreground">
             Já tem uma conta?{' '}
-            <Link to="/login" className="text-primary hover:underline">
+            <Link to="/login" className="text-accent hover:underline">
               Fazer Login
             </Link>
           </div>

@@ -15,7 +15,7 @@ const Header: React.FC = () => (
         <Button variant="ghost" asChild size="sm">
           <a href="https://wa.me/5571992059840" target="_blank" rel="noopener noreferrer">Fale com um consultor</a>
         </Button>
-        <Button asChild size="sm">
+        <Button asChild size="sm" className="bg-accent hover:bg-accent/90">
           <Link to="/register">
             Iniciar Teste Grátis
           </Link>
@@ -66,13 +66,13 @@ const Index = () => {
             <div className="flex flex-col lg:flex-row gap-12 items-center">
               <div className="lg:w-1/2 space-y-6 text-center lg:text-left">
                 <h1 className="text-4xl md:text-6xl font-extrabold tracking-tight text-foreground">
-                  Gestão escolar <span className="text-primary">descomplicada</span> para escolas pequenas e médias
+                  Gestão escolar <span className="text-accent">descomplicada</span> para escolas pequenas e médias
                 </h1>
                 <p className="text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto lg:mx-0">
                   Tudo que sua escola precisa – matrícula, notas, financeiro e comunicação – por apenas R$ 220/mês.
                 </p>
                 <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start pt-4">
-                  <Button asChild size="lg" className="text-lg px-8 py-6">
+                  <Button asChild size="lg" className="text-lg px-8 py-6 bg-accent hover:bg-accent/90">
                     <Link to="/register">
                       Iniciar teste grátis de 7 dias
                       <ArrowRight className="ml-2 h-5 w-5" />
@@ -96,19 +96,19 @@ const Index = () => {
         <section className="py-16 md:py-20 px-4">
           <div className="max-w-5xl mx-auto grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
             <div className="flex flex-col items-center space-y-2">
-              <Clock className="h-10 w-10 text-primary" />
+              <Clock className="h-10 w-10 text-accent" />
               <p className="font-semibold">Economize tempo da secretaria</p>
             </div>
             <div className="flex flex-col items-center space-y-2">
-              <DollarSign className="h-10 w-10 text-primary" />
+              <DollarSign className="h-10 w-10 text-accent" />
               <p className="font-semibold">Controle financeiro simplificado</p>
             </div>
             <div className="flex flex-col items-center space-y-2">
-              <Users className="h-10 w-10 text-primary" />
+              <Users className="h-10 w-10 text-accent" />
               <p className="font-semibold">Pais e alunos conectados</p>
             </div>
             <div className="flex flex-col items-center space-y-2">
-              <BarChart className="h-10 w-10 text-primary" />
+              <BarChart className="h-10 w-10 text-accent" />
               <p className="font-semibold">Relatórios prontos para decisões</p>
             </div>
           </div>
@@ -128,7 +128,7 @@ const Index = () => {
                 { icon: ShieldCheck, title: "Cancelamento fácil", desc: "Liberdade para decidir, sem burocracia." },
               ].map(item => (
                 <div key={item.title} className="p-6 bg-card rounded-lg text-left flex items-start gap-4">
-                  <item.icon className="h-8 w-8 text-primary flex-shrink-0 mt-1" />
+                  <item.icon className="h-8 w-8 text-accent flex-shrink-0 mt-1" />
                   <div>
                     <h3 className="font-semibold text-lg">{item.title}</h3>
                     <p className="text-sm text-muted-foreground">{item.desc}</p>
@@ -151,7 +151,7 @@ const Index = () => {
                 { num: 4, title: "Acompanhe os resultados", desc: "Use relatórios intuitivos para tomar as melhores decisões." },
               ].map(step => (
                 <div key={step.num} className="flex flex-col items-center text-center">
-                  <div className="w-12 h-12 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xl font-bold mb-4">{step.num}</div>
+                  <div className="w-12 h-12 rounded-full bg-accent text-accent-foreground flex items-center justify-center text-xl font-bold mb-4">{step.num}</div>
                   <h3 className="font-semibold mb-2">{step.title}</h3>
                   <p className="text-sm text-muted-foreground">{step.desc}</p>
                 </div>
@@ -230,7 +230,7 @@ const Index = () => {
                   <li className="flex items-center"><CheckCircle className="h-5 w-5 text-green-500 mr-2" /> Comunicação com pais e alunos</li>
                   <li className="flex items-center"><CheckCircle className="h-5 w-5 text-green-500 mr-2" /> Suporte completo</li>
                 </ul>
-                <Button asChild size="lg" className="w-full text-lg">
+                <Button asChild size="lg" className="w-full text-lg bg-accent hover:bg-accent/90">
                   <Link to="/register">Iniciar teste grátis de 7 dias</Link>
                 </Button>
               </CardContent>
@@ -271,7 +271,7 @@ const Index = () => {
         <section className="py-20 md:py-24 px-4 text-center">
           <div className="max-w-3xl mx-auto">
             <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-6">Transforme a gestão da sua escola hoje mesmo</h2>
-            <Button asChild size="lg" className="text-lg px-10 py-7">
+            <Button asChild size="lg" className="text-lg px-10 py-7 bg-accent hover:bg-accent/90">
               <Link to="/register">Iniciar teste grátis de 7 dias</Link>
             </Button>
             <p className="text-muted-foreground mt-4">Sem fidelidade. Experimente e decida depois.</p>
