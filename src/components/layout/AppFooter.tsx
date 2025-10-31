@@ -2,13 +2,24 @@ import React from 'react';
 import { Separator } from '@/components/ui/separator';
 
 const AppFooter: React.FC = () => {
+  const appVersion = import.meta.env.VITE_APP_VERSION;
+  const buildTimestamp = import.meta.env.VITE_BUILD_TIMESTAMP;
+  const fullVersion = `v${appVersion}.${buildTimestamp}`;
+
   return (
     <footer className="w-full border-t border-border/50 bg-background p-4 print-hidden">
       <Separator className="mb-4" />
       <div className="flex flex-col sm:flex-row justify-between items-center text-xs text-muted-foreground max-w-7xl mx-auto">
-        <p className="mb-2 sm:mb-0">
-          &copy; {new Date().getFullYear()} Davi EDU. Todos os direitos reservados.
-        </p>
+        <div className="flex flex-col sm:flex-row items-center gap-x-4 gap-y-2 mb-2 sm:mb-0">
+          <p>
+            &copy; {new Date().getFullYear()} Davi EDU. Todos os direitos reservados.
+          </p>
+          {appVersion && buildTimestamp && (
+            <p className="font-mono text-muted-foreground/80">
+              {fullVersion}
+            </p>
+          )}
+        </div>
         <div className="flex items-center gap-2">
           <span className="text-sm">Criado por:</span>
           <img 
