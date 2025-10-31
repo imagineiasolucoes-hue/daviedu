@@ -15,6 +15,11 @@ const Header: React.FC = () => (
         <Button variant="ghost" asChild size="sm">
           <a href="https://wa.me/5571992059840" target="_blank" rel="noopener noreferrer">Fale com um consultor</a>
         </Button>
+        <Button asChild size="sm" variant="outline" className="border-primary text-primary hover:bg-primary/10">
+          <Link to="/login">
+            Login
+          </Link>
+        </Button>
         <Button asChild size="sm" className="bg-accent hover:bg-accent/90">
           <Link to="/register">
             Iniciar Teste Grátis
