@@ -72,7 +72,7 @@ const Index = () => {
               <img 
                 src="/dashboard-mockup.png" 
                 alt="Davi EDU Dashboard Mockup" 
-                className="w-full max-w-xl rounded-xl shadow-2xl border border-border/50"
+                className="w-full h-auto max-w-xl rounded-xl shadow-2xl border border-border/50 object-cover"
               />
             </div>
           </div>
