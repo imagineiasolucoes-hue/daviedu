@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { ArrowRight, CheckCircle, Clock, BarChart, Users, DollarSign, MessageSquare, ShieldCheck, Zap, Cloud, Star, Phone, Mail, Instagram, Facebook, Linkedin } from 'lucide-react';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import FloatingConsultantButton from '@/components/FloatingConsultantButton';
 
 const Header: React.FC = () => (
   <header className="w-full py-4 px-6 border-b border-border/50 bg-background/90 backdrop-blur-sm sticky top-0 z-50">
@@ -12,9 +13,6 @@ const Header: React.FC = () => (
         <img src="/logo-retangular.png" alt="Davi EDU Logo" className="h-8" />
       </Link>
       <nav className="flex items-center space-x-2 sm:space-x-4">
-        <Button variant="ghost" asChild size="sm">
-          <a href="https://wa.me/5571992059840" target="_blank" rel="noopener noreferrer">Fale com um consultor</a>
-        </Button>
         <Button asChild size="sm" variant="outline" className="border-primary text-primary hover:bg-primary/10">
           <Link to="/login">
             Login
@@ -294,6 +292,7 @@ const Index = () => {
       </main>
 
       <Footer />
+      <FloatingConsultantButton />
     </div>
   );
 };
