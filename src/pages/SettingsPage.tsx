@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Separator } from '@/components/ui/separator';
 import { User, School, Lock } from 'lucide-react';
+import SchoolSettingsForm from '@/components/settings/SchoolSettingsForm';
 
 // Componentes Placeholder para as abas
 const ProfileSettings: React.FC = () => (
@@ -12,17 +13,6 @@ const ProfileSettings: React.FC = () => (
     {/* Conteúdo do formulário de perfil virá aqui */}
     <div className="h-24 bg-gray-50 dark:bg-gray-800 rounded-md flex items-center justify-center text-sm text-muted-foreground border border-dashed">
       Formulário de Perfil (Nome, Email, Avatar)
-    </div>
-  </CardContent>
-);
-
-const SchoolSettings: React.FC = () => (
-  <CardContent className="space-y-4">
-    <h3 className="text-lg font-semibold">Configurações da Escola</h3>
-    <p className="text-muted-foreground">Gerencie o nome, endereço e configurações gerais da sua escola (Tenant).</p>
-    {/* Conteúdo do formulário da escola virá aqui */}
-    <div className="h-24 bg-gray-50 dark:bg-gray-800 rounded-md flex items-center justify-center text-sm text-muted-foreground border border-dashed">
-      Formulário de Configurações da Escola
     </div>
   </CardContent>
 );
@@ -45,7 +35,7 @@ const SettingsPage: React.FC = () => {
       <h1 className="text-3xl font-bold">Configurações</h1>
       <Separator />
 
-      <Tabs defaultValue="profile" className="w-full">
+      <Tabs defaultValue="school" className="w-full">
         <TabsList className="grid w-full grid-cols-3 md:w-auto md:flex">
           <TabsTrigger value="profile">
             <User className="h-4 w-4 mr-2" />
@@ -61,17 +51,19 @@ const SettingsPage: React.FC = () => {
           </TabsTrigger>
         </TabsList>
         
-        <Card className="mt-4">
-          <TabsContent value="profile">
+        <TabsContent value="profile">
+          <Card>
             <ProfileSettings />
-          </TabsContent>
-          <TabsContent value="school">
-            <SchoolSettings />
-          </TabsContent>
-          <TabsContent value="security">
+          </Card>
+        </TabsContent>
+        <TabsContent value="school">
+          <SchoolSettingsForm />
+        </TabsContent>
+        <TabsContent value="security">
+          <Card>
             <SecuritySettings />
-          </TabsContent>
-        </Card>
+          </Card>
+        </TabsContent>
       </Tabs>
     </div>
   );
