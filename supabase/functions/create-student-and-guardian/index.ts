@@ -50,21 +50,22 @@ async function generateNextRegistrationCode(supabaseAdmin: any, tenantId: string
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
-    return new Response("ok", { headers: corsHeaders });
+    return new Response(null, { headers: corsHeaders });
   }
 
   try {
     const body = await req.json();
-    const { tenant_id, school_year, ...studentInfo } = body; // Capturando school_year
+    const { tenant_id, school_year, student: studentInfo, guardian: guardianInfo } = body;
 
-    if (!tenant_id) {
-      throw new Error("Identificador da escola (tenant_id) ausente.");
+    // --- Validação ---
+    if (!tenant_id || !school_year || !studentInfo || !guardianInfo) {
+      throw new Error("Dados incompletos para aluno, escola ou responsável.");
     }
     if (!studentInfo.full_name || !studentInfo.birth_date) {
-      throw new Error("Campos obrigatórios ausentes: nome e data de nascimento.");
+      throw new Error("Campos obrigatórios do aluno ausentes: nome e data de nascimento.");
     }
-    if (!school_year) {
-        throw new Error("Ano letivo (school_year) é obrigatório para gerar o código de matrícula.");
+    if (!guardianInfo.guardian_full_name || !guardianInfo.guardian_relationship) {
+      throw new Error("Campos obrigatórios do responsável ausentes: nome e parentesco.");
     }
 
     const supabaseAdmin = createClient(
@@ -72,48 +73,73 @@ serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
     );
 
-    // --- Gerar Código de Matrícula usando o Ano Letivo ---
+    // 1. Gerar Código de Matrícula
     const registration_code = await generateNextRegistrationCode(supabaseAdmin, tenant_id, school_year);
 
-    // Filtra e prepara os dados para inserção
-    const studentData = {
+    // 2. Preparar e Inserir Aluno
+    const studentDataToInsert = {
       ...studentInfo,
       tenant_id: tenant_id,
       registration_code: registration_code,
-      status: "active", // Define o status como 'ativo'
-      
-      // Campos adicionais
-      gender: studentInfo.gender || null,
-      nationality: studentInfo.nationality || null,
-      naturality: studentInfo.naturality || null,
-      cpf: studentInfo.cpf || null,
-      rg: studentInfo.rg || null,
-      zip_code: studentInfo.zip_code || null,
-      address_street: studentInfo.address_street || null,
-      address_number: studentInfo.address_number || null,
-      address_neighborhood: studentInfo.address_neighborhood || null,
-      address_city: studentInfo.address_city || null,
-      address_state: studentInfo.address_state || null,
-      guardian_name: studentInfo.guardian_name || null,
-      special_needs: studentInfo.special_needs || null,
-      medication_use: studentInfo.medication_use || null,
-      class_id: studentInfo.class_id || null,
+      status: "active",
     };
 
-    const { data, error: insertError } = await supabaseAdmin
+    const { data: studentResult, error: studentInsertError } = await supabaseAdmin
       .from("students")
-      .insert(studentData)
+      .insert(studentDataToInsert)
       .select("id")
       .single();
 
-    if (insertError) {
-      console.error("Supabase Insert Error:", JSON.stringify(insertError, null, 2));
-      throw new Error(`Erro no banco de dados: ${insertError.message}`);
+    if (studentInsertError) {
+      console.error("Supabase Student Insert Error:", JSON.stringify(studentInsertError, null, 2));
+      throw new Error(`Erro ao cadastrar aluno: ${studentInsertError.message}`);
     }
 
+    const studentId = studentResult.id;
+
+    // 3. Preparar e Inserir Responsável
+    const guardianDataToInsert = {
+      tenant_id: tenant_id,
+      full_name: guardianInfo.guardian_full_name,
+      phone: guardianInfo.guardian_phone,
+      email: guardianInfo.guardian_email,
+      cpf: guardianInfo.guardian_cpf,
+      relationship: guardianInfo.guardian_relationship,
+    };
+
+    const { data: guardianResult, error: guardianInsertError } = await supabaseAdmin
+      .from("guardians")
+      .insert(guardianDataToInsert)
+      .select("id")
+      .single();
+
+    if (guardianInsertError) {
+      console.error("Supabase Guardian Insert Error:", JSON.stringify(guardianInsertError, null, 2));
+      // Nota: Em um ambiente de produção, você pode querer reverter a criação do aluno aqui.
+      throw new Error(`Erro ao cadastrar responsável: ${guardianInsertError.message}`);
+    }
+
+    const guardianId = guardianResult.id;
+
+    // 4. Vincular Aluno e Responsável (Definir como principal)
+    const { error: linkError } = await supabaseAdmin
+      .from("student_guardians")
+      .insert({
+        student_id: studentId,
+        guardian_id: guardianId,
+        is_primary: true,
+      });
+
+    if (linkError) {
+      console.error("Supabase Link Error:", JSON.stringify(linkError, null, 2));
+      throw new Error(`Erro ao vincular responsável ao aluno: ${linkError.message}`);
+    }
+
+    // 5. Sucesso
     return new Response(JSON.stringify({
       success: true,
-      student: data,
+      studentId: studentId,
+      registration_code: registration_code,
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 200,
