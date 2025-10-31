@@ -1,22 +1,10 @@
 import React from 'react';
-import { Card, CardContent } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Separator } from '@/components/ui/separator';
 import { User, School, Lock } from 'lucide-react';
 import SchoolSettingsForm from '@/components/settings/SchoolSettingsForm';
 import ProfileSettingsForm from '@/components/settings/ProfileSettingsForm';
-
-const SecuritySettings: React.FC = () => (
-  <Card>
-    <CardContent className="space-y-4 pt-6">
-      <h3 className="text-lg font-semibold">Segurança e Acesso</h3>
-      <p className="text-muted-foreground">Altere sua senha e gerencie a autenticação.</p>
-      <div className="h-24 bg-gray-50 dark:bg-gray-800 rounded-md flex items-center justify-center text-sm text-muted-foreground border border-dashed">
-        Formulário de Alteração de Senha
-      </div>
-    </CardContent>
-  </Card>
-);
+import SecuritySettingsForm from '@/components/settings/SecuritySettingsForm';
 
 const SettingsPage: React.FC = () => {
   return (
@@ -47,7 +35,7 @@ const SettingsPage: React.FC = () => {
           <SchoolSettingsForm />
         </TabsContent>
         <TabsContent value="security">
-          <SecuritySettings />
+          <SecuritySettingsForm />
         </TabsContent>
       </Tabs>
     </div>
