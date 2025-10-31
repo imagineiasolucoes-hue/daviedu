@@ -34,7 +34,7 @@ const Footer: React.FC = () => (
       </div>
       <div className="text-sm text-muted-foreground">
         <h4 className="font-semibold text-foreground mb-2">Contato</h4>
-        <p><a href="mailto:contato@daviedu.com" className="hover:text-primary">contato@daviedu.com</a></p>
+        <p><a href="mailto:imagineiasolucoes@gmail.com" className="hover:text-primary">imagineiasolucoes@gmail.com</a></p>
         <p><a href="https://wa.me/5571992059840" target="_blank" rel="noopener noreferrer" className="hover:text-primary">(71) 99205-9840</a></p>
       </div>
       <div className="text-sm">
