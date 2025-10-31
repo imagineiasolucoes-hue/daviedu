@@ -8,6 +8,7 @@ import { useAuth } from '@/components/auth/SessionContextProvider';
 import { supabase } from '@/integrations/supabase/client';
 import { useProfile } from '@/hooks/useProfile';
 import Sidebar from './Sidebar';
+import AppFooter from './AppFooter'; // Importando o novo rodapé
 
 const AppLayout: React.FC = () => {
   const { user } = useAuth();
@@ -30,7 +31,7 @@ const AppLayout: React.FC = () => {
   const roleDisplay = profile?.role ? profile.role.replace('_', ' ').toUpperCase() : 'N/A';
 
   return (
-    <div className="flex min-h-screen bg-background">
+    <div className="flex min-h-screen flex-col bg-background lg:flex-row">
       {/* Desktop Sidebar */}
       <div className="hidden lg:block w-64 flex-shrink-0">
         <Sidebar isSuperAdmin={isSuperAdmin} displayName={displayName} roleDisplay={roleDisplay} onLogout={handleLogout} />
@@ -63,6 +64,9 @@ const AppLayout: React.FC = () => {
         <main className="flex-1 p-4 md:p-6">
           <Outlet />
         </main>
+        
+        {/* Footer */}
+        <AppFooter />
       </div>
     </div>
   );
