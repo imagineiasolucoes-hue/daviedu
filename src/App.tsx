@@ -23,6 +23,7 @@ import SettingsPage from "./pages/SettingsPage";
 import CalendarPage from "./pages/CalendarPage";
 import DocumentsPage from "./pages/DocumentsPage";
 import TeachersPage from "./pages/TeachersPage";
+import CoursesPage from "./pages/CoursesPage"; // Importando a nova página
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -56,6 +57,7 @@ const App = () => {
                   <Route path="/students" element={<StudentsPage />} />
                   <Route path="/teachers" element={<TeachersPage />} />
                   <Route path="/classes" element={<ClassesPage />} />
+                  <Route path="/classes/courses" element={<CoursesPage />} /> {/* Nova Rota */}
                   <Route path="/calendar" element={<CalendarPage />} />
                   <Route path="/documents" element={<DocumentsPage />} />
                   <Route path="/finance" element={<FinancePage />} />

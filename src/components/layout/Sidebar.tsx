@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Home, Users, Settings, LogOut, School, BookOpen, DollarSign, TrendingUp, TrendingDown, CalendarDays, FileText, UserCheck } from 'lucide-react';
+import { Home, Users, Settings, LogOut, School, BookOpen, DollarSign, TrendingUp, TrendingDown, CalendarDays, FileText, UserCheck, ListChecks } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { cn } from '@/lib/utils';
@@ -11,9 +11,15 @@ interface NavItemProps {
   label: string;
 }
 
+// Definindo o tipo para os itens de navegação, incluindo isSubItem
+interface NavigationItem extends NavItemProps {
+  isSubItem?: boolean;
+}
+
 const NavItem: React.FC<NavItemProps> = ({ to, icon, label }) => {
   const location = useLocation();
-  const isActive = location.pathname === to;
+  // Verifica se a rota atual é exatamente a rota do item ou se é uma sub-rota (para manter o pai ativo)
+  const isActive = location.pathname === to || (to === '/classes' && location.pathname.startsWith('/classes/'));
 
   return (
     <Link
@@ -39,12 +45,17 @@ interface SidebarProps {
 }
 
 const Sidebar: React.FC<SidebarProps> = ({ isSuperAdmin, displayName, roleDisplay, onLogout }) => {
-  const adminNavItems = [
+  const location = useLocation();
+  const isClassesActive = location.pathname.startsWith('/classes');
+
+  const adminNavItems: NavigationItem[] = [
     { to: "/dashboard", icon: <Home className="h-5 w-5" />, label: "Dashboard" },
     // Secretaria
     { to: "/students", icon: <Users className="h-5 w-5" />, label: "Alunos" },
     { to: "/teachers", icon: <UserCheck className="h-5 w-5" />, label: "Professores" },
     { to: "/classes", icon: <BookOpen className="h-5 w-5" />, label: "Turmas" },
+    // Sub-item de Turmas
+    { to: "/classes/courses", icon: <ListChecks className="h-5 w-5 ml-4" />, label: "Cursos/Séries", isSubItem: true },
     { to: "/calendar", icon: <CalendarDays className="h-5 w-5" />, label: "Calendário" },
     { to: "/documents", icon: <FileText className="h-5 w-5" />, label: "Documentos" },
     // Financeiro
@@ -55,7 +66,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isSuperAdmin, displayName, roleDispla
     { to: "/settings", icon: <Settings className="h-5 w-5" />, label: "Configurações" },
   ];
 
-  const superAdminNavItems = [
+  const superAdminNavItems: NavigationItem[] = [
     { to: "/dashboard", icon: <Home className="h-5 w-5" />, label: "Dashboard SA" },
     { to: "/super-admin/tenants", icon: <School className="h-5 w-5" />, label: "Escolas (Tenants)" },
     { to: "/super-admin/users", icon: <Users className="h-5 w-5" />, label: "Usuários SA" },
@@ -75,9 +86,32 @@ const Sidebar: React.FC<SidebarProps> = ({ isSuperAdmin, displayName, roleDispla
 
       <div className="flex-1 overflow-y-auto py-2">
         <nav className="grid items-start gap-1 text-sm font-medium">
-          {navigationItems.map((item) => (
-            <NavItem key={item.to} {...item} />
-          ))}
+          {navigationItems.map((item) => {
+            // Renderiza o item principal
+            if (!item.isSubItem) {
+              return <NavItem key={item.to} {...item} />;
+            }
+            
+            // Renderiza o sub-item se o item pai estiver ativo (Turmas)
+            if (item.isSubItem && isClassesActive) {
+                return (
+                    <Link
+                        key={item.to}
+                        to={item.to}
+                        className={cn(
+                            "flex items-center gap-3 rounded-lg px-3 py-2 transition-all ml-4",
+                            location.pathname === item.to
+                                ? "bg-sidebar-primary text-sidebar-primary-foreground hover:bg-sidebar-primary/90"
+                                : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+                        )}
+                    >
+                        {item.icon}
+                        {item.label}
+                    </Link>
+                );
+            }
+            return null;
+          })}
         </nav>
       </div>
 
