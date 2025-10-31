@@ -43,7 +43,7 @@ const Index = () => {
         <section className="py-16 md:py-24 px-4 max-w-6xl mx-auto">
           <div className="grid lg:grid-cols-2 gap-12 items-center">
             {/* Text Content */}
-            <div className="space-y-6 text-center lg:text-left relative z-10"> {/* Adicionado relative z-10 */}
+            <div className="space-y-6 text-center lg:text-left mb-8 lg:mb-0"> {/* Adicionado mb-8 */}
               <h1 className="text-5xl md:text-6xl font-extrabold tracking-tight text-foreground">
                 Gestão Escolar <span className="text-primary">Simples</span> e <span className="text-accent">Eficiente</span>
               </h1>
