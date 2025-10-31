@@ -1,33 +1,22 @@
 import React from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Separator } from '@/components/ui/separator';
 import { User, School, Lock } from 'lucide-react';
 import SchoolSettingsForm from '@/components/settings/SchoolSettingsForm';
-
-// Componentes Placeholder para as abas
-const ProfileSettings: React.FC = () => (
-  <CardContent className="space-y-4">
-    <h3 className="text-lg font-semibold">Configurações de Perfil</h3>
-    <p className="text-muted-foreground">Gerencie suas informações pessoais e avatar.</p>
-    {/* Conteúdo do formulário de perfil virá aqui */}
-    <div className="h-24 bg-gray-50 dark:bg-gray-800 rounded-md flex items-center justify-center text-sm text-muted-foreground border border-dashed">
-      Formulário de Perfil (Nome, Email, Avatar)
-    </div>
-  </CardContent>
-);
+import ProfileSettingsForm from '@/components/settings/ProfileSettingsForm';
 
 const SecuritySettings: React.FC = () => (
-  <CardContent className="space-y-4">
-    <h3 className="text-lg font-semibold">Segurança e Acesso</h3>
-    <p className="text-muted-foreground">Altere sua senha e gerencie a autenticação.</p>
-    {/* Conteúdo de segurança virá aqui */}
-    <div className="h-24 bg-gray-50 dark:bg-gray-800 rounded-md flex items-center justify-center text-sm text-muted-foreground border border-dashed">
-      Formulário de Alteração de Senha
-    </div>
-  </CardContent>
+  <Card>
+    <CardContent className="space-y-4 pt-6">
+      <h3 className="text-lg font-semibold">Segurança e Acesso</h3>
+      <p className="text-muted-foreground">Altere sua senha e gerencie a autenticação.</p>
+      <div className="h-24 bg-gray-50 dark:bg-gray-800 rounded-md flex items-center justify-center text-sm text-muted-foreground border border-dashed">
+        Formulário de Alteração de Senha
+      </div>
+    </CardContent>
+  </Card>
 );
-
 
 const SettingsPage: React.FC = () => {
   return (
@@ -35,7 +24,7 @@ const SettingsPage: React.FC = () => {
       <h1 className="text-3xl font-bold">Configurações</h1>
       <Separator />
 
-      <Tabs defaultValue="school" className="w-full">
+      <Tabs defaultValue="profile" className="w-full">
         <TabsList className="grid w-full grid-cols-3 md:w-auto md:flex">
           <TabsTrigger value="profile">
             <User className="h-4 w-4 mr-2" />
@@ -52,17 +41,13 @@ const SettingsPage: React.FC = () => {
         </TabsList>
         
         <TabsContent value="profile">
-          <Card>
-            <ProfileSettings />
-          </Card>
+          <ProfileSettingsForm />
         </TabsContent>
         <TabsContent value="school">
           <SchoolSettingsForm />
         </TabsContent>
         <TabsContent value="security">
-          <Card>
-            <SecuritySettings />
-          </Card>
+          <SecuritySettings />
         </TabsContent>
       </Tabs>
     </div>
