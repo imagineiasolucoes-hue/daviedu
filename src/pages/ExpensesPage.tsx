@@ -2,16 +2,14 @@ import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { PlusCircle } from 'lucide-react';
+import AddExpenseSheet from '@/components/expenses/AddExpenseSheet';
 
 const ExpensesPage: React.FC = () => {
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h1 className="text-3xl font-bold">Gestão de Despesas</h1>
-        <Button variant="destructive">
-          <PlusCircle className="mr-2 h-4 w-4" />
-          Nova Despesa
-        </Button>
+        <AddExpenseSheet />
       </div>
       
       <Card>
