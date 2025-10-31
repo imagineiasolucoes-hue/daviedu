@@ -89,8 +89,8 @@ const Register = () => {
       }
 
       toast({
-        title: "Cadastro Concluído!",
-        description: "Sua escola foi cadastrada. Você será redirecionado para o login.",
+        title: "Teste Iniciado!",
+        description: "Seu teste de 7 dias começou! Você será redirecionado para o login.",
         variant: "default",
       });
 
@@ -112,7 +112,7 @@ const Register = () => {
     <div className="flex items-center justify-center min-h-screen bg-gray-50 dark:bg-gray-900 p-4">
       <Card className="w-full max-w-md">
         <CardHeader>
-          <CardTitle className="text-2xl font-bold text-primary">Cadastrar Escola</CardTitle>
+          <CardTitle className="text-2xl font-bold text-primary">Inicie seu Teste Grátis</CardTitle>
           <CardDescription>Inicie seu teste grátis de 7 dias.</CardDescription>
         </CardHeader>
         <CardContent>

@@ -17,7 +17,7 @@ const Header: React.FC = () => (
         </Button>
         <Button asChild size="sm">
           <Link to="/register">
-            Agendar demonstração
+            Iniciar Teste Grátis
           </Link>
         </Button>
       </nav>
@@ -74,7 +74,7 @@ const Index = () => {
                 <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start pt-4">
                   <Button asChild size="lg" className="text-lg px-8 py-6">
                     <Link to="/register">
-                      Agendar demonstração gratuita
+                      Iniciar teste grátis de 7 dias
                       <ArrowRight className="ml-2 h-5 w-5" />
                     </Link>
                   </Button>
@@ -231,7 +231,7 @@ const Index = () => {
                   <li className="flex items-center"><CheckCircle className="h-5 w-5 text-green-500 mr-2" /> Suporte completo</li>
                 </ul>
                 <Button asChild size="lg" className="w-full text-lg">
-                  <Link to="/register">Agendar demonstração gratuita</Link>
+                  <Link to="/register">Iniciar teste grátis de 7 dias</Link>
                 </Button>
               </CardContent>
             </Card>
@@ -272,7 +272,7 @@ const Index = () => {
           <div className="max-w-3xl mx-auto">
             <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-6">Transforme a gestão da sua escola hoje mesmo</h2>
             <Button asChild size="lg" className="text-lg px-10 py-7">
-              <Link to="/register">Agendar demonstração gratuita</Link>
+              <Link to="/register">Iniciar teste grátis de 7 dias</Link>
             </Button>
             <p className="text-muted-foreground mt-4">Sem fidelidade. Experimente e decida depois.</p>
           </div>
