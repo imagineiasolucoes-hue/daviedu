@@ -19,18 +19,44 @@ interface Teacher {
   main_subject: string | null;
   status: string;
   base_salary: number;
+  // Novos campos
+  email: string | null;
+  phone: string | null;
+  // Relacionamento com turmas
+  teacher_classes: {
+    classes: {
+      name: string;
+      school_year: number;
+    } | null;
+    period: string;
+  }[];
 }
 
 const fetchTeachers = async (tenantId: string): Promise<Teacher[]> => {
   const { data, error } = await supabase
     .from('employees')
-    .select(`id, full_name, main_subject, status, base_salary`)
+    .select(`
+      id, 
+      full_name, 
+      main_subject, 
+      status, 
+      base_salary,
+      email,
+      phone,
+      teacher_classes (
+        period,
+        classes (
+          name,
+          school_year
+        )
+      )
+    `)
     .eq('tenant_id', tenantId)
     .eq('is_teacher', true)
     .order('full_name', { ascending: true });
 
   if (error) throw new Error(error.message);
-  return data as Teacher[];
+  return data as unknown as Teacher[];
 };
 
 const TeachersPage: React.FC = () => {
@@ -91,6 +117,7 @@ const TeachersPage: React.FC = () => {
                 <TableRow>
                   <TableHead>Nome Completo</TableHead>
                   <TableHead>Matéria Principal</TableHead>
+                  <TableHead>Turmas</TableHead>
                   <TableHead>Salário Base</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead className="text-right">Ações</TableHead>
@@ -101,6 +128,19 @@ const TeachersPage: React.FC = () => {
                   <TableRow key={teacher.id}>
                     <TableCell className="font-medium">{teacher.full_name}</TableCell>
                     <TableCell>{teacher.main_subject || 'N/A'}</TableCell>
+                    <TableCell>
+                      <div className="flex flex-wrap gap-1 max-w-xs">
+                        {teacher.teacher_classes.length > 0 ? (
+                          teacher.teacher_classes.map((tc, index) => (
+                            <Badge key={index} variant="outline" className="text-xs">
+                              {tc.classes?.name} ({tc.period})
+                            </Badge>
+                          ))
+                        ) : (
+                          <span className="text-muted-foreground text-sm">Nenhuma</span>
+                        )}
+                      </div>
+                    </TableCell>
                     <TableCell>{formatCurrency(teacher.base_salary)}</TableCell>
                     <TableCell>{getStatusBadge(teacher.status)}</TableCell>
                     <TableCell className="text-right">

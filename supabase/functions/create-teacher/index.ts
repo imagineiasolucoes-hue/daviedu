@@ -21,7 +21,7 @@ serve(async (req) => {
 
   try {
     const body = await req.json();
-    const { tenant_id, ...teacherInfo } = body;
+    const { tenant_id, classes_to_teach, ...teacherInfo } = body; // Capturando classes_to_teach
 
     if (!tenant_id) {
       throw new Error("Identificador da escola (tenant_id) ausente.");
@@ -40,19 +40,51 @@ serve(async (req) => {
       tenant_id: tenant_id,
       is_teacher: true,
       status: "active",
+      
+      // Novos campos de contato e endereço
+      email: teacherInfo.email || null,
+      phone: teacherInfo.phone || null,
+      zip_code: teacherInfo.zip_code || null,
+      address_street: teacherInfo.address_street || null,
+      address_number: teacherInfo.address_number || null,
+      address_neighborhood: teacherInfo.address_neighborhood || null,
+      address_city: teacherInfo.address_city || null,
+      address_state: teacherInfo.address_state || null,
     };
 
-    const { data, error: insertError } = await supabaseAdmin
+    // 1. Inserir Professor
+    const { data: employeeResult, error: insertError } = await supabaseAdmin
       .from("employees")
       .insert(teacherData)
       .select("id")
       .single();
 
     if (insertError) {
-      throw new Error(`Erro no banco de dados: ${insertError.message}`);
+      throw new Error(`Erro no banco de dados ao criar professor: ${insertError.message}`);
+    }
+    
+    const employeeId = employeeResult.id;
+
+    // 2. Vincular Turmas, se houver
+    if (classes_to_teach && classes_to_teach.length > 0) {
+        const links = classes_to_teach.map((c: { class_id: string, period: string }) => ({
+            employee_id: employeeId,
+            class_id: c.class_id,
+            period: c.period,
+        }));
+
+        const { error: linkError } = await supabaseAdmin
+            .from("teacher_classes")
+            .insert(links);
+
+        if (linkError) {
+            // Logar o erro, mas não necessariamente reverter a criação do professor
+            console.error("Erro ao vincular professor às turmas:", linkError);
+            // Continuar, mas informar o erro
+        }
     }
 
-    return new Response(JSON.stringify({ success: true, teacher: data }), {
+    return new Response(JSON.stringify({ success: true, teacherId: employeeId }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 200,
     });

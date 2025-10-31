@@ -20,7 +20,7 @@ serve(async (req) => {
   }
 
   try {
-    const { employee_id, tenant_id, ...updateData } = await req.json();
+    const { employee_id, tenant_id, classes_to_teach, ...updateData } = await req.json();
 
     if (!employee_id || !tenant_id) {
       throw new Error("ID do funcionário e da escola são obrigatórios.");
@@ -30,17 +30,62 @@ serve(async (req) => {
       Deno.env.get("SUPABASE_URL") ?? "",
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
     );
+    
+    // 1. Preparar dados do funcionário (removendo classes_to_teach para não tentar inserir na tabela employees)
+    const employeeUpdateData = {
+        ...updateData,
+        email: updateData.email || null,
+        phone: updateData.phone || null,
+        zip_code: updateData.zip_code || null,
+        address_street: updateData.address_street || null,
+        address_number: updateData.address_number || null,
+        address_neighborhood: updateData.address_neighborhood || null,
+        address_city: updateData.address_city || null,
+        address_state: updateData.address_state || null,
+    };
 
-    const { data, error } = await supabaseAdmin
+    // 2. Atualizar Professor
+    const { data, error: employeeError } = await supabaseAdmin
       .from("employees")
-      .update(updateData)
+      .update(employeeUpdateData)
       .eq("id", employee_id)
       .eq("tenant_id", tenant_id) // Security check
       .select("id")
       .single();
 
-    if (error) {
-      throw new Error(`Erro no banco de dados: ${error.message}`);
+    if (employeeError) {
+      throw new Error(`Erro no banco de dados ao atualizar professor: ${employeeError.message}`);
+    }
+
+    // 3. Sincronizar Turmas (Deletar todas as antigas e inserir as novas)
+    
+    // Deletar todas as associações existentes
+    const { error: deleteError } = await supabaseAdmin
+        .from("teacher_classes")
+        .delete()
+        .eq("employee_id", employee_id);
+
+    if (deleteError) {
+        console.error("Erro ao deletar associações antigas:", deleteError);
+        throw new Error(`Erro ao sincronizar turmas: ${deleteError.message}`);
+    }
+
+    // Inserir as novas associações
+    if (classes_to_teach && classes_to_teach.length > 0) {
+        const links = classes_to_teach.map((c: { class_id: string, period: string }) => ({
+            employee_id: employee_id,
+            class_id: c.class_id,
+            period: c.period,
+        }));
+
+        const { error: insertError } = await supabaseAdmin
+            .from("teacher_classes")
+            .insert(links);
+
+        if (insertError) {
+            console.error("Erro ao inserir novas associações:", insertError);
+            throw new Error(`Erro ao sincronizar turmas: ${insertError.message}`);
+        }
     }
 
     return new Response(JSON.stringify({ success: true, teacher: data }), {
