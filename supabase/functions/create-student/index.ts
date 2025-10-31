@@ -15,8 +15,12 @@ const corsHeaders = {
 };
 
 async function generateNextRegistrationCode(supabaseAdmin: any, tenantId: string): Promise<string> {
-    const currentYear = new Date().getFullYear().toString();
-    const prefix = currentYear;
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const day = String(now.getDate()).padStart(2, '0');
+    
+    const prefix = `${year}${month}${day}`;
 
     const { data, error } = await supabaseAdmin
         .from("students")
@@ -36,7 +40,7 @@ async function generateNextRegistrationCode(supabaseAdmin: any, tenantId: string
 
     if (data?.registration_code) {
         const lastCode = data.registration_code;
-        const lastSequenceStr = lastCode.slice(-3);
+        const lastSequenceStr = lastCode.substring(8); // YYYYMMDD is 8 chars
         const lastSequence = parseInt(lastSequenceStr, 10);
 
         if (!isNaN(lastSequence)) {
