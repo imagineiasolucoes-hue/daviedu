@@ -30,6 +30,11 @@ interface EditStudentSheetProps {
   onOpenChange: (open: boolean) => void;
 }
 
+interface Class {
+  id: string;
+  name: string;
+}
+
 const fetchStudentDetails = async (studentId: string) => {
   const { data, error } = await supabase
     .from('students')
@@ -40,15 +45,31 @@ const fetchStudentDetails = async (studentId: string) => {
   return data;
 };
 
+const fetchClasses = async (tenantId: string): Promise<Class[]> => {
+  const { data, error } = await supabase
+    .from('classes')
+    .select('id, name')
+    .eq('tenant_id', tenantId)
+    .order('name');
+  if (error) throw new Error(error.message);
+  return data;
+};
+
 const EditStudentSheet: React.FC<EditStudentSheetProps> = ({ studentId, open, onOpenChange }) => {
   const { profile } = useProfile();
   const queryClient = useQueryClient();
   const tenantId = profile?.tenant_id;
 
-  const { data: student, isLoading } = useQuery({
+  const { data: student, isLoading: isLoadingStudent } = useQuery({
     queryKey: ['student', studentId],
     queryFn: () => fetchStudentDetails(studentId!),
     enabled: !!studentId && open,
+  });
+
+  const { data: classes, isLoading: isLoadingClasses } = useQuery<Class[], Error>({
+    queryKey: ['classes', tenantId],
+    queryFn: () => fetchClasses(tenantId!),
+    enabled: !!tenantId && open,
   });
 
   const form = useForm<StudentFormData>({
@@ -62,7 +83,7 @@ const EditStudentSheet: React.FC<EditStudentSheetProps> = ({ studentId, open, on
         birth_date: student.birth_date,
         phone: student.phone || '',
         email: student.email || '',
-        class_id: student.class_id,
+        class_id: student.class_id || '', // Use '' para Selects vazios
         status: student.status,
       });
     }
@@ -71,7 +92,13 @@ const EditStudentSheet: React.FC<EditStudentSheetProps> = ({ studentId, open, on
   const mutation = useMutation({
     mutationFn: async (data: StudentFormData) => {
       const { error } = await supabase.functions.invoke('update-student', {
-        body: JSON.stringify({ ...data, student_id: studentId, tenant_id: tenantId }),
+        body: JSON.stringify({ 
+          ...data, 
+          student_id: studentId, 
+          tenant_id: tenantId,
+          class_id: data.class_id || null, // Garante que string vazia vire null
+          email: data.email || null,
+        }),
       });
       if (error) throw new Error(error.message);
     },
@@ -89,6 +116,8 @@ const EditStudentSheet: React.FC<EditStudentSheetProps> = ({ studentId, open, on
     mutation.mutate(data);
   };
 
+  const isLoading = isLoadingStudent || isLoadingClasses;
+
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent className="sm:max-w-lg">
@@ -99,7 +128,7 @@ const EditStudentSheet: React.FC<EditStudentSheetProps> = ({ studentId, open, on
           </SheetDescription>
         </SheetHeader>
         {isLoading ? (
-          <div className="flex justify-center items-center h-full"><Loader2 className="h-8 w-8 animate-spin" /></div>
+          <div className="flex justify-center items-center h-full"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>
         ) : (
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 py-4">
             <div className="space-y-2">
@@ -119,6 +148,28 @@ const EditStudentSheet: React.FC<EditStudentSheetProps> = ({ studentId, open, on
               <Label htmlFor="email">Email</Label>
               <Input id="email" type="email" {...form.register("email")} />
             </div>
+            
+            {/* Campo de Turma (Class ID) */}
+            <div className="space-y-2">
+              <Label htmlFor="class_id">Turma</Label>
+              <Select 
+                onValueChange={(value) => form.setValue('class_id', value)} 
+                value={form.watch('class_id') || ''}
+                disabled={isLoadingClasses}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder={isLoadingClasses ? "Carregando Turmas..." : "Selecione uma turma"} />
+                </SelectTrigger>
+                <SelectContent>
+                  {/* Opção para desvincular a turma */}
+                  <SelectItem value="">Nenhuma Turma (Desvincular)</SelectItem>
+                  {classes?.map((c) => (
+                    <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
             <div className="space-y-2">
               <Label htmlFor="status">Status</Label>
               <Select onValueChange={(value) => form.setValue('status', value as any)} defaultValue={form.getValues('status')}>
@@ -133,7 +184,7 @@ const EditStudentSheet: React.FC<EditStudentSheetProps> = ({ studentId, open, on
               </Select>
             </div>
             <SheetFooter className="pt-4">
-              <Button type="submit" disabled={mutation.isPending}>
+              <Button type="submit" disabled={mutation.isPending || isLoading}>
                 {mutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 Salvar Alterações
               </Button>
