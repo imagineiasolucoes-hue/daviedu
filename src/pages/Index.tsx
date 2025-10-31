@@ -13,7 +13,7 @@ const Header: React.FC = () => (
       </Link>
       <nav className="flex items-center space-x-2 sm:space-x-4">
         <Button variant="ghost" asChild size="sm">
-          <a href="https://wa.me/5511999999999" target="_blank" rel="noopener noreferrer">Fale com um consultor</a>
+          <a href="https://wa.me/5571992059840" target="_blank" rel="noopener noreferrer">Fale com um consultor</a>
         </Button>
         <Button asChild size="sm">
           <Link to="/register">
@@ -35,7 +35,7 @@ const Footer: React.FC = () => (
       <div className="text-sm text-muted-foreground">
         <h4 className="font-semibold text-foreground mb-2">Contato</h4>
         <p><a href="mailto:contato@daviedu.com" className="hover:text-primary">contato@daviedu.com</a></p>
-        <p><a href="tel:+5511999999999" className="hover:text-primary">(11) 99999-9999</a></p>
+        <p><a href="https://wa.me/5571992059840" target="_blank" rel="noopener noreferrer" className="hover:text-primary">(71) 99205-9840</a></p>
       </div>
       <div className="text-sm">
         <h4 className="font-semibold text-foreground mb-2">Siga-nos</h4>
