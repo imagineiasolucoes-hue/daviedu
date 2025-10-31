@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -19,6 +19,9 @@ import { Loader2, PlusCircle } from 'lucide-react';
 const studentSchema = z.object({
   full_name: z.string().min(5, "Nome completo é obrigatório."),
   birth_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Data de nascimento inválida."),
+  
+  // Campos de relacionamento (class_id e course_id não são persistidos diretamente, mas usados para lógica)
+  course_id: z.string().uuid("Selecione um curso/série.").optional().nullable(),
   class_id: z.string().uuid("Selecione uma turma.").optional().nullable(),
   
   // Contato e Documentos
@@ -48,19 +51,36 @@ const studentSchema = z.object({
 
 type StudentFormData = z.infer<typeof studentSchema>;
 
-interface Class {
+interface Course {
   id: string;
   name: string;
 }
 
-const fetchClasses = async (tenantId: string): Promise<Class[]> => {
+interface Class {
+  id: string;
+  name: string;
+  course_id: string | null;
+}
+
+// --- Funções de Busca de Dados ---
+const fetchCourses = async (tenantId: string): Promise<Course[]> => {
   const { data, error } = await supabase
-    .from('classes')
+    .from('courses')
     .select('id, name')
     .eq('tenant_id', tenantId)
     .order('name');
   if (error) throw new Error(error.message);
   return data;
+};
+
+const fetchClasses = async (tenantId: string): Promise<Class[]> => {
+  const { data, error } = await supabase
+    .from('classes')
+    .select('id, name, course_id')
+    .eq('tenant_id', tenantId)
+    .order('name');
+  if (error) throw new Error(error.message);
+  return data as Class[];
 };
 
 const AddStudentSheet: React.FC = () => {
@@ -69,10 +89,16 @@ const AddStudentSheet: React.FC = () => {
   const queryClient = useQueryClient();
   const tenantId = profile?.tenant_id;
 
-  const { data: classes, isLoading: isLoadingClasses } = useQuery<Class[], Error>({
+  const { data: courses, isLoading: isLoadingCourses } = useQuery<Course[], Error>({
+    queryKey: ['courses', tenantId],
+    queryFn: () => fetchCourses(tenantId!),
+    enabled: !!tenantId && isOpen,
+  });
+
+  const { data: allClasses, isLoading: isLoadingClasses } = useQuery<Class[], Error>({
     queryKey: ['classes', tenantId],
     queryFn: () => fetchClasses(tenantId!),
-    enabled: !!tenantId,
+    enabled: !!tenantId && isOpen,
   });
 
   const form = useForm<StudentFormData>({
@@ -82,6 +108,7 @@ const AddStudentSheet: React.FC = () => {
       birth_date: "",
       phone: "",
       email: "",
+      course_id: null,
       class_id: null,
       gender: null,
       nationality: "",
@@ -100,6 +127,24 @@ const AddStudentSheet: React.FC = () => {
     },
   });
 
+  const selectedCourseId = form.watch('course_id');
+
+  // Filtra as turmas com base no curso selecionado
+  const filteredClasses = useMemo(() => {
+    if (!allClasses) return [];
+    if (!selectedCourseId) return allClasses; // Se nenhum curso for selecionado, mostra todas as turmas
+    
+    return allClasses.filter(c => c.course_id === selectedCourseId);
+  }, [allClasses, selectedCourseId]);
+
+  // Resetar class_id se o curso mudar
+  React.useEffect(() => {
+    if (selectedCourseId) {
+      form.setValue('class_id', null);
+    }
+  }, [selectedCourseId, form]);
+
+
   const onSubmit = async (data: StudentFormData) => {
     if (!tenantId) {
       toast.error("Erro", { description: "ID da escola não encontrado." });
@@ -116,6 +161,7 @@ const AddStudentSheet: React.FC = () => {
           class_id: data.class_id || null,
           gender: data.gender || null,
           email: data.email || null,
+          // course_id não é enviado, pois não é uma coluna na tabela students, apenas class_id é a FK.
         }),
       });
 
@@ -132,6 +178,8 @@ const AddStudentSheet: React.FC = () => {
       });
     }
   };
+
+  const isLoading = isLoadingCourses || isLoadingClasses;
 
   return (
     <Sheet open={isOpen} onOpenChange={setIsOpen}>
@@ -150,7 +198,7 @@ const AddStudentSheet: React.FC = () => {
         </SheetHeader>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 py-4">
           
-          {/* Seção 1: Dados Pessoais e Turma */}
+          {/* Seção 1: Dados Pessoais e Matrícula */}
           <div className="space-y-4">
             <h3 className="text-lg font-semibold">Dados Pessoais e Matrícula</h3>
             <div className="space-y-2">
@@ -188,18 +236,50 @@ const AddStudentSheet: React.FC = () => {
                 <Input id="naturality" placeholder="Ex: Salvador" {...form.register("naturality")} />
               </div>
             </div>
+
+            {/* NOVO CAMPO: Curso/Série */}
             <div className="space-y-2">
-              <Label htmlFor="class_id">Turma</Label>
-              <Select onValueChange={(value) => form.setValue('class_id', value)} defaultValue={form.getValues('class_id') || ''}>
+              <Label htmlFor="course_id">Curso / Série</Label>
+              <Select 
+                onValueChange={(value) => form.setValue('course_id', value)} 
+                value={form.watch('course_id') || ''}
+                disabled={isLoadingCourses}
+              >
                 <SelectTrigger>
-                  <SelectValue placeholder={isLoadingClasses ? "Carregando..." : "Selecione uma turma"} />
+                  <SelectValue placeholder={isLoadingCourses ? "Carregando Cursos..." : "Selecione o curso/série"} />
                 </SelectTrigger>
                 <SelectContent>
-                  {classes?.map((c) => (
+                  {courses?.map((c) => (
                     <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
+              {form.formState.errors.course_id && <p className="text-sm text-destructive">{form.formState.errors.course_id.message}</p>}
+            </div>
+
+            {/* CAMPO EXISTENTE: Turma (agora filtrado) */}
+            <div className="space-y-2">
+              <Label htmlFor="class_id">Turma</Label>
+              <Select 
+                onValueChange={(value) => form.setValue('class_id', value)} 
+                value={form.watch('class_id') || ''}
+                disabled={isLoadingClasses || !selectedCourseId}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder={!selectedCourseId ? "Selecione um curso primeiro" : (isLoadingClasses ? "Carregando Turmas..." : "Selecione uma turma")} />
+                </SelectTrigger>
+                <SelectContent>
+                  {filteredClasses.map((c) => (
+                    <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {form.formState.errors.class_id && <p className="text-sm text-destructive">{form.formState.errors.class_id.message}</p>}
+              {selectedCourseId && filteredClasses.length === 0 && (
+                <p className="text-xs text-muted-foreground mt-1">
+                    Nenhuma turma encontrada para o curso selecionado.
+                </p>
+              )}
             </div>
           </div>
 
@@ -288,7 +368,7 @@ const AddStudentSheet: React.FC = () => {
           </div>
 
           <SheetFooter className="pt-4">
-            <Button type="submit" disabled={form.formState.isSubmitting}>
+            <Button type="submit" disabled={form.formState.isSubmitting || isLoading}>
               {form.formState.isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Salvar Aluno
             </Button>
