@@ -55,6 +55,7 @@ const SchoolSettingsForm: React.FC = () => {
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const qrCodeRef = useRef<SVGSVGElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const { data: tenant, isLoading } = useQuery<Tenant, Error>({
     queryKey: ['tenant', tenantId],
@@ -81,6 +82,10 @@ const SchoolSettingsForm: React.FC = () => {
       setLogoFile(file);
       setLogoPreview(URL.createObjectURL(file));
     }
+  };
+
+  const handleUploadClick = () => {
+    fileInputRef.current?.click();
   };
 
   const onSubmit = async (data: TenantFormData) => {
@@ -238,13 +243,18 @@ const SchoolSettingsForm: React.FC = () => {
                 <AvatarImage src={logoPreview || tenant?.config?.logo_url || ''} alt="Logo da Escola" />
                 <AvatarFallback><School className="h-10 w-10 text-muted-foreground" /></AvatarFallback>
               </Avatar>
-              <Label htmlFor="logo-upload" className="cursor-pointer">
-                <Button type="button" variant="outline">
-                  <Upload className="mr-2 h-4 w-4" />
-                  {logoFile ? "Alterar Imagem" : "Enviar Imagem"}
-                </Button>
-              </Label>
-              <Input id="logo-upload" type="file" className="hidden" accept="image/png, image/jpeg, image/webp" onChange={handleLogoChange} />
+              <Button type="button" variant="outline" onClick={handleUploadClick}>
+                <Upload className="mr-2 h-4 w-4" />
+                {logoFile ? "Alterar Imagem" : "Enviar Imagem"}
+              </Button>
+              <Input
+                ref={fileInputRef}
+                id="logo-upload"
+                type="file"
+                className="hidden"
+                accept="image/png, image/jpeg, image/webp"
+                onChange={handleLogoChange}
+              />
             </div>
           </div>
 
