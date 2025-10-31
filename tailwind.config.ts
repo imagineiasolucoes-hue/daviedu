@@ -62,6 +62,7 @@ export default {
           border: "hsl(var(--sidebar-border))",
           ring: "hsl(var(--sidebar-ring))",
         },
+        kiwify: '#00B47E',
       },
       borderRadius: {
         lg: "var(--radius)",

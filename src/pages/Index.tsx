@@ -230,9 +230,18 @@ const Index = () => {
                   <li className="flex items-center"><CheckCircle className="h-5 w-5 text-green-500 mr-2" /> Comunicação com pais e alunos</li>
                   <li className="flex items-center"><CheckCircle className="h-5 w-5 text-green-500 mr-2" /> Suporte completo</li>
                 </ul>
-                <Button asChild size="lg" className="w-full text-lg bg-accent hover:bg-accent/90">
-                  <Link to="/register">Iniciar teste grátis de 7 dias</Link>
-                </Button>
+                <div className="space-y-3 pt-2">
+                  <Button asChild size="lg" className="w-full text-lg bg-kiwify hover:bg-kiwify/90 text-white">
+                    <a href="https://pay.kiwify.com.br/r3Ur8To" target="_blank" rel="noopener noreferrer">
+                      Assinar Agora
+                    </a>
+                  </Button>
+                  <Button asChild size="lg" variant="outline" className="w-full text-lg">
+                    <Link to="/register">
+                      Iniciar teste grátis de 7 dias
+                    </Link>
+                  </Button>
+                </div>
               </CardContent>
             </Card>
           </div>
