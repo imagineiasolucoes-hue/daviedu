@@ -4,11 +4,12 @@ import { supabase } from '@/integrations/supabase/client';
 import { useProfile } from '@/hooks/useProfile';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Loader2, PlusCircle, User } from 'lucide-react';
+import { Loader2, User } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import AddStudentSheet from '@/components/students/AddStudentSheet';
 
 interface Student {
   id: string;
@@ -80,10 +81,7 @@ const StudentsPage: React.FC = () => {
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h1 className="text-3xl font-bold">Gestão de Alunos</h1>
-        <Button>
-          <PlusCircle className="mr-2 h-4 w-4" />
-          Novo Aluno
-        </Button>
+        <AddStudentSheet />
       </div>
       
       <Card>
