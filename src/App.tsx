@@ -18,7 +18,7 @@ import ClassesPage from "./pages/ClassesPage";
 import FinancePage from "./pages/FinancePage";
 import RevenuesPage from "./pages/RevenuesPage";
 import ExpensesPage from "./pages/ExpensesPage";
-import SettingsPage from "./pages/SettingsPage"; // Novo import
+import SettingsPage from "./pages/SettingsPage";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -53,7 +53,7 @@ const App = () => {
                   <Route path="/finance" element={<FinancePage />} />
                   <Route path="/revenues" element={<RevenuesPage />} />
                   <Route path="/expenses" element={<ExpensesPage />} />
-                  <Route path="/settings" element={<SettingsPage />} /> {/* Nova Rota */}
+                  <Route path="/settings" element={<SettingsPage />} />
                   
                   {/* Super Admin Routes */}
                   <Route path="/super-admin/tenants" element={<TenantsPage />} />

@@ -6,8 +6,8 @@ import { LogIn, UserPlus, GraduationCap } from 'lucide-react';
 
 const Index = () => {
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-gray-50 dark:bg-gray-900 p-4">
-      <Card className="w-full max-w-md text-center">
+    <div className="flex flex-col items-center justify-center min-h-screen bg-primary/10 dark:bg-gray-950 p-4">
+      <Card className="w-full max-w-md text-center shadow-2xl">
         <CardHeader>
           <CardTitle className="text-3xl font-bold text-primary">Davi EDU</CardTitle>
           <p className="text-muted-foreground mt-2">Sistema de Gestão Escolar</p>
