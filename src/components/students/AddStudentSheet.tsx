@@ -60,6 +60,7 @@ interface Class {
   id: string;
   name: string;
   course_id: string | null;
+  school_year: number; // Adicionando school_year
 }
 
 // --- Funções de Busca de Dados ---
@@ -76,7 +77,7 @@ const fetchCourses = async (tenantId: string): Promise<Course[]> => {
 const fetchClasses = async (tenantId: string): Promise<Class[]> => {
   const { data, error } = await supabase
     .from('classes')
-    .select('id, name, course_id')
+    .select('id, name, course_id, school_year') // Buscando school_year
     .eq('tenant_id', tenantId)
     .order('name');
   if (error) throw new Error(error.message);
@@ -128,14 +129,21 @@ const AddStudentSheet: React.FC = () => {
   });
 
   const selectedCourseId = form.watch('course_id');
+  const selectedClassId = form.watch('class_id');
 
   // Filtra as turmas com base no curso selecionado
   const filteredClasses = useMemo(() => {
     if (!allClasses) return [];
-    if (!selectedCourseId) return allClasses; // Se nenhum curso for selecionado, mostra todas as turmas
+    if (!selectedCourseId) return allClasses;
     
     return allClasses.filter(c => c.course_id === selectedCourseId);
   }, [allClasses, selectedCourseId]);
+
+  // Encontra o ano letivo da turma selecionada
+  const selectedClass = useMemo(() => {
+    if (!allClasses || !selectedClassId) return null;
+    return allClasses.find(c => c.id === selectedClassId);
+  }, [allClasses, selectedClassId]);
 
   // Resetar class_id se o curso mudar
   React.useEffect(() => {
@@ -150,18 +158,25 @@ const AddStudentSheet: React.FC = () => {
       toast.error("Erro", { description: "ID da escola não encontrado." });
       return;
     }
+    
+    if (!selectedClass) {
+        toast.error("Erro", { description: "Selecione uma turma válida para continuar." });
+        return;
+    }
 
     try {
-      // A Edge Function 'create-student' gera o registration_code e define o status como 'active'
+      // A Edge Function 'create-student' gera o registration_code
       const { error } = await supabase.functions.invoke('create-student', {
         body: JSON.stringify({ 
           ...data, 
           tenant_id: tenantId,
+          // ENVIANDO O ANO LETIVO DA TURMA SELECIONADA
+          school_year: selectedClass.school_year, 
+          
           // Garantir que campos opcionais vazios sejam null ou omitidos
           class_id: data.class_id || null,
           gender: data.gender || null,
           email: data.email || null,
-          // course_id não é enviado, pois não é uma coluna na tabela students, apenas class_id é a FK.
         }),
       });
 
@@ -237,7 +252,7 @@ const AddStudentSheet: React.FC = () => {
               </div>
             </div>
 
-            {/* NOVO CAMPO: Curso/Série */}
+            {/* CAMPO: Curso/Série */}
             <div className="space-y-2">
               <Label htmlFor="course_id">Curso / Série</Label>
               <Select 
@@ -257,7 +272,7 @@ const AddStudentSheet: React.FC = () => {
               {form.formState.errors.course_id && <p className="text-sm text-destructive">{form.formState.errors.course_id.message}</p>}
             </div>
 
-            {/* CAMPO EXISTENTE: Turma (agora filtrado) */}
+            {/* CAMPO: Turma (filtrado) */}
             <div className="space-y-2">
               <Label htmlFor="class_id">Turma</Label>
               <Select 
@@ -270,7 +285,7 @@ const AddStudentSheet: React.FC = () => {
                 </SelectTrigger>
                 <SelectContent>
                   {filteredClasses.map((c) => (
-                    <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                    <SelectItem key={c.id} value={c.id}>{c.name} ({c.school_year})</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
@@ -368,7 +383,7 @@ const AddStudentSheet: React.FC = () => {
           </div>
 
           <SheetFooter className="pt-4">
-            <Button type="submit" disabled={form.formState.isSubmitting || isLoading}>
+            <Button type="submit" disabled={form.formState.isSubmitting || isLoading || !selectedClassId}>
               {form.formState.isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Salvar Aluno
             </Button>

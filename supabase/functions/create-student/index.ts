@@ -14,13 +14,8 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-async function generateNextRegistrationCode(supabaseAdmin: any, tenantId: string): Promise<string> {
-    const now = new Date();
-    const year = now.getFullYear();
-    const month = String(now.getMonth() + 1).padStart(2, '0');
-    const day = String(now.getDate()).padStart(2, '0');
-    
-    const prefix = `${year}${month}${day}`;
+async function generateNextRegistrationCode(supabaseAdmin: any, tenantId: string, schoolYear: number): Promise<string> {
+    const prefix = String(schoolYear); // O prefixo agora é apenas o ano letivo (ex: 2024)
 
     const { data, error } = await supabaseAdmin
         .from("students")
@@ -40,7 +35,8 @@ async function generateNextRegistrationCode(supabaseAdmin: any, tenantId: string
 
     if (data?.registration_code) {
         const lastCode = data.registration_code;
-        const lastSequenceStr = lastCode.substring(8); // YYYYMMDD is 8 chars
+        // Assume que o código é YYYYSSS (Ano + Sequência de 3 dígitos)
+        const lastSequenceStr = lastCode.substring(4); 
         const lastSequence = parseInt(lastSequenceStr, 10);
 
         if (!isNaN(lastSequence)) {
@@ -59,7 +55,7 @@ serve(async (req) => {
 
   try {
     const body = await req.json();
-    const { tenant_id, ...studentInfo } = body;
+    const { tenant_id, school_year, ...studentInfo } = body; // Capturando school_year
 
     if (!tenant_id) {
       throw new Error("Identificador da escola (tenant_id) ausente.");
@@ -67,15 +63,19 @@ serve(async (req) => {
     if (!studentInfo.full_name || !studentInfo.birth_date) {
       throw new Error("Campos obrigatórios ausentes: nome e data de nascimento.");
     }
+    if (!school_year) {
+        throw new Error("Ano letivo (school_year) é obrigatório para gerar o código de matrícula.");
+    }
 
     const supabaseAdmin = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
     );
 
-    const registration_code = await generateNextRegistrationCode(supabaseAdmin, tenant_id);
+    // --- Gerar Código de Matrícula usando o Ano Letivo ---
+    const registration_code = await generateNextRegistrationCode(supabaseAdmin, tenant_id, school_year);
 
-    // Filtra e prepara os dados para inserção, garantindo que todos os campos sejam aceitos
+    // Filtra e prepara os dados para inserção
     const studentData = {
       ...studentInfo,
       tenant_id: tenant_id,
