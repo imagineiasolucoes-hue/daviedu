@@ -6,7 +6,7 @@ import { Separator } from '@/components/ui/separator';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
-import { Zap, Database, Folder, Code, HardDrive, AlertTriangle, Loader2, ChevronDown, RefreshCcw } from 'lucide-react';
+import { Zap, Database, Folder, Code, HardDrive, AlertTriangle, Loader2, ChevronDown, RefreshCcw, Cloud } from 'lucide-react'; // Adicionado Cloud
 import { useBackupNotifications } from '@/hooks/useBackupNotifications'; // Importando o hook
 
 type SelectiveBackupType = 'database' | 'files' | 'code';
@@ -22,6 +22,8 @@ interface QuickBackupPanelProps {
   onSelectiveBackup: (type: SelectiveBackupType) => Promise<void>;
   onEmergencyRestore: () => Promise<void>;
   diskUsage: DiskUsage;
+  isSuperAdmin?: boolean; // Nova prop para Super Admin
+  onBackupAllTenants?: () => Promise<void>; // Nova prop para backup de todos os tenants
 }
 
 const QuickBackupPanel: React.FC<QuickBackupPanelProps> = ({
@@ -29,6 +31,8 @@ const QuickBackupPanel: React.FC<QuickBackupPanelProps> = ({
   onSelectiveBackup,
   onEmergencyRestore,
   diskUsage,
+  isSuperAdmin = false,
+  onBackupAllTenants,
 }) => {
   const [isQuickBackupLoading, setIsQuickBackupLoading] = useState(false);
   const [isSelectiveBackupLoading, setIsSelectiveBackupLoading] = useState(false);
@@ -109,11 +113,37 @@ const QuickBackupPanel: React.FC<QuickBackupPanelProps> = ({
       <CardHeader>
         <CardTitle className="text-xl font-semibold flex items-center gap-2">
           <RefreshCcw className="h-5 w-5 text-primary" />
-          Painel de Backup e Restauração
+          Painel de Backup e Restauração {isSuperAdmin ? "(Tenant)" : ""}
         </CardTitle>
         <CardDescription>Gerencie a segurança dos dados da sua escola.</CardDescription>
       </CardHeader>
       <CardContent className="flex-grow space-y-6 pt-4">
+        {isSuperAdmin && onBackupAllTenants && (
+          <>
+            <div className="space-y-2">
+              <h3 className="font-semibold text-lg flex items-center gap-2">
+                <Cloud className="h-5 w-5 text-blue-600" /> Backup de Todos os Tenants
+              </h3>
+              <p className="text-sm text-muted-foreground">
+                Inicie um backup de dados para todas as escolas gerenciadas.
+              </p>
+              <Button
+                onClick={onBackupAllTenants}
+                disabled={!!progressNotificationId}
+                className="w-full bg-blue-600 hover:bg-blue-700"
+              >
+                {!!progressNotificationId ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : (
+                  <Cloud className="mr-2 h-4 w-4" />
+                )}
+                Backup de Todos os Tenants
+              </Button>
+            </div>
+            <Separator />
+          </>
+        )}
+
         {/* 1. Backup Rápido */}
         <div className="space-y-2">
           <h3 className="font-semibold text-lg flex items-center gap-2">

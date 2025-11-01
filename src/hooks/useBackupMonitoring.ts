@@ -1,73 +1,141 @@
 import { useEffect, useCallback, useRef } from 'react';
 import { useBackupNotifications } from './useBackupNotifications';
-import useBackupStatus from './useBackupStatus';
+import useBackupStatus from './useBackupStatus'; // Para o status do tenant atual
+import useGlobalBackupStatus from './useGlobalBackupStatus'; // NOVO IMPORT para o status global
+import { useProfile } from './useProfile'; // NOVO IMPORT para verificar se é Super Admin
 import { format, parseISO, differenceInHours } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
 export const useBackupMonitoring = () => {
+  const { profile, isSuperAdmin } = useProfile();
+
+  // Monitoramento para o tenant atual (se não for Super Admin ou se for Super Admin mas quiser ver o status do tenant)
   const {
-    status: backupStatus,
-    lastBackup,
-    nextScheduled,
-    isBackingUp,
-    startBackup,
+    status: tenantBackupStatus,
+    lastBackup: lastTenantBackup,
+    nextScheduled: nextTenantScheduled,
+    isBackingUp: isTenantBackingUp,
+    startBackup: startTenantBackup,
   } = useBackupStatus();
+
+  // Monitoramento para o status global (apenas para Super Admin)
+  const {
+    overallStatus: globalBackupStatus,
+    lastCodeBackup,
+    lastSchemaBackup,
+    lastConfigBackup,
+    isGlobalBackingUp,
+    startFullGlobalBackup,
+  } = useGlobalBackupStatus();
+
   const { showBackupReminder, showEmergencyAlert, showProgressNotification, showSuccessFeedback, dismissNotification } = useBackupNotifications();
 
   // Refs para controlar se um alerta específico já foi mostrado para evitar duplicação
-  const criticalAlertShownRef = useRef(false);
-  const warningAlertShownRef = useRef(false);
-  const progressNotificationIdRef = useRef<string | null>(null);
-  const lastBackupRef = useRef(lastBackup); // Para detectar mudanças em lastBackup para o alerta "Backup concluído"
+  const criticalTenantAlertShownRef = useRef(false);
+  const warningTenantAlertShownRef = useRef(false);
+  const progressTenantNotificationIdRef = useRef<string | null>(null);
+  const lastTenantBackupRef = useRef(lastTenantBackup);
 
-  // Efeito para lidar com alertas proativos baseados no status do backup
+  const criticalGlobalAlertShownRef = useRef(false); // NOVO
+  const warningGlobalAlertShownRef = useRef(false); // NOVO
+  const progressGlobalNotificationIdRef = useRef<string | null>(null); // NOVO
+  const lastGlobalBackupRef = useRef(lastCodeBackup); // Usar o backup de código como referência para o global
+
+  // Efeito para lidar com alertas proativos baseados no status do backup do TENANT
   useEffect(() => {
+    if (!profile?.tenant_id) return; // Apenas monitora se houver um tenant associado
+
     // Alerta Crítico: Backup > 48h ou nunca
-    if (backupStatus === 'critical' && !criticalAlertShownRef.current) {
-      const message = lastBackup
-        ? `Último backup há mais de 48 horas (${format(parseISO(lastBackup), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}).`
-        : 'Nenhum backup realizado ainda. Faça um backup imediatamente!';
+    if (tenantBackupStatus === 'critical' && !criticalTenantAlertShownRef.current) {
+      const message = lastTenantBackup
+        ? `Último backup do tenant há mais de 48 horas (${format(parseISO(lastTenantBackup), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}).`
+        : 'Nenhum backup do tenant realizado ainda. Faça um backup imediatamente!';
       showEmergencyAlert({
-        title: 'Backup Crítico!',
+        title: 'Backup do Tenant Crítico!',
         message: message,
         actions: [
-          { label: 'Fazer Backup Urgente', onClick: startBackup },
+          { label: 'Fazer Backup Urgente', onClick: startTenantBackup },
         ],
       });
-      criticalAlertShownRef.current = true;
-    } else if (backupStatus !== 'critical' && criticalAlertShownRef.current) {
-      // Se o status não for mais crítico, resetar o flag
-      criticalAlertShownRef.current = false;
-      // Poderíamos adicionar lógica para dispensar o alerta crítico aqui se ele fosse um modal específico
-      // Por enquanto, o modal de emergência não é auto-dispensável.
+      criticalTenantAlertShownRef.current = true;
+    } else if (tenantBackupStatus !== 'critical' && criticalTenantAlertShownRef.current) {
+      criticalTenantAlertShownRef.current = false;
     }
 
     // Alerta de Aviso: Backup > 24h e < 48h
-    if (backupStatus === 'warning' && !warningAlertShownRef.current) {
-      const message = `Último backup há mais de 24 horas (${format(parseISO(lastBackup!), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}). Considere executar um backup manual.`;
+    if (tenantBackupStatus === 'warning' && !warningTenantAlertShownRef.current) {
+      const message = `Último backup do tenant há mais de 24 horas (${format(parseISO(lastTenantBackup!), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}). Considere executar um backup manual.`;
       showBackupReminder(message, [
-        { label: 'Fazer Backup', onClick: startBackup },
+        { label: 'Fazer Backup', onClick: startTenantBackup },
       ]);
-      warningAlertShownRef.current = true;
-    } else if (backupStatus !== 'warning' && warningAlertShownRef.current) {
-      warningAlertShownRef.current = false;
+      warningTenantAlertShownRef.current = true;
+    } else if (tenantBackupStatus !== 'warning' && warningTenantAlertShownRef.current) {
+      warningTenantAlertShownRef.current = false;
     }
 
     // Alerta de Informação: Backup em andamento
-    if (isBackingUp && !progressNotificationIdRef.current) {
-      const id = showProgressNotification('Backup em Andamento', 'Seu backup está sendo processado...');
-      progressNotificationIdRef.current = id;
-    } else if (!isBackingUp && progressNotificationIdRef.current) {
-      // Se o backup não está mais em andamento, dispensar a notificação de progresso
-      dismissNotification(progressNotificationIdRef.current);
-      progressNotificationIdRef.current = null;
+    if (isTenantBackingUp && !progressTenantNotificationIdRef.current) {
+      const id = showProgressNotification('Backup do Tenant em Andamento', 'Seu backup está sendo processado...');
+      progressTenantNotificationIdRef.current = id;
+    } else if (!isTenantBackingUp && progressTenantNotificationIdRef.current) {
+      dismissNotification(progressTenantNotificationIdRef.current);
+      progressTenantNotificationIdRef.current = null;
     }
 
-    // Alerta de Informação: Backup concluído (acionado quando lastBackup muda e isBackingUp se torna falso)
-    if (lastBackupRef.current !== lastBackup && !isBackingUp && lastBackupRef.current !== null) {
-        showSuccessFeedback('Backup Concluído!', `Backup realizado com sucesso em ${format(parseISO(lastBackup!), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}.`);
+    // Alerta de Informação: Backup concluído (acionado quando lastTenantBackup muda e isTenantBackingUp se torna falso)
+    if (lastTenantBackupRef.current !== lastTenantBackup && !isTenantBackingUp && lastTenantBackupRef.current !== null) {
+        showSuccessFeedback('Backup do Tenant Concluído!', `Backup realizado com sucesso em ${format(parseISO(lastTenantBackup!), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}.`);
     }
-    lastBackupRef.current = lastBackup; // Atualiza a referência para o próximo ciclo
+    lastTenantBackupRef.current = lastTenantBackup;
 
-  }, [backupStatus, lastBackup, nextScheduled, isBackingUp, startBackup, showBackupReminder, showEmergencyAlert, showProgressNotification, showSuccessFeedback, dismissNotification]);
+  }, [profile?.tenant_id, tenantBackupStatus, lastTenantBackup, isTenantBackingUp, startTenantBackup, showBackupReminder, showEmergencyAlert, showProgressNotification, showSuccessFeedback, dismissNotification]);
+
+  // NOVO Efeito para lidar com alertas proativos baseados no status do backup GLOBAL (apenas para Super Admin)
+  useEffect(() => {
+    if (!isSuperAdmin) return;
+
+    // Alerta Crítico Global
+    if (globalBackupStatus === 'critical' && !criticalGlobalAlertShownRef.current) {
+      const message = lastCodeBackup
+        ? `Último backup global há mais de 48 horas (${format(parseISO(lastCodeBackup), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}).`
+        : 'Nenhum backup global realizado ainda. Faça um backup completo imediatamente!';
+      showEmergencyAlert({
+        title: 'Backup Global Crítico!',
+        message: message,
+        actions: [
+          { label: 'Fazer Backup Global Urgente', onClick: startFullGlobalBackup },
+        ],
+      });
+      criticalGlobalAlertShownRef.current = true;
+    } else if (globalBackupStatus !== 'critical' && criticalGlobalAlertShownRef.current) {
+      criticalGlobalAlertShownRef.current = false;
+    }
+
+    // Alerta de Aviso Global
+    if (globalBackupStatus === 'warning' && !warningGlobalAlertShownRef.current) {
+      const message = `Último backup global há mais de 24 horas (${format(parseISO(lastCodeBackup!), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}). Considere executar um backup global manual.`;
+      showBackupReminder(message, [
+        { label: 'Fazer Backup Global', onClick: startFullGlobalBackup },
+      ]);
+      warningGlobalAlertShownRef.current = true;
+    } else if (globalBackupStatus !== 'warning' && warningGlobalAlertShownRef.current) {
+      warningGlobalAlertShownRef.current = false;
+    }
+
+    // Alerta de Informação: Backup global em andamento
+    if (isGlobalBackingUp && !progressGlobalNotificationIdRef.current) {
+      const id = showProgressNotification('Backup Global em Andamento', 'Seu backup global está sendo processado...');
+      progressGlobalNotificationIdRef.current = id;
+    } else if (!isGlobalBackingUp && progressGlobalNotificationIdRef.current) {
+      dismissNotification(progressGlobalNotificationIdRef.current);
+      progressGlobalNotificationIdRef.current = null;
+    }
+
+    // Alerta de Informação: Backup global concluído
+    if (lastGlobalBackupRef.current !== lastCodeBackup && !isGlobalBackingUp && lastGlobalBackupRef.current !== null) {
+        showSuccessFeedback('Backup Global Concluído!', `Backup global realizado com sucesso em ${format(parseISO(lastCodeBackup!), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}.`);
+    }
+    lastGlobalBackupRef.current = lastCodeBackup;
+
+  }, [isSuperAdmin, globalBackupStatus, lastCodeBackup, isGlobalBackingUp, startFullGlobalBackup, showBackupReminder, showEmergencyAlert, showProgressNotification, showSuccessFeedback, dismissNotification]);
 };
