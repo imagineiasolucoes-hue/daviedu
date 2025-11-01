@@ -8,8 +8,9 @@ import { Badge } from '@/components/ui/badge';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { Button } from '@/components/ui/button';
-import BackupStatusWidget from '@/components/dashboard/BackupStatusWidget'; // Importando
-import QuickBackupPanel from '@/components/backup/QuickBackupPanel'; // Importando
+// Removendo imports de BackupStatusWidget e QuickBackupPanel
+// import BackupStatusWidget from '@/components/dashboard/BackupStatusWidget';
+// import QuickBackupPanel from '@/components/backup/QuickBackupPanel';
 import { toast } from 'sonner'; // Importando toast para as ações do painel
 
 interface Tenant {
@@ -38,30 +39,30 @@ const TenantsPage: React.FC = () => {
     queryFn: fetchTenants,
   });
 
-  // Mock data e handlers para o QuickBackupPanel
-  const mockDiskUsage = {
-    used: 750,
-    total: 1024,
-    percent: (750 / 1024) * 100,
-  };
+  // Mock data e handlers para o QuickBackupPanel (removidos, mas mantendo para referência se necessário em outro lugar)
+  // const mockDiskUsage = {
+  //   used: 750,
+  //   total: 1024,
+  //   percent: (750 / 1024) * 100,
+  // };
 
-  const handleQuickBackup = async () => {
-    console.log("Executando backup completo (Super Admin)...");
-    await new Promise(resolve => setTimeout(resolve, 2000)); // Simula API call
-    toast.success("Backup Completo Concluído!", { description: "Todos os dados foram salvos com sucesso." });
-  };
+  // const handleQuickBackup = async () => {
+  //   console.log("Executando backup completo (Super Admin)...");
+  //   await new Promise(resolve => setTimeout(resolve, 2000)); // Simula API call
+  //   toast.success("Backup Completo Concluído!", { description: "Todos os dados foram salvos com sucesso." });
+  // };
 
-  const handleSelectiveBackup = async (type: 'database' | 'files' | 'code') => {
-    console.log(`Executando backup seletivo (Super Admin): ${type}...`);
-    await new Promise(resolve => setTimeout(resolve, 1500)); // Simula API call
-    toast.success(`Backup Seletivo (${type}) Concluído!`, { description: `Os dados de ${type} foram salvos.` });
-  };
+  // const handleSelectiveBackup = async (type: 'database' | 'files' | 'code') => {
+  //   console.log(`Executando backup seletivo (Super Admin): ${type}...`);
+  //   await new Promise(resolve => setTimeout(resolve, 1500)); // Simula API call
+  //   toast.success(`Backup Seletivo (${type}) Concluído!`, { description: `Os dados de ${type} foram salvos.` });
+  // };
 
-  const handleEmergencyRestore = async () => {
-    console.log("Executando restauração de emergência (Super Admin)...");
-    await new Promise(resolve => setTimeout(resolve, 3000)); // Simula API call
-    toast.success("Restauração Concluída!", { description: "O último backup estável foi restaurado." });
-  };
+  // const handleEmergencyRestore = async () => {
+  //   console.log("Executando restauração de emergência (Super Admin)...");
+  //   await new Promise(resolve => setTimeout(resolve, 3000)); // Simula API call
+  //   toast.success("Restauração Concluída!", { description: "O último backup estável foi restaurado." });
+  // };
 
   if (isLoading) {
     return (
@@ -92,8 +93,8 @@ const TenantsPage: React.FC = () => {
     <div className="space-y-6">
       <h1 className="text-3xl font-bold">Gestão de Escolas (Tenants)</h1>
 
-      {/* Nova Seção de Backup */}
-      <section className="space-y-4">
+      {/* Seção de Backup REMOVIDA daqui */}
+      {/* <section className="space-y-4">
         <h2 className="text-2xl font-bold flex items-center gap-2">
           <HardDrive className="h-6 w-6 text-primary" /> Sistema de Backup
         </h2>
@@ -108,7 +109,7 @@ const TenantsPage: React.FC = () => {
             />
           </div>
         </div>
-      </section>
+      </section> */}
 
       <Card>
         <CardHeader>

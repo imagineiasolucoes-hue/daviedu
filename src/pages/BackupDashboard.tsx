@@ -1,7 +1,7 @@
 import React from 'react';
 import BackupStatusWidget from '@/components/dashboard/BackupStatusWidget';
 import QuickBackupPanel from '@/components/backup/QuickBackupPanel';
-import { Loader2 } from 'lucide-react';
+import { Loader2, HardDrive } from 'lucide-react';
 import { useProfile } from '@/hooks/useProfile';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { toast } from 'sonner';
@@ -19,16 +19,19 @@ const BackupDashboard: React.FC = () => {
   const handleQuickBackup = async () => {
     console.log("Executando backup completo...");
     await new Promise(resolve => setTimeout(resolve, 2000)); // Simula API call
+    toast.success("Backup Completo Concluído!", { description: "Todos os dados foram salvos com sucesso." });
   };
 
   const handleSelectiveBackup = async (type: 'database' | 'files' | 'code') => {
     console.log(`Executando backup seletivo: ${type}...`);
     await new Promise(resolve => setTimeout(resolve, 1500)); // Simula API call
+    toast.success(`Backup Seletivo (${type}) Concluído!`, { description: `Os dados de ${type} foram salvos.` });
   };
 
   const handleEmergencyRestore = async () => {
     console.log("Executando restauração de emergência...");
     await new Promise(resolve => setTimeout(resolve, 3000)); // Simula API call
+    toast.success("Restauração Concluída!", { description: "O último backup estável foi restaurado." });
   };
 
   if (isProfileLoading) {
@@ -42,7 +45,10 @@ const BackupDashboard: React.FC = () => {
   if (isSuperAdmin) {
     return (
       <div className="space-y-6">
-        <h1 className="text-3xl font-bold">Sistema de Backup (Super Administrador)</h1>
+        <h1 className="text-3xl font-bold flex items-center gap-2">
+          <HardDrive className="h-8 w-8 text-primary" />
+          Sistema de Backup (Super Administrador)
+        </h1>
         <Card>
           <CardHeader>
             <CardTitle>Visão Geral do Sistema de Backup</CardTitle>
@@ -54,6 +60,18 @@ const BackupDashboard: React.FC = () => {
             </p>
           </CardContent>
         </Card>
+        {/* Adicionando os painéis de backup para Super Admin também */}
+        <div className="grid gap-4 lg:grid-cols-3">
+          <BackupStatusWidget />
+          <div className="lg:col-span-2">
+            <QuickBackupPanel
+              onQuickBackup={handleQuickBackup}
+              onSelectiveBackup={handleSelectiveBackup}
+              onEmergencyRestore={handleEmergencyRestore}
+              diskUsage={mockDiskUsage}
+            />
+          </div>
+        </div>
       </div>
     );
   }
@@ -61,7 +79,10 @@ const BackupDashboard: React.FC = () => {
   if (!isSchoolUser) {
     return (
       <div className="space-y-6">
-        <h1 className="text-3xl font-bold">Sistema de Backup</h1>
+        <h1 className="text-3xl font-bold flex items-center gap-2">
+          <HardDrive className="h-8 w-8 text-primary" />
+          Sistema de Backup
+        </h1>
         <Card>
           <CardHeader>
             <CardTitle>Aguardando Ativação da Escola</CardTitle>
@@ -79,7 +100,10 @@ const BackupDashboard: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-3xl font-bold">Sistema de Backup</h1>
+      <h1 className="text-3xl font-bold flex items-center gap-2">
+        <HardDrive className="h-8 w-8 text-primary" />
+        Sistema de Backup
+      </h1>
       
       <div className="grid gap-4 lg:grid-cols-3">
         <BackupStatusWidget />
