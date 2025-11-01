@@ -12,6 +12,7 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { formatCurrency } from '@/lib/utils';
 import { Skeleton } from '@/components/ui/skeleton';
+import SchoolEvolutionIndicator from '@/components/dashboard/SchoolEvolutionIndicator'; // NEW IMPORT
 
 // Componente Placeholder para o Gráfico
 const EnrollmentChartPlaceholder: React.FC = () => (
@@ -205,6 +206,9 @@ const Dashboard: React.FC = () => {
         </div>
         <RecentActivity />
       </div>
+
+      {/* Novo Indicador de Evolução da Escola */}
+      <SchoolEvolutionIndicator />
     </div>
   );
 };

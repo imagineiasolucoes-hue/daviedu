@@ -16,7 +16,7 @@ const corsHeaders = {
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
-    return new Response("ok", { headers: corsHeaders });
+    return new Response(null, { headers: corsHeaders });
   }
 
   try {
@@ -44,7 +44,12 @@ serve(async (req) => {
       activeEmployees,
       paidRevenue,
       pendingRevenue,
-      paidExpense
+      paidExpense,
+      totalCourses,
+      totalAcademicEvents,
+      totalGuardians,
+      totalRevenuesOverall,
+      totalExpensesOverall
     ] = await Promise.all([
       supabaseAdmin.from('students').select('*', { count: 'exact', head: true }).eq('tenant_id', tenant_id).eq('status', 'active'),
       supabaseAdmin.from('students').select('*', { count: 'exact', head: true }).eq('tenant_id', tenant_id).eq('status', 'pre-enrolled'),
@@ -53,11 +58,20 @@ serve(async (req) => {
       supabaseAdmin.from('employees').select('*', { count: 'exact', head: true }).eq('tenant_id', tenant_id).eq('status', 'active'),
       supabaseAdmin.from('revenues').select('amount').eq('tenant_id', tenant_id).eq('status', 'pago').gte('date', firstDayOfMonth).lte('date', lastDayOfMonth),
       supabaseAdmin.from('revenues').select('amount').eq('tenant_id', tenant_id).eq('status', 'pendente').gte('date', firstDayOfMonth).lte('date', lastDayOfMonth),
-      supabaseAdmin.from('expenses').select('amount').eq('tenant_id', tenant_id).eq('status', 'pago').gte('date', firstDayOfMonth).lte('date', lastDayOfMonth)
+      supabaseAdmin.from('expenses').select('amount').eq('tenant_id', tenant_id).eq('status', 'pago').gte('date', firstDayOfMonth).lte('date', lastDayOfMonth),
+      supabaseAdmin.from('courses').select('*', { count: 'exact', head: true }).eq('tenant_id', tenant_id),
+      supabaseAdmin.from('academic_events').select('*', { count: 'exact', head: true }).eq('tenant_id', tenant_id),
+      supabaseAdmin.from('guardians').select('*', { count: 'exact', head: true }).eq('tenant_id', tenant_id),
+      supabaseAdmin.from('revenues').select('*', { count: 'exact', head: true }).eq('tenant_id', tenant_id),
+      supabaseAdmin.from('expenses').select('*', { count: 'exact', head: true }).eq('tenant_id', tenant_id)
     ]);
 
     // Verificar erros em cada consulta
-    const errors = [activeStudents.error, preEnrolledStudents.error, activeClasses.error, activeTeachers.error, activeEmployees.error, paidRevenue.error, pendingRevenue.error, paidExpense.error].filter(Boolean);
+    const errors = [
+      activeStudents.error, preEnrolledStudents.error, activeClasses.error, activeTeachers.error, activeEmployees.error,
+      paidRevenue.error, pendingRevenue.error, paidExpense.error,
+      totalCourses.error, totalAcademicEvents.error, totalGuardians.error, totalRevenuesOverall.error, totalExpensesOverall.error
+    ].filter(Boolean);
     if (errors.length > 0) {
         console.error("Erros nas métricas do painel:", errors);
         throw new Error("Erro ao buscar métricas do painel.");
@@ -77,6 +91,11 @@ serve(async (req) => {
       paidRevenueMonth: totalPaidRevenue,
       pendingRevenueMonth: totalPendingRevenue,
       paidExpenseMonth: totalPaidExpense,
+      totalCourses: totalCourses.count ?? 0,
+      totalAcademicEvents: totalAcademicEvents.count ?? 0,
+      totalGuardians: totalGuardians.count ?? 0,
+      totalRevenuesOverall: totalRevenuesOverall.count ?? 0,
+      totalExpensesOverall: totalExpensesOverall.count ?? 0,
     };
 
     return new Response(JSON.stringify(metrics), {
