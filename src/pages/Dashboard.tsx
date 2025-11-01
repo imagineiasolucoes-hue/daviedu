@@ -1,7 +1,7 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useProfile } from '@/hooks/useProfile';
-import { Loader2, Users, UserPlus, GraduationCap, User, Briefcase, DollarSign, Clock, ArrowDownCircle, Share2 } from 'lucide-react';
+import { Loader2, Users, UserPlus, GraduationCap, User, Briefcase, DollarSign, Clock, ArrowDownCircle, Share2, School } from 'lucide-react';
 import MetricCard from '@/components/dashboard/MetricCard';
 import RecentActivity from '@/components/dashboard/RecentActivity';
 import { Button } from '@/components/ui/button';
@@ -67,6 +67,21 @@ const Dashboard: React.FC = () => {
     enabled: !!tenantId,
   });
 
+  // Nova query para métricas do super admin
+  const fetchSuperAdminMetrics = async () => {
+    const { data, error } = await supabase.functions.invoke('get-super-admin-metrics');
+    if (error) throw new Error(error.message);
+    // @ts-ignore
+    if (data.error) throw new Error(data.error);
+    return data;
+  };
+
+  const { data: saMetrics, isLoading: areSaMetricsLoading } = useQuery({
+    queryKey: ['superAdminMetrics'],
+    queryFn: fetchSuperAdminMetrics,
+    enabled: isSuperAdmin, // Só executa se for super admin
+  });
+
   const handleCopyLink = () => {
     if (!profile?.tenant_id) return;
     const link = `${window.location.origin}/pre-matricula/${profile.tenant_id}`;
@@ -88,14 +103,35 @@ const Dashboard: React.FC = () => {
     return (
       <div className="space-y-6">
         <h1 className="text-3xl font-bold">Dashboard Super Administrador</h1>
+        
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+          {areSaMetricsLoading ? (
+            <>
+              <MetricCardSkeleton />
+              <MetricCardSkeleton />
+            </>
+          ) : (
+            <>
+              <MetricCard title="Usuários Cadastrados" value={saMetrics?.usersCount ?? 0} icon={Users} iconColor="text-primary" />
+              <MetricCard title="Escolas (Tenants)" value={saMetrics?.tenantsCount ?? 0} icon={School} iconColor="text-green-500" />
+            </>
+          )}
+        </div>
+
         <Card>
           <CardHeader>
-            <CardTitle>Visão Geral do Sistema</CardTitle>
+            <CardTitle>Gestão do Sistema</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-muted-foreground">
-              Use o menu lateral para navegar para a Gestão de Escolas.
+            <p className="text-muted-foreground mb-4">
+              Use os links abaixo para gerenciar as escolas e usuários do sistema.
             </p>
+            <Button asChild>
+              <Link to="/super-admin/tenants">
+                <School className="mr-2 h-4 w-4" />
+                Gerenciar Escolas
+              </Link>
+            </Button>
           </CardContent>
         </Card>
       </div>
