@@ -9,6 +9,7 @@ interface NavItemProps {
   to: string;
   icon: React.ReactNode;
   label: string;
+  variant?: 'default' | 'accent'; // Adicionado a propriedade variant
 }
 
 // Definindo o tipo para os itens de navegação, incluindo isSubItem
@@ -17,19 +18,23 @@ interface NavigationItem extends NavItemProps {
   parentPath?: string; // Adicionado para vincular sub-itens ao pai
 }
 
-const NavItem: React.FC<NavItemProps> = ({ to, icon, label }) => {
+const NavItem: React.FC<NavItemProps> = ({ to, icon, label, variant = 'default' }) => {
   const location = useLocation();
   // Verifica se a rota atual é exatamente a rota do item ou se é uma sub-rota (para manter o pai ativo)
   const isActive = location.pathname === to || (to === '/classes' && location.pathname.startsWith('/classes/'));
+
+  const activeClasses = variant === 'accent'
+    ? "bg-accent text-accent-foreground hover:bg-accent/90" // Estilo laranja para destaque
+    : "bg-sidebar-primary text-sidebar-primary-foreground hover:bg-sidebar-primary/90"; // Estilo padrão azul
+
+  const inactiveClasses = "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground";
 
   return (
     <Link
       to={to}
       className={cn(
         "flex items-center gap-3 rounded-lg px-3 py-2 transition-all",
-        isActive
-          ? "bg-sidebar-primary text-sidebar-primary-foreground hover:bg-sidebar-primary/90"
-          : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+        isActive ? activeClasses : inactiveClasses
       )}
     >
       {icon}
@@ -65,7 +70,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isSuperAdmin, displayName, roleDispla
     { to: "/expenses", icon: <TrendingDown className="h-5 w-5 ml-4" />, label: "Despesas", isSubItem: true, parentPath: '/finance' },
     // Geral
     { to: "/settings", icon: <Settings className="h-5 w-5" />, label: "Configurações" },
-    { to: "/faq", icon: <HelpCircle className="h-5 w-5" />, label: "Ajuda (FAQ)" }, // NOVO ITEM DE FAQ
+    { to: "/faq", icon: <HelpCircle className="h-5 w-5" />, label: "Ajuda (FAQ)", variant: 'accent' }, // Destaque laranja para FAQ
   ];
 
   const superAdminNavItems: NavigationItem[] = [
@@ -74,7 +79,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isSuperAdmin, displayName, roleDispla
     { to: "/super-admin/users", icon: <Users className="h-5 w-5" />, label: "Usuários SA" },
     { to: "/super-admin/kiwify", icon: <ShoppingCart className="h-5 w-5" />, label: "Kiwify Metrics" },
     { to: "/backup", icon: <HardDrive className="h-5 w-5" />, label: "Backup" },
-    { to: "/faq", icon: <HelpCircle className="h-5 w-5" />, label: "Ajuda (FAQ)" }, // NOVO ITEM DE FAQ PARA SUPER ADMIN
+    { to: "/faq", icon: <HelpCircle className="h-5 w-5" />, label: "Ajuda (FAQ)", variant: 'accent' }, // Destaque laranja para FAQ
   ];
 
   const navigationItems = isSuperAdmin ? superAdminNavItems : adminNavItems;
