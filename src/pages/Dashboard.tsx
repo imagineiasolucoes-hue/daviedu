@@ -13,28 +13,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { formatCurrency } from '@/lib/utils';
 import { Skeleton } from '@/components/ui/skeleton';
 import SchoolEvolutionIndicator from '@/components/dashboard/SchoolEvolutionIndicator';
-
-// Componente Placeholder para o Gráfico
-const EnrollmentChartPlaceholder: React.FC = () => (
-  <Card className="h-full">
-    <CardHeader>
-      <CardTitle className="text-xl font-semibold">Novas Matrículas (Últimos 6 Meses)</CardTitle>
-    </CardHeader>
-    <CardContent className="h-[400px] flex items-center justify-center">
-      <div className="w-full h-full bg-gray-100 dark:bg-gray-800 rounded-lg flex items-end p-4">
-        {/* Mock Bar Chart */}
-        <div className="flex w-full h-full items-end justify-around">
-          <div className="w-8 bg-gray-300 dark:bg-gray-600 h-1/4 rounded-t-sm" />
-          <div className="w-8 bg-gray-300 dark:bg-gray-600 h-1/6 rounded-t-sm" />
-          <div className="w-8 bg-gray-300 dark:bg-gray-600 h-1/12 rounded-t-sm" />
-          <div className="w-8 bg-gray-300 dark:bg-gray-600 h-1/3 rounded-t-sm" />
-          <div className="w-8 bg-gray-300 dark:bg-gray-600 h-1/5 rounded-t-sm" />
-          <div className="w-8 bg-primary h-3/4 rounded-t-sm" />
-        </div>
-      </div>
-    </CardContent>
-  </Card>
-);
+import MonthlyEnrollmentChart from '@/components/dashboard/MonthlyEnrollmentChart'; // NOVO IMPORT
 
 const MetricCardSkeleton: React.FC = () => (
   <Card>
@@ -53,12 +32,27 @@ interface SuperAdminMetrics {
   totalUsers: number;
 }
 
+interface MonthlyEnrollmentData {
+  name: string;
+  'Novas Matrículas': number;
+}
+
 const fetchSuperAdminMetrics = async (): Promise<SuperAdminMetrics> => {
   const { data, error } = await supabase.functions.invoke('get-super-admin-metrics');
   if (error) throw new Error(error.message);
   // @ts-ignore
   if (data.error) throw new Error(data.error);
   return data as SuperAdminMetrics;
+};
+
+const fetchMonthlyEnrollments = async (tenantId: string): Promise<MonthlyEnrollmentData[]> => {
+  const { data, error } = await supabase.functions.invoke('get-monthly-enrollments', {
+    body: JSON.stringify({ tenant_id: tenantId }),
+  });
+  if (error) throw new Error(error.message);
+  // @ts-ignore
+  if (data.error) throw new Error(data.error);
+  return data as MonthlyEnrollmentData[];
 };
 
 const Dashboard: React.FC = () => {
@@ -85,6 +79,12 @@ const Dashboard: React.FC = () => {
     queryKey: ['superAdminMetrics'],
     queryFn: fetchSuperAdminMetrics,
     enabled: isSuperAdmin, // Only fetch for Super Admin
+  });
+
+  const { data: monthlyEnrollments, isLoading: areMonthlyEnrollmentsLoading } = useQuery<MonthlyEnrollmentData[], Error>({
+    queryKey: ['monthlyEnrollments', tenantId],
+    queryFn: () => fetchMonthlyEnrollments(tenantId!),
+    enabled: !!tenantId && !isSuperAdmin, // Only fetch for school users
   });
 
   const handleCopyLink = () => {
@@ -201,7 +201,18 @@ const Dashboard: React.FC = () => {
 
       <div className="grid gap-4 lg:grid-cols-3">
         <div className="lg:col-span-2">
-          <EnrollmentChartPlaceholder />
+          {areMonthlyEnrollmentsLoading ? (
+            <Card className="h-full">
+              <CardHeader>
+                <CardTitle className="text-xl font-semibold">Novas Matrículas (Últimos 6 Meses)</CardTitle>
+              </CardHeader>
+              <CardContent className="h-[400px] flex items-center justify-center">
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+              </CardContent>
+            </Card>
+          ) : (
+            <MonthlyEnrollmentChart data={monthlyEnrollments || []} />
+          )}
         </div>
         <RecentActivity />
       </div>
