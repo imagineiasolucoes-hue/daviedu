@@ -1,16 +1,19 @@
-import React from 'react';
-import { useQuery } from '@tanstack/react-query';
+import React, { useState } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Loader2, School } from 'lucide-react';
+import { Loader2, School, MoreHorizontal, CheckCircle, XCircle } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { Button } from '@/components/ui/button';
 import { useProfile } from '@/hooks/useProfile';
 import { Navigate } from 'react-router-dom';
-import { formatCurrency } from '@/lib/utils'; // Importar a função de formatação
+import { formatCurrency } from '@/lib/utils';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+import { toast } from 'sonner';
 
 interface Tenant {
   id: string;
@@ -22,44 +25,73 @@ interface Tenant {
   class_count: number;
   teacher_count: number;
   employee_count: number;
-  plan_value: number; // Novo campo para o valor do plano
+  plan_value: number;
 }
 
 const fetchTenants = async (): Promise<Tenant[]> => {
   const { data, error } = await supabase.functions.invoke('get-all-tenant-metrics');
   if (error) throw new Error(error.message);
-  if (data.error) throw new Error(data.error); // Edge function might return an error object
+  if (data.error) throw new Error(data.error);
   return data as Tenant[];
 };
 
 const TenantsPage: React.FC = () => {
   const { isSuperAdmin, isLoading: isProfileLoading } = useProfile();
+  const queryClient = useQueryClient();
+  const [isConfirmOpen, setIsConfirmOpen] = useState(false);
+  const [selectedTenant, setSelectedTenant] = useState<Tenant | null>(null);
 
   const { data: tenants, isLoading: isTenantsLoading, error } = useQuery<Tenant[], Error>({
     queryKey: ['tenants'],
     queryFn: fetchTenants,
-    enabled: isSuperAdmin, // Only fetch if the current user is a Super Admin
+    enabled: isSuperAdmin,
   });
 
+  const updateStatusMutation = useMutation({
+    mutationFn: async ({ tenantId, newStatus }: { tenantId: string, newStatus: Tenant['status'] }) => {
+      const { error } = await supabase.functions.invoke('update-tenant-status', {
+        body: JSON.stringify({ tenant_id: tenantId, new_status: newStatus }),
+      });
+      if (error) throw new Error(error.message);
+    },
+    onSuccess: () => {
+      toast.success("Status da escola atualizado com sucesso!");
+      queryClient.invalidateQueries({ queryKey: ['tenants'] });
+    },
+    onError: (error) => {
+      toast.error("Erro ao atualizar status", { description: error.message });
+    },
+    onSettled: () => {
+      setIsConfirmOpen(false);
+      setSelectedTenant(null);
+    },
+  });
+
+  const handleSuspendClick = (tenant: Tenant) => {
+    setSelectedTenant(tenant);
+    setIsConfirmOpen(true);
+  };
+
+  const handleConfirmSuspend = () => {
+    if (selectedTenant) {
+      updateStatusMutation.mutate({ tenantId: selectedTenant.id, newStatus: 'suspended' });
+    }
+  };
+
+  const handleActivateClick = (tenant: Tenant) => {
+    updateStatusMutation.mutate({ tenantId: tenant.id, newStatus: 'active' });
+  };
+
   if (isProfileLoading) {
-    return (
-      <div className="flex justify-center items-center h-64">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      </div>
-    );
+    return <div className="flex justify-center items-center h-64"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>;
   }
 
   if (!isSuperAdmin) {
-    // Redirect if not a Super Admin
     return <Navigate to="/dashboard" replace />;
   }
 
   if (isTenantsLoading) {
-    return (
-      <div className="flex justify-center items-center h-64">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      </div>
-    );
+    return <div className="flex justify-center items-center h-64"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>;
   }
 
   if (error) {
@@ -68,14 +100,10 @@ const TenantsPage: React.FC = () => {
 
   const getStatusBadge = (status: Tenant['status']) => {
     switch (status) {
-      case 'active':
-        return <Badge className="bg-green-500 hover:bg-green-600">Ativa</Badge>;
-      case 'trial':
-        return <Badge variant="secondary" className="bg-yellow-500 hover:bg-yellow-600 text-white">Teste</Badge>;
-      case 'suspended':
-        return <Badge variant="destructive">Suspensa</Badge>;
-      default:
-        return <Badge variant="outline">Desconhecido</Badge>;
+      case 'active': return <Badge className="bg-green-500 hover:bg-green-600">Ativa</Badge>;
+      case 'trial': return <Badge variant="secondary" className="bg-yellow-500 hover:bg-yellow-600 text-white">Teste</Badge>;
+      case 'suspended': return <Badge variant="destructive">Suspensa</Badge>;
+      default: return <Badge variant="outline">Desconhecido</Badge>;
     }
   };
 
@@ -99,11 +127,9 @@ const TenantsPage: React.FC = () => {
                   <TableHead>Alunos</TableHead>
                   <TableHead>Turmas</TableHead>
                   <TableHead>Professores</TableHead>
-                  <TableHead>Funcionários</TableHead>
-                  <TableHead>Plano ($)</TableHead> {/* Nova Coluna */}
+                  <TableHead>Plano ($)</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Criada em</TableHead>
-                  <TableHead>Expiração do Teste</TableHead>
                   <TableHead className="text-right">Ações</TableHead>
                 </TableRow>
               </TableHeader>
@@ -114,17 +140,29 @@ const TenantsPage: React.FC = () => {
                     <TableCell>{tenant.student_count}</TableCell>
                     <TableCell>{tenant.class_count}</TableCell>
                     <TableCell>{tenant.teacher_count}</TableCell>
-                    <TableCell>{tenant.employee_count}</TableCell>
-                    <TableCell>{formatCurrency(tenant.plan_value)}</TableCell> {/* Exibindo o valor do plano */}
+                    <TableCell>{formatCurrency(tenant.plan_value)}</TableCell>
                     <TableCell>{getStatusBadge(tenant.status)}</TableCell>
                     <TableCell>{format(new Date(tenant.created_at), 'dd/MM/yyyy', { locale: ptBR })}</TableCell>
-                    <TableCell>
-                      {tenant.trial_expires_at 
-                        ? format(new Date(tenant.trial_expires_at), 'dd/MM/yyyy', { locale: ptBR })
-                        : 'N/A'}
-                    </TableCell>
                     <TableCell className="text-right">
-                      <Button variant="outline" size="sm">Ver Detalhes</Button>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="icon">
+                            <MoreHorizontal className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          {tenant.status !== 'active' && (
+                            <DropdownMenuItem onClick={() => handleActivateClick(tenant)}>
+                              <CheckCircle className="mr-2 h-4 w-4 text-green-500" /> Ativar Plano
+                            </DropdownMenuItem>
+                          )}
+                          {tenant.status !== 'suspended' && (
+                            <DropdownMenuItem onClick={() => handleSuspendClick(tenant)} className="text-destructive">
+                              <XCircle className="mr-2 h-4 w-4" /> Suspender Acesso
+                            </DropdownMenuItem>
+                          )}
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     </TableCell>
                   </TableRow>
                 ))}
@@ -136,6 +174,28 @@ const TenantsPage: React.FC = () => {
           )}
         </CardContent>
       </Card>
+
+      <AlertDialog open={isConfirmOpen} onOpenChange={setIsConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirmar Suspensão</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tem certeza que deseja suspender o acesso da escola <strong>{selectedTenant?.name}</strong>? Os usuários não poderão mais acessar o sistema.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <Button
+              variant="destructive"
+              onClick={handleConfirmSuspend}
+              disabled={updateStatusMutation.isPending}
+            >
+              {updateStatusMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Suspender
+            </Button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
