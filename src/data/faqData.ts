@@ -15,18 +15,19 @@ import {
   School,
   Lock,
   ClipboardList,
-  Cloud, // Added
-  UserPlus, // Added
-  Pencil, // Added
-  Link, // Added
-  TrendingUp, // Added
-  TrendingDown, // Added
-  BarChart, // Added
-  Image, // Added
-  Upload, // Added
-  Share2, // Added
-  QrCode, // Added
-  CheckCircle, // Added
+  Cloud,
+  UserPlus,
+  Pencil,
+  Link,
+  TrendingUp,
+  TrendingDown,
+  BarChart,
+  Image,
+  Upload,
+  Share2,
+  QrCode,
+  CheckCircle,
+  ListChecks, // Adicionado
 } from 'lucide-react';
 import { FAQCategory, FAQItem } from '@/types/faq';
 
