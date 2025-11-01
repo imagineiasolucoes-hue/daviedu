@@ -12,7 +12,8 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { formatCurrency } from '@/lib/utils';
 import { Skeleton } from '@/components/ui/skeleton';
-import BackupStatusWidget from '@/components/dashboard/BackupStatusWidget'; // Importando o novo widget
+import BackupStatusWidget from '@/components/dashboard/BackupStatusWidget';
+import QuickBackupPanel from '@/components/backup/QuickBackupPanel'; // Importando o novo componente
 
 // Componente Placeholder para o Gráfico
 const EnrollmentChartPlaceholder: React.FC = () => (
@@ -76,6 +77,29 @@ const Dashboard: React.FC = () => {
       description: "O link de pré-matrícula foi copiado para a área de transferência.",
     });
   };
+
+  // Mock data e handlers para o QuickBackupPanel
+  const mockDiskUsage = {
+    used: 750,
+    total: 1024,
+    percent: (750 / 1024) * 100,
+  };
+
+  const handleQuickBackup = async () => {
+    console.log("Executando backup completo...");
+    await new Promise(resolve => setTimeout(resolve, 2000)); // Simula API call
+  };
+
+  const handleSelectiveBackup = async (type: 'database' | 'files' | 'code') => {
+    console.log(`Executando backup seletivo: ${type}...`);
+    await new Promise(resolve => setTimeout(resolve, 1500)); // Simula API call
+  };
+
+  const handleEmergencyRestore = async () => {
+    console.log("Executando restauração de emergência...");
+    await new Promise(resolve => setTimeout(resolve, 3000)); // Simula API call
+  };
+
 
   if (isProfileLoading) {
     return (
@@ -164,9 +188,17 @@ const Dashboard: React.FC = () => {
         <RecentActivity />
       </div>
       
-      {/* Adicionando o Backup Status Widget em uma linha separada para destaque */}
+      {/* Adicionando o Backup Status Widget e o QuickBackupPanel em uma linha separada para destaque */}
       <div className="grid gap-4 lg:grid-cols-3">
         <BackupStatusWidget />
+        <div className="lg:col-span-2"> {/* Ocupa 2 colunas para o QuickBackupPanel */}
+          <QuickBackupPanel
+            onQuickBackup={handleQuickBackup}
+            onSelectiveBackup={handleSelectiveBackup}
+            onEmergencyRestore={handleEmergencyRestore}
+            diskUsage={mockDiskUsage}
+          />
+        </div>
       </div>
     </div>
   );
