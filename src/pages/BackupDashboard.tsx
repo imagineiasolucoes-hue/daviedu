@@ -9,7 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { format, parseISO } from 'date-fns'; // Adicionado parseISO
+import { format, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import useAllTenantsBackupStatus from '@/hooks/useAllTenantsBackupStatus';
 import { useBackupNotifications } from '@/hooks/useBackupNotifications';
