@@ -45,9 +45,33 @@ serve(async (req) => {
       throw new Error(`Erro ao buscar o número de usuários: ${profilesError.message}`);
     }
 
+    // Contar o total de alunos ativos em todas as escolas
+    const { count: activeStudentsCount, error: studentsError } = await supabaseAdmin
+      .from('students')
+      .select('*', { count: 'exact', head: true })
+      .eq('status', 'active');
+
+    if (studentsError) {
+      console.error("Error fetching active students count:", studentsError);
+      throw new Error(`Erro ao buscar o número de alunos ativos: ${studentsError.message}`);
+    }
+
+    // Contar o total de funcionários ativos em todas as escolas
+    const { count: activeEmployeesCount, error: employeesError } = await supabaseAdmin
+      .from('employees')
+      .select('*', { count: 'exact', head: true })
+      .eq('status', 'active');
+
+    if (employeesError) {
+      console.error("Error fetching active employees count:", employeesError);
+      throw new Error(`Erro ao buscar o número de funcionários ativos: ${employeesError.message}`);
+    }
+
     return new Response(JSON.stringify({
       totalTenants: tenantsCount ?? 0,
       totalUsers: profilesCount ?? 0,
+      totalActiveStudents: activeStudentsCount ?? 0,
+      totalActiveEmployees: activeEmployeesCount ?? 0,
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 200,

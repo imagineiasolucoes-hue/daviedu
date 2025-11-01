@@ -50,6 +50,8 @@ const MetricCardSkeleton: React.FC = () => (
 interface SuperAdminMetrics {
   totalTenants: number;
   totalUsers: number;
+  totalActiveStudents: number; // Nova métrica
+  totalActiveEmployees: number; // Nova métrica
 }
 
 const fetchSuperAdminMetrics = async (): Promise<SuperAdminMetrics> => {
@@ -112,7 +114,7 @@ const Dashboard: React.FC = () => {
         </h1>
         
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-          {areSuperAdminMetricsLoading ? Array.from({ length: 2 }).map((_, i) => <MetricCardSkeleton key={i} />) : (
+          {areSuperAdminMetricsLoading ? Array.from({ length: 4 }).map((_, i) => <MetricCardSkeleton key={i} />) : (
             <>
               <MetricCard 
                 title="Total de Escolas" 
@@ -126,7 +128,18 @@ const Dashboard: React.FC = () => {
                 icon={Users} 
                 iconColor="text-indigo-500" 
               />
-              {/* Adicione mais métricas específicas para Super Admin aqui, se necessário */}
+              <MetricCard 
+                title="Alunos Ativos (Total)" 
+                value={superAdminMetrics?.totalActiveStudents ?? 0} 
+                icon={GraduationCap} 
+                iconColor="text-green-500" 
+              />
+              <MetricCard 
+                title="Funcionários Ativos (Total)" 
+                value={superAdminMetrics?.totalActiveEmployees ?? 0} 
+                icon={Briefcase} 
+                iconColor="text-orange-500" 
+              />
             </>
           )}
         </div>
