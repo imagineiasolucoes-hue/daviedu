@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { ArrowRight, CheckCircle, Clock, BarChart, Users, DollarSign, MessageSquare, ShieldCheck, Zap, Cloud, Star, Phone, Mail, Instagram, Facebook, Linkedin } from 'lucide-react';
+import { ArrowRight, CheckCircle, Clock, BarChart, Users, DollarSign, MessageSquare, ShieldCheck, Zap, Cloud, Star, Phone, Mail, Instagram, Facebook, Linkedin, HelpCircle } from 'lucide-react'; // Adicionado HelpCircle
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import FloatingConsultantButton from '@/components/FloatingConsultantButton';
@@ -42,10 +42,12 @@ const Footer: React.FC = () => (
       </div>
       <div className="text-sm">
         <h4 className="font-semibold text-foreground mb-2">Siga-nos</h4>
-        <div className="flex justify-center md:justify-start space-x-4">
+        <div className="flex justify-center md:justify-start space-x-4 mb-2">
           <a href="#" className="text-muted-foreground hover:text-primary"><Instagram size={20} /></a>
           <a href="#" className="text-muted-foreground hover:text-primary"><Facebook size={20} /></a>
         </div>
+        <h4 className="font-semibold text-foreground mb-2">Recursos</h4>
+        <p><Link to="/faq" className="hover:text-primary">Dúvidas Frequentes (FAQ)</Link></p> {/* NOVO LINK */}
       </div>
     </div>
     <div className="max-w-7xl mx-auto mt-8 pt-6 border-t border-border/50 text-center text-xs text-muted-foreground">

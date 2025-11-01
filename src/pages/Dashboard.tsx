@@ -13,7 +13,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { formatCurrency } from '@/lib/utils';
 import { Skeleton } from '@/components/ui/skeleton';
 import SchoolEvolutionIndicator from '@/components/dashboard/SchoolEvolutionIndicator';
-import MonthlyEnrollmentChart from '@/components/dashboard/MonthlyEnrollmentChart'; // NOVO IMPORT
+import MonthlyEnrollmentChart from '@/components/dashboard/MonthlyEnrollmentChart';
+import HelpButton from '@/components/HelpButton'; // NOVO IMPORT
 
 const MetricCardSkeleton: React.FC = () => (
   <Card>
@@ -141,6 +142,7 @@ const Dashboard: React.FC = () => {
             </p>
           </CardContent>
         </Card>
+        <HelpButton /> {/* Botão de ajuda para Super Admin */}
       </div>
     );
   }
@@ -160,6 +162,7 @@ const Dashboard: React.FC = () => {
             </p>
           </CardContent>
         </Card>
+        <HelpButton /> {/* Botão de ajuda para usuários não associados a escola */}
       </div>
     );
   }
@@ -217,8 +220,8 @@ const Dashboard: React.FC = () => {
         <RecentActivity />
       </div>
 
-      {/* Novo Indicador de Evolução da Escola */}
       <SchoolEvolutionIndicator />
+      <HelpButton /> {/* Botão de ajuda para usuários de escola */}
     </div>
   );
 };

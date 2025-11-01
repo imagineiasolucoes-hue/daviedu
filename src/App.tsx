@@ -10,7 +10,7 @@ import PreEnrollment from "./pages/PreEnrollment";
 import PreEnrollmentInfoPage from "./pages/PreEnrollmentInfoPage";
 import { SessionContextProvider } from "./components/auth/SessionContextProvider";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
-import SuperAdminProtectedRoute from "./components/auth/SuperAdminProtectedRoute"; // NOVO IMPORT
+import SuperAdminProtectedRoute from "./components/auth/SuperAdminProtectedRoute";
 import Dashboard from "./pages/Dashboard";
 import AppLayout from "./components/layout/AppLayout";
 import TenantsPage from "./pages/super-admin/TenantsPage";
@@ -27,6 +27,7 @@ import DocumentsPage from "./pages/DocumentsPage";
 import TeachersPage from "./pages/TeachersPage";
 import CoursesPage from "./pages/CoursesPage";
 import BackupDashboard from "./pages/BackupDashboard";
+import FAQPage from "./pages/FAQPage"; // NOVO IMPORT
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -51,6 +52,7 @@ const App = () => {
               <Route path="/register" element={<Register />} />
               <Route path="/pre-matricula" element={<PreEnrollmentInfoPage />} />
               <Route path="/pre-matricula/:tenantId" element={<PreEnrollment />} />
+              <Route path="/faq" element={<FAQPage />} /> {/* NOVA ROTA */}
 
               {/* Protected Routes using AppLayout */}
               <Route element={<ProtectedRoute />}>
@@ -69,7 +71,7 @@ const App = () => {
                   
                   {/* Super Admin Routes */}
                   <Route element={<SuperAdminProtectedRoute />}>
-                    <Route path="/backup" element={<BackupDashboard />} /> {/* MOVIDO PARA CÁ */}
+                    <Route path="/backup" element={<BackupDashboard />} />
                     <Route path="/super-admin/tenants" element={<TenantsPage />} />
                     <Route path="/super-admin/users" element={<UsersPage />} />
                     <Route path="/super-admin/kiwify" element={<KiwifyPage />} />
