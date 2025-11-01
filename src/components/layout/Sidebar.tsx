@@ -64,7 +64,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isSuperAdmin, displayName, roleDispla
     { to: "/revenues", icon: <TrendingUp className="h-5 w-5 ml-4" />, label: "Receitas", isSubItem: true, parentPath: '/finance' },
     { to: "/expenses", icon: <TrendingDown className="h-5 w-5 ml-4" />, label: "Despesas", isSubItem: true, parentPath: '/finance' },
     // Geral
-    { to: "/backup", icon: <HardDrive className="h-5 w-5" />, label: "Backup" },
+    // { to: "/backup", icon: <HardDrive className="h-5 w-5" />, label: "Backup" }, // REMOVIDO PARA ADMIN
     { to: "/settings", icon: <Settings className="h-5 w-5" />, label: "Configurações" },
   ];
 
@@ -73,7 +73,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isSuperAdmin, displayName, roleDispla
     { to: "/super-admin/tenants", icon: <School className="h-5 w-5" />, label: "Escolas (Tenants)" },
     { to: "/super-admin/users", icon: <Users className="h-5 w-5" />, label: "Usuários SA" },
     { to: "/super-admin/kiwify", icon: <ShoppingCart className="h-5 w-5" />, label: "Kiwify Metrics" },
-    { to: "/backup", icon: <HardDrive className="h-5 w-5" />, label: "Backup" },
+    { to: "/backup", icon: <HardDrive className="h-5 w-5" />, label: "Backup" }, // MANTIDO PARA SUPER ADMIN
   ];
 
   const navigationItems = isSuperAdmin ? superAdminNavItems : adminNavItems;

@@ -10,11 +10,12 @@ import PreEnrollment from "./pages/PreEnrollment";
 import PreEnrollmentInfoPage from "./pages/PreEnrollmentInfoPage";
 import { SessionContextProvider } from "./components/auth/SessionContextProvider";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
+import SuperAdminProtectedRoute from "./components/auth/SuperAdminProtectedRoute"; // NOVO IMPORT
 import Dashboard from "./pages/Dashboard";
 import AppLayout from "./components/layout/AppLayout";
 import TenantsPage from "./pages/super-admin/TenantsPage";
 import UsersPage from "./pages/super-admin/UsersPage";
-import KiwifyPage from "./pages/super-admin/KiwifyPage"; // NOVO IMPORT
+import KiwifyPage from "./pages/super-admin/KiwifyPage";
 import StudentsPage from "./pages/StudentsPage";
 import ClassesPage from "./pages/ClassesPage";
 import FinancePage from "./pages/FinancePage";
@@ -65,12 +66,14 @@ const App = () => {
                   <Route path="/revenues" element={<RevenuesPage />} />
                   <Route path="/expenses" element={<ExpensesPage />} />
                   <Route path="/settings" element={<SettingsPage />} />
-                  <Route path="/backup" element={<BackupDashboard />} />
                   
                   {/* Super Admin Routes */}
-                  <Route path="/super-admin/tenants" element={<TenantsPage />} />
-                  <Route path="/super-admin/users" element={<UsersPage />} />
-                  <Route path="/super-admin/kiwify" element={<KiwifyPage />} /> {/* NOVA ROTA */}
+                  <Route element={<SuperAdminProtectedRoute />}>
+                    <Route path="/backup" element={<BackupDashboard />} /> {/* MOVIDO PARA CÁ */}
+                    <Route path="/super-admin/tenants" element={<TenantsPage />} />
+                    <Route path="/super-admin/users" element={<UsersPage />} />
+                    <Route path="/super-admin/kiwify" element={<KiwifyPage />} />
+                  </Route>
                   
                   {/* Add other protected routes here later */}
                 </Route>
