@@ -35,16 +35,16 @@ export const SessionContextProvider: React.FC<SessionContextProviderProps> = ({ 
       if (event === 'SIGNED_IN' || event === 'INITIAL_SESSION') {
         setSession(currentSession);
         setUser(currentSession?.user ?? null);
-        if (currentSession && window.location.pathname === '/login') {
-          // Redirect authenticated users away from login page
+        if (currentSession && (window.location.pathname === '/login' || window.location.pathname === '/register')) {
+          // Redirect authenticated users away from login/register page
           navigate('/dashboard', { replace: true });
         }
       } else if (event === 'SIGNED_OUT') {
         setSession(null);
         setUser(null);
-        // Redirect unauthenticated users to login page
-        if (window.location.pathname !== '/login' && window.location.pathname !== '/register' && window.location.pathname !== '/pre-matricula') {
-          navigate('/login', { replace: true });
+        // Redirect unauthenticated users to the index page after logout
+        if (window.location.pathname !== '/' && window.location.pathname !== '/pre-matricula') {
+          navigate('/', { replace: true });
         }
       } else if (event === 'AUTH_API_ERROR' as string) { // Asserção de tipo para corrigir o erro TS2367
         // Tratamento de erro de API de autenticação
