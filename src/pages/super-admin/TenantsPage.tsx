@@ -10,6 +10,7 @@ import { ptBR } from 'date-fns/locale';
 import { Button } from '@/components/ui/button';
 import { useProfile } from '@/hooks/useProfile';
 import { Navigate } from 'react-router-dom';
+import { formatCurrency } from '@/lib/utils'; // Importar a função de formatação
 
 interface Tenant {
   id: string;
@@ -21,6 +22,7 @@ interface Tenant {
   class_count: number;
   teacher_count: number;
   employee_count: number;
+  plan_value: number; // Novo campo para o valor do plano
 }
 
 const fetchTenants = async (): Promise<Tenant[]> => {
@@ -98,6 +100,7 @@ const TenantsPage: React.FC = () => {
                   <TableHead>Turmas</TableHead>
                   <TableHead>Professores</TableHead>
                   <TableHead>Funcionários</TableHead>
+                  <TableHead>Plano ($)</TableHead> {/* Nova Coluna */}
                   <TableHead>Status</TableHead>
                   <TableHead>Criada em</TableHead>
                   <TableHead>Expiração do Teste</TableHead>
@@ -112,6 +115,7 @@ const TenantsPage: React.FC = () => {
                     <TableCell>{tenant.class_count}</TableCell>
                     <TableCell>{tenant.teacher_count}</TableCell>
                     <TableCell>{tenant.employee_count}</TableCell>
+                    <TableCell>{formatCurrency(tenant.plan_value)}</TableCell> {/* Exibindo o valor do plano */}
                     <TableCell>{getStatusBadge(tenant.status)}</TableCell>
                     <TableCell>{format(new Date(tenant.created_at), 'dd/MM/yyyy', { locale: ptBR })}</TableCell>
                     <TableCell>

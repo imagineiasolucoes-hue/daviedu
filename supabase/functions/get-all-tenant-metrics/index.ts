@@ -49,12 +49,19 @@ serve(async (req) => {
         supabaseAdmin.from('employees').select('*', { count: 'exact', head: true }).eq('tenant_id', tenant.id),
       ]);
 
+      // Determine plan value based on status
+      let planValue = 0;
+      if (tenant.status === 'active' || tenant.status === 'trial') {
+        planValue = 220; // R$ 220/mês para planos ativos ou em teste
+      }
+
       return {
         ...tenant,
         student_count: studentsCount.count ?? 0,
         class_count: classesCount.count ?? 0,
         teacher_count: teachersCount.count ?? 0,
         employee_count: employeesCount.count ?? 0,
+        plan_value: planValue, // Adicionando o valor do plano
       };
     }));
 
