@@ -9,7 +9,6 @@ import { supabase } from '@/integrations/supabase/client';
 import { useProfile } from '@/hooks/useProfile';
 import Sidebar from './Sidebar';
 import AppFooter from './AppFooter'; // Importando o novo rodapé
-import BackupAlerts from '@/components/BackupAlerts'; // Importando o componente de alertas
 
 const AppLayout: React.FC = () => {
   const { user } = useAuth();
@@ -69,9 +68,6 @@ const AppLayout: React.FC = () => {
         {/* Footer */}
         <AppFooter />
       </div>
-      
-      {/* Global Backup Alerts for Super Admins */}
-      {isSuperAdmin && <BackupAlerts />}
     </div>
   );
 };
