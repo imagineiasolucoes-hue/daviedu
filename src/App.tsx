@@ -13,7 +13,8 @@ import ProtectedRoute from "./components/auth/ProtectedRoute";
 import Dashboard from "./pages/Dashboard";
 import AppLayout from "./components/layout/AppLayout";
 import TenantsPage from "./pages/super-admin/TenantsPage";
-import UsersPage from "./pages/super-admin/UsersPage"; // Importando a nova página de usuários
+import UsersPage from "./pages/super-admin/UsersPage";
+import KiwifyPage from "./pages/super-admin/KiwifyPage"; // NOVO IMPORT
 import StudentsPage from "./pages/StudentsPage";
 import ClassesPage from "./pages/ClassesPage";
 import FinancePage from "./pages/FinancePage";
@@ -68,7 +69,8 @@ const App = () => {
                   
                   {/* Super Admin Routes */}
                   <Route path="/super-admin/tenants" element={<TenantsPage />} />
-                  <Route path="/super-admin/users" element={<UsersPage />} /> {/* Nova rota para usuários */}
+                  <Route path="/super-admin/users" element={<UsersPage />} />
+                  <Route path="/super-admin/kiwify" element={<KiwifyPage />} /> {/* NOVA ROTA */}
                   
                   {/* Add other protected routes here later */}
                 </Route>

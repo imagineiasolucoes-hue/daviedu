@@ -1,7 +1,7 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useProfile } from '@/hooks/useProfile';
-import { Loader2, Users, UserPlus, GraduationCap, User, Briefcase, DollarSign, Clock, ArrowDownCircle, Share2, School, LayoutDashboard, ShoppingCart, Repeat } from 'lucide-react';
+import { Loader2, Users, UserPlus, GraduationCap, User, Briefcase, DollarSign, Clock, ArrowDownCircle, Share2, School, LayoutDashboard } from 'lucide-react';
 import MetricCard from '@/components/dashboard/MetricCard';
 import RecentActivity from '@/components/dashboard/RecentActivity';
 import { Button } from '@/components/ui/button';
@@ -53,11 +53,6 @@ interface SuperAdminMetrics {
   totalUsers: number;
 }
 
-interface KiwifyMetrics {
-  totalSales: number;
-  totalSubscriptions: number;
-}
-
 const fetchSuperAdminMetrics = async (): Promise<SuperAdminMetrics> => {
   const { data, error } = await supabase.functions.invoke('get-super-admin-metrics');
   if (error) throw new Error(error.message);
@@ -66,13 +61,7 @@ const fetchSuperAdminMetrics = async (): Promise<SuperAdminMetrics> => {
   return data as SuperAdminMetrics;
 };
 
-const fetchKiwifyMetrics = async (): Promise<KiwifyMetrics> => {
-  const { data, error } = await supabase.functions.invoke('get-kiwify-metrics');
-  if (error) throw new Error(error.message);
-  // @ts-ignore
-  if (data.error) throw new Error(data.error);
-  return data as KiwifyMetrics;
-};
+// Removido fetchKiwifyMetrics e KiwifyMetrics interface daqui
 
 const Dashboard: React.FC = () => {
   const { profile, isLoading: isProfileLoading, isSuperAdmin, isSchoolUser } = useProfile();
@@ -100,11 +89,7 @@ const Dashboard: React.FC = () => {
     enabled: isSuperAdmin, // Only fetch for Super Admin
   });
 
-  const { data: kiwifyMetrics, isLoading: areKiwifyMetricsLoading } = useQuery<KiwifyMetrics, Error>({
-    queryKey: ['kiwifyMetrics'],
-    queryFn: fetchKiwifyMetrics,
-    enabled: isSuperAdmin, // Only fetch for Super Admin
-  });
+  // Removido useQuery para kiwifyMetrics daqui
 
   const handleCopyLink = () => {
     if (!profile?.tenant_id) return;
@@ -148,22 +133,7 @@ const Dashboard: React.FC = () => {
               />
             </>
           )}
-          {areKiwifyMetricsLoading ? Array.from({ length: 2 }).map((_, i) => <MetricCardSkeleton key={i} />) : (
-            <>
-              <MetricCard 
-                title="Vendas Kiwify (Total)" 
-                value={formatCurrency(kiwifyMetrics?.totalSales ?? 0)} 
-                icon={ShoppingCart} 
-                iconColor="text-kiwify" 
-              />
-              <MetricCard 
-                title="Assinaturas Ativas" 
-                value={kiwifyMetrics?.totalSubscriptions ?? 0} 
-                icon={Repeat} 
-                iconColor="text-kiwify" 
-              />
-            </>
-          )}
+          {/* Métricas do Kiwify removidas daqui */}
         </div>
 
         <Card>
@@ -172,7 +142,7 @@ const Dashboard: React.FC = () => {
           </CardHeader>
           <CardContent>
             <p className="text-muted-foreground">
-              Use o menu lateral para navegar para a Gestão de Escolas e Usuários.
+              Use o menu lateral para navegar para a Gestão de Escolas, Usuários e Métricas Kiwify.
             </p>
           </CardContent>
         </Card>
