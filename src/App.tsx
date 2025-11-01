@@ -23,6 +23,7 @@ import CalendarPage from "./pages/CalendarPage";
 import DocumentsPage from "./pages/DocumentsPage";
 import TeachersPage from "./pages/TeachersPage";
 import CoursesPage from "./pages/CoursesPage";
+import BackupAlerts from "./components/BackupAlerts";
 import BackupDashboard from "./pages/BackupDashboard"; // Importando a nova página
 
 const queryClient = new QueryClient({
@@ -77,6 +78,7 @@ const App = () => {
             </Routes>
           </SessionContextProvider>
         </BrowserRouter>
+        <BackupAlerts />
       </TooltipProvider>
     </QueryClientProvider>
   );
