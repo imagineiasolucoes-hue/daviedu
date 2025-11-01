@@ -22,7 +22,8 @@ import SettingsPage from "./pages/SettingsPage";
 import CalendarPage from "./pages/CalendarPage";
 import DocumentsPage from "./pages/DocumentsPage";
 import TeachersPage from "./pages/TeachersPage";
-import CoursesPage from "./pages/CoursesPage"; // Importando a nova página
+import CoursesPage from "./pages/CoursesPage";
+import BackupAlerts from "./components/BackupAlerts"; // Importando o novo componente
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -37,7 +38,6 @@ const App = () => {
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
-        {/* Removido o Toaster antigo */}
         <Sonner />
         <BrowserRouter>
           <SessionContextProvider>
@@ -56,7 +56,7 @@ const App = () => {
                   <Route path="/students" element={<StudentsPage />} />
                   <Route path="/teachers" element={<TeachersPage />} />
                   <Route path="/classes" element={<ClassesPage />} />
-                  <Route path="/classes/courses" element={<CoursesPage />} /> {/* Nova Rota */}
+                  <Route path="/classes/courses" element={<CoursesPage />} />
                   <Route path="/calendar" element={<CalendarPage />} />
                   <Route path="/documents" element={<DocumentsPage />} />
                   <Route path="/finance" element={<FinancePage />} />
@@ -76,6 +76,7 @@ const App = () => {
             </Routes>
           </SessionContextProvider>
         </BrowserRouter>
+        <BackupAlerts /> {/* Renderiza o componente de alertas aqui */}
       </TooltipProvider>
     </QueryClientProvider>
   );
