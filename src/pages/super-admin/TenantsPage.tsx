@@ -1,15 +1,17 @@
 import React from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Loader2, School } from 'lucide-react';
+import { Loader2, School, MoreHorizontal, Ban, CheckCircle } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { Button } from '@/components/ui/button';
 import { useProfile } from '@/hooks/useProfile';
 import { Navigate } from 'react-router-dom';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { toast } from 'sonner';
 
 interface Tenant {
   id: string;
@@ -32,12 +34,37 @@ const fetchTenants = async (): Promise<Tenant[]> => {
 
 const TenantsPage: React.FC = () => {
   const { isSuperAdmin, isLoading: isProfileLoading } = useProfile();
+  const queryClient = useQueryClient();
 
   const { data: tenants, isLoading: isTenantsLoading, error } = useQuery<Tenant[], Error>({
     queryKey: ['tenants'],
     queryFn: fetchTenants,
     enabled: isSuperAdmin, // Only fetch if the current user is a Super Admin
   });
+
+  const updateTenantStatusMutation = useMutation({
+    mutationFn: async ({ tenantId, newStatus }: { tenantId: string; newStatus: 'active' | 'suspended' }) => {
+      const { error: edgeFunctionError } = await supabase.functions.invoke('update-tenant-status', {
+        body: JSON.stringify({ tenant_id: tenantId, new_status: newStatus }),
+      });
+      if (edgeFunctionError) throw new Error(edgeFunctionError.message);
+    },
+    onSuccess: (_, variables) => {
+      toast.success(`Escola ${variables.newStatus === 'active' ? 'habilitada' : 'bloqueada'} com sucesso!`);
+      queryClient.invalidateQueries({ queryKey: ['tenants'] }); // Refetch tenants to update the list
+    },
+    onError: (err) => {
+      toast.error("Erro ao atualizar status da escola", { description: err.message });
+    },
+  });
+
+  const handleBlockTenant = (tenantId: string) => {
+    updateTenantStatusMutation.mutate({ tenantId, newStatus: 'suspended' });
+  };
+
+  const handleEnableTenant = (tenantId: string) => {
+    updateTenantStatusMutation.mutate({ tenantId, newStatus: 'active' });
+  };
 
   if (isProfileLoading) {
     return (
@@ -120,7 +147,32 @@ const TenantsPage: React.FC = () => {
                         : 'N/A'}
                     </TableCell>
                     <TableCell className="text-right">
-                      <Button variant="outline" size="sm">Ver Detalhes</Button>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="icon" disabled={updateTenantStatusMutation.isPending}>
+                            <MoreHorizontal className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          {tenant.status === 'active' || tenant.status === 'trial' ? (
+                            <DropdownMenuItem 
+                              onClick={() => handleBlockTenant(tenant.id)} 
+                              className="text-destructive"
+                              disabled={updateTenantStatusMutation.isPending}
+                            >
+                              <Ban className="mr-2 h-4 w-4" /> Bloquear Escola
+                            </DropdownMenuItem>
+                          ) : (
+                            <DropdownMenuItem 
+                              onClick={() => handleEnableTenant(tenant.id)}
+                              disabled={updateTenantStatusMutation.isPending}
+                            >
+                              <CheckCircle className="mr-2 h-4 w-4 text-green-600" /> Habilitar Escola
+                            </DropdownMenuItem>
+                          )}
+                          {/* Adicionar outras ações aqui, se necessário */}
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     </TableCell>
                   </TableRow>
                 ))}
