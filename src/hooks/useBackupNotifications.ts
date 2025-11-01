@@ -49,13 +49,14 @@ export const useBackupNotifications = () => {
     });
   }, [addNotification]);
 
-  const showEmergencyAlert = useCallback((message: string, actions?: Notification['actions']) => {
+  // Adjusted signature to accept an object
+  const showEmergencyAlert = useCallback((alertProps: { title: string; message: string; actions?: Notification['actions'] }) => {
     return addNotification({
       type: 'modal',
       variant: 'error',
-      title: 'Alerta de Emergência',
-      message,
-      actions,
+      title: alertProps.title,
+      message: alertProps.message,
+      actions: alertProps.actions,
       autoDismiss: 0,
     });
   }, [addNotification]);

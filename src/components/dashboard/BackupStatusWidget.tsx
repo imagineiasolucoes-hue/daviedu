@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -9,6 +9,7 @@ import useBackupStatus, { BackupStatus } from '@/hooks/useBackupStatus';
 import { format, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
+import { useBackupNotifications } from '@/hooks/useBackupNotifications'; // Importando o hook
 
 const getStatusDetails = (status: BackupStatus) => {
   switch (status) {
@@ -17,27 +18,18 @@ const getStatusDetails = (status: BackupStatus) => {
         label: 'Saudável',
         color: 'bg-green-500 hover:bg-green-600',
         icon: CheckCircle,
-        alert: null,
       };
     case 'warning':
       return {
         label: 'Atenção',
         color: 'bg-yellow-500 hover:bg-yellow-600 text-white',
         icon: AlertTriangle,
-        alert: {
-          title: 'Backup Pendente',
-          description: 'O último backup foi realizado há mais de 24 horas. Considere executar um backup manual.',
-        },
       };
     case 'critical':
       return {
         label: 'Crítico',
         color: 'bg-red-600 hover:bg-red-700',
         icon: ShieldAlert,
-        alert: {
-          title: 'Risco de Perda de Dados',
-          description: 'O backup está desatualizado (> 48h) ou nunca foi realizado. Faça um backup imediatamente!',
-        },
       };
   }
 };
@@ -51,8 +43,10 @@ const BackupStatusWidget: React.FC = () => {
     isBackingUp, 
     startBackup 
   } = useBackupStatus();
+  const { showSuccessFeedback, showProgressNotification, dismissNotification } = useBackupNotifications();
+  const [progressNotificationId, setProgressNotificationId] = useState<string | null>(null);
 
-  const { label, color, icon: StatusIcon, alert } = getStatusDetails(currentStatus);
+  const { label, color, icon: StatusIcon } = getStatusDetails(currentStatus);
 
   const formattedLastBackup = lastBackup 
     ? format(parseISO(lastBackup), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })
@@ -61,6 +55,22 @@ const BackupStatusWidget: React.FC = () => {
   const formattedNextScheduled = nextScheduled 
     ? format(parseISO(nextScheduled), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })
     : 'N/A';
+
+  const handleManualBackup = async () => {
+    const id = showProgressNotification('Backup em Andamento', 'Realizando backup manual...');
+    setProgressNotificationId(id);
+    try {
+      await startBackup();
+      showSuccessFeedback('Backup Concluído!', 'O backup manual foi realizado com sucesso.');
+    } catch (error) {
+      // Erros do startBackup são tratados pelo useBackupMonitoring ou pelo QuickBackupPanel
+      // Este widget apenas mostra o progresso e sucesso do backup manual
+      console.error("Erro ao iniciar backup manual:", error);
+    } finally {
+      if (progressNotificationId) dismissNotification(progressNotificationId);
+      setProgressNotificationId(null);
+    }
+  };
 
   return (
     <Card className="h-full flex flex-col">
@@ -83,14 +93,7 @@ const BackupStatusWidget: React.FC = () => {
       </CardHeader>
       
       <CardContent className="flex-grow space-y-4 pt-4">
-        {/* Alerta de Pendência */}
-        {alert && (
-          <Alert variant="destructive" className="border-l-4 border-red-500">
-            <ShieldAlert className="h-4 w-4" />
-            <AlertTitle>{alert.title}</AlertTitle>
-            <AlertDescription>{alert.description}</AlertDescription>
-          </Alert>
-        )}
+        {/* Alerta de Pendência - REMOVIDO, AGORA GERENCIADO POR BackupAlerts/useBackupMonitoring */}
 
         {/* Informações de Tempo */}
         <div className="space-y-2">
@@ -110,11 +113,11 @@ const BackupStatusWidget: React.FC = () => {
 
         {/* Botão de Ação */}
         <Button 
-          onClick={startBackup} 
-          disabled={isBackingUp}
+          onClick={handleManualBackup} 
+          disabled={isBackingUp || !!progressNotificationId}
           className="w-full bg-primary hover:bg-primary/90 mt-4"
         >
-          {isBackingUp ? (
+          {isBackingUp || !!progressNotificationId ? (
             <>
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
               Fazendo Backup...

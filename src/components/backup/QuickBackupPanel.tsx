@@ -7,7 +7,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Zap, Database, Folder, Code, HardDrive, AlertTriangle, Loader2, ChevronDown, RefreshCcw } from 'lucide-react';
-import { toast } from 'sonner';
+import { useBackupNotifications } from '@/hooks/useBackupNotifications'; // Importando o hook
 
 type SelectiveBackupType = 'database' | 'files' | 'code';
 
@@ -34,41 +34,73 @@ const QuickBackupPanel: React.FC<QuickBackupPanelProps> = ({
   const [isSelectiveBackupLoading, setIsSelectiveBackupLoading] = useState(false);
   const [isRestoreLoading, setIsRestoreLoading] = useState(false);
   const [isRestoreConfirmOpen, setIsRestoreConfirmOpen] = useState(false);
+  const { showSuccessFeedback, showEmergencyAlert, showProgressNotification, dismissNotification } = useBackupNotifications();
+  const [progressNotificationId, setProgressNotificationId] = useState<string | null>(null);
 
   const handleQuickBackup = async () => {
     setIsQuickBackupLoading(true);
+    const id = showProgressNotification('Backup em Andamento', 'Realizando backup completo de todos os dados...');
+    setProgressNotificationId(id);
     try {
       await onQuickBackup();
-      toast.success("Backup Completo Concluído!", { description: "Todos os dados foram salvos com sucesso." });
+      showSuccessFeedback('Backup Concluído!', 'O backup completo foi realizado com sucesso.');
     } catch (error) {
-      toast.error("Erro no Backup Completo", { description: (error as Error).message });
+      showEmergencyAlert({
+        title: 'Falha no Backup Completo',
+        message: (error as Error).message || 'Não foi possível completar o backup completo.',
+        actions: [
+          { label: 'Tentar Novamente', onClick: handleQuickBackup },
+        ],
+      });
     } finally {
       setIsQuickBackupLoading(false);
+      if (progressNotificationId) dismissNotification(progressNotificationId);
+      setProgressNotificationId(null);
     }
   };
 
   const handleSelectiveBackup = async (type: SelectiveBackupType) => {
     setIsSelectiveBackupLoading(true);
+    const id = showProgressNotification('Backup Seletivo em Andamento', `Realizando backup seletivo de ${type}...`);
+    setProgressNotificationId(id);
     try {
       await onSelectiveBackup(type);
-      toast.success(`Backup Seletivo (${type}) Concluído!`, { description: `Os dados de ${type} foram salvos.` });
+      showSuccessFeedback('Backup Seletivo Concluído!', `O backup dos dados de ${type} foi realizado com sucesso.`);
     } catch (error) {
-      toast.error(`Erro no Backup Seletivo (${type})`, { description: (error as Error).message });
+      showEmergencyAlert({
+        title: `Falha no Backup Seletivo (${type})`,
+        message: (error as Error).message || `Não foi possível completar o backup seletivo de ${type}.`,
+        actions: [
+          { label: 'Tentar Novamente', onClick: () => handleSelectiveBackup(type) },
+        ],
+      });
     } finally {
       setIsSelectiveBackupLoading(false);
+      if (progressNotificationId) dismissNotification(progressNotificationId);
+      setProgressNotificationId(null);
     }
   };
 
   const handleEmergencyRestore = async () => {
     setIsRestoreLoading(true);
+    const id = showProgressNotification('Restauração em Andamento', 'Restaurando o sistema para o último backup estável...');
+    setProgressNotificationId(id);
     try {
       await onEmergencyRestore();
-      toast.success("Restauração Concluída!", { description: "O último backup estável foi restaurado." });
+      showSuccessFeedback('Restauração Concluída!', 'O último backup estável foi restaurado com sucesso.');
     } catch (error) {
-      toast.error("Erro na Restauração", { description: (error as Error).message });
+      showEmergencyAlert({
+        title: 'Falha na Restauração',
+        message: (error as Error).message || 'Não foi possível restaurar o sistema.',
+        actions: [
+          { label: 'Tentar Novamente', onClick: handleEmergencyRestore },
+        ],
+      });
     } finally {
       setIsRestoreLoading(false);
       setIsRestoreConfirmOpen(false);
+      if (progressNotificationId) dismissNotification(progressNotificationId);
+      setProgressNotificationId(null);
     }
   };
 
@@ -95,7 +127,7 @@ const QuickBackupPanel: React.FC<QuickBackupPanelProps> = ({
               <TooltipTrigger asChild>
                 <Button
                   onClick={handleQuickBackup}
-                  disabled={isQuickBackupLoading}
+                  disabled={isQuickBackupLoading || !!progressNotificationId}
                   className="w-full bg-primary hover:bg-primary/90"
                 >
                   {isQuickBackupLoading ? (
@@ -125,7 +157,7 @@ const QuickBackupPanel: React.FC<QuickBackupPanelProps> = ({
           </p>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="outline" disabled={isSelectiveBackupLoading} className="w-full">
+              <Button variant="outline" disabled={isSelectiveBackupLoading || !!progressNotificationId} className="w-full">
                 {isSelectiveBackupLoading ? (
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 ) : (
@@ -137,13 +169,13 @@ const QuickBackupPanel: React.FC<QuickBackupPanelProps> = ({
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent>
-              <DropdownMenuItem onClick={() => handleSelectiveBackup('database')} disabled={isSelectiveBackupLoading}>
+              <DropdownMenuItem onClick={() => handleSelectiveBackup('database')} disabled={isSelectiveBackupLoading || !!progressNotificationId}>
                 <Database className="mr-2 h-4 w-4" /> Banco de Dados
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => handleSelectiveBackup('files')} disabled={isSelectiveBackupLoading}>
+              <DropdownMenuItem onClick={() => handleSelectiveBackup('files')} disabled={isSelectiveBackupLoading || !!progressNotificationId}>
                 <Folder className="mr-2 h-4 w-4" /> Arquivos
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => handleSelectiveBackup('code')} disabled={isSelectiveBackupLoading}>
+              <DropdownMenuItem onClick={() => handleSelectiveBackup('code')} disabled={isSelectiveBackupLoading || !!progressNotificationId}>
                 <Code className="mr-2 h-4 w-4" /> Código Fonte
               </DropdownMenuItem>
             </DropdownMenuContent>
@@ -188,7 +220,7 @@ const QuickBackupPanel: React.FC<QuickBackupPanelProps> = ({
                 <Button
                   variant="destructive"
                   onClick={() => setIsRestoreConfirmOpen(true)}
-                  disabled={isRestoreLoading}
+                  disabled={isRestoreLoading || !!progressNotificationId}
                   className="w-full"
                 >
                   {isRestoreLoading ? (

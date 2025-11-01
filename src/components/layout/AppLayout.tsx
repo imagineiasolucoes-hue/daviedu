@@ -8,18 +8,22 @@ import { useAuth } from '@/components/auth/SessionContextProvider';
 import { supabase } from '@/integrations/supabase/client';
 import { useProfile } from '@/hooks/useProfile';
 import Sidebar from './Sidebar';
-import AppFooter from './AppFooter'; // Importando o novo rodapé
+import AppFooter from './AppFooter';
+import BackupAlerts from '@/components/BackupAlerts'; // Importando BackupAlerts
+import { useBackupMonitoring } from '@/hooks/useBackupMonitoring'; // Importando o novo hook de monitoramento
 
 const AppLayout: React.FC = () => {
   const { user } = useAuth();
   const { profile, isLoading, isSuperAdmin } = useProfile();
+
+  // Ativa o monitoramento de backup para gerar alertas proativos
+  useBackupMonitoring();
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
   };
 
   if (isLoading) {
-    // O loading já é tratado no ProtectedRoute, mas mantemos aqui para o caso de recarga
     return (
       <div className="flex items-center justify-center min-h-screen">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -68,6 +72,9 @@ const AppLayout: React.FC = () => {
         {/* Footer */}
         <AppFooter />
       </div>
+
+      {/* Backup Alerts Display */}
+      <BackupAlerts />
     </div>
   );
 };
