@@ -16,15 +16,15 @@ import { QRCodeSVG } from 'qrcode.react';
 import { Separator } from '@/components/ui/separator';
 
 const tenantConfigSchema = z.object({
-  cnpj: z.string().optional(),
-  phone: z.string().optional(),
-  address_street: z.string().optional(),
-  address_number: z.string().optional(),
-  address_neighborhood: z.string().optional(),
-  address_city: z.string().optional(),
-  address_state: z.string().optional(),
-  address_zip_code: z.string().optional(),
-  logo_url: z.string().url().optional().nullable(),
+  cnpj: z.string().optional().nullable(),
+  phone: z.string().optional().nullable(),
+  address_street: z.string().optional().nullable(),
+  address_number: z.string().optional().nullable(),
+  address_neighborhood: z.string().optional().nullable(),
+  address_city: z.string().optional().nullable(),
+  address_state: z.string().optional().nullable(),
+  address_zip_code: z.string().optional().nullable(),
+  logo_url: z.string().url("URL da logo inválida.").optional().nullable(),
 });
 
 const tenantSchema = z.object({
@@ -71,7 +71,17 @@ const SchoolSettingsForm: React.FC = () => {
     if (tenant) {
       form.reset({
         name: tenant.name,
-        config: tenant.config,
+        config: {
+          cnpj: tenant.config?.cnpj || null,
+          phone: tenant.config?.phone || null,
+          address_street: tenant.config?.address_street || null,
+          address_number: tenant.config?.address_number || null,
+          address_neighborhood: tenant.config?.address_neighborhood || null,
+          address_city: tenant.config?.address_city || null,
+          address_state: tenant.config?.address_state || null,
+          address_zip_code: tenant.config?.address_zip_code || null,
+          logo_url: tenant.config?.logo_url || null,
+        },
       });
     }
   }, [tenant, form]);
@@ -110,7 +120,18 @@ const SchoolSettingsForm: React.FC = () => {
       logoUrl = publicUrl;
     }
 
-    const updatedConfig = { ...data.config, logo_url: logoUrl };
+    const updatedConfig = { 
+      ...data.config, 
+      cnpj: data.config?.cnpj || null,
+      phone: data.config?.phone || null,
+      address_street: data.config?.address_street || null,
+      address_number: data.config?.address_number || null,
+      address_neighborhood: data.config?.address_neighborhood || null,
+      address_city: data.config?.address_city || null,
+      address_state: data.config?.address_state || null,
+      address_zip_code: data.config?.address_zip_code || null,
+      logo_url: logoUrl || null,
+    };
 
     const { error } = await supabase
       .from('tenants')
@@ -177,11 +198,11 @@ const SchoolSettingsForm: React.FC = () => {
               </div>
               <div className="grid sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="cnpj">CNPJ</Label>
+                  <Label htmlFor="cnpj">CNPJ (Opcional)</Label>
                   <Input id="cnpj" {...form.register("config.cnpj")} />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="phone">Telefone</Label>
+                  <Label htmlFor="phone">Telefone (Opcional)</Label>
                   <Input id="phone" {...form.register("config.phone")} />
                 </div>
               </div>
@@ -199,31 +220,31 @@ const SchoolSettingsForm: React.FC = () => {
             <div className="md:col-span-2 grid gap-4">
               <div className="grid sm:grid-cols-3 gap-4">
                 <div className="space-y-2 sm:col-span-2">
-                  <Label htmlFor="address_street">Rua</Label>
+                  <Label htmlFor="address_street">Rua (Opcional)</Label>
                   <Input id="address_street" {...form.register("config.address_street")} />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="address_number">Número</Label>
+                  <Label htmlFor="address_number">Número (Opcional)</Label>
                   <Input id="address_number" {...form.register("config.address_number")} />
                 </div>
               </div>
               <div className="grid sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="address_neighborhood">Bairro</Label>
+                  <Label htmlFor="address_neighborhood">Bairro (Opcional)</Label>
                   <Input id="address_neighborhood" {...form.register("config.address_neighborhood")} />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="address_zip_code">CEP</Label>
+                  <Label htmlFor="address_zip_code">CEP (Opcional)</Label>
                   <Input id="address_zip_code" {...form.register("config.address_zip_code")} />
                 </div>
               </div>
               <div className="grid sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="address_city">Cidade</Label>
+                  <Label htmlFor="address_city">Cidade (Opcional)</Label>
                   <Input id="address_city" {...form.register("config.address_city")} />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="address_state">Estado</Label>
+                  <Label htmlFor="address_state">Estado (Opcional)</Label>
                   <Input id="address_state" {...form.register("config.address_state")} />
                 </div>
               </div>

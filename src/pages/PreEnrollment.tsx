@@ -17,7 +17,7 @@ const preEnrollmentSchema = z.object({
   full_name: z.string().min(5, "Nome completo é obrigatório."),
   birth_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Data de nascimento inválida. Use o formato AAAA-MM-DD."),
   phone: z.string().min(8, "Telefone é obrigatório."),
-  email: z.string().email("Email inválido.").optional().or(z.literal('')),
+  email: z.string().email("Email inválido.").optional().or(z.literal('')).nullable(),
 });
 
 type PreEnrollmentFormData = z.infer<typeof preEnrollmentSchema>;
@@ -54,7 +54,7 @@ const PreEnrollment: React.FC = () => {
       full_name: "",
       birth_date: "",
       phone: "",
-      email: "",
+      email: null,
     },
   });
 

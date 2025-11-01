@@ -15,7 +15,7 @@ import { Loader2 } from 'lucide-react';
 const profileSchema = z.object({
   first_name: z.string().min(2, "O nome é obrigatório."),
   last_name: z.string().min(2, "O sobrenome é obrigatório."),
-  phone: z.string().optional(),
+  phone: z.string().optional().nullable(),
 });
 
 type ProfileFormData = z.infer<typeof profileSchema>;
@@ -33,7 +33,7 @@ const ProfileSettingsForm: React.FC = () => {
       form.reset({
         first_name: profile.first_name || '',
         last_name: profile.last_name || '',
-        phone: profile.phone || '',
+        phone: profile.phone || null,
       });
     }
   }, [profile, form]);
@@ -47,7 +47,7 @@ const ProfileSettingsForm: React.FC = () => {
       .update({
         first_name: data.first_name,
         last_name: data.last_name,
-        phone: data.phone,
+        phone: data.phone || null,
         updated_at: new Date().toISOString(),
       })
       .eq('id', profile.id);
@@ -97,7 +97,7 @@ const ProfileSettingsForm: React.FC = () => {
                   <p className="text-xs text-muted-foreground">O e-mail não pode ser alterado.</p>
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="phone">Telefone de Contato</Label>
+                  <Label htmlFor="phone">Telefone de Contato (Opcional)</Label>
                   <Input id="phone" type="tel" {...form.register("phone")} />
                 </div>
               </div>

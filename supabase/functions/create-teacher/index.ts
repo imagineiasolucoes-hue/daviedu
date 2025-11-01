@@ -78,7 +78,10 @@ serve(async (req) => {
             .insert(links);
 
         if (linkError) {
-            // Logar o erro, mas não necessariamente reverter a criação do professor
+            // NOTA: Em um ambiente de produção, para garantir atomicidade, a criação do professor
+            // também deveria ser revertida se o vínculo das turmas falhar.
+            // Isso geralmente é feito com uma função de banco de dados (stored procedure)
+            // que encapsula todas as operações em uma única transação.
             console.error("Erro ao vincular professor às turmas:", linkError);
             // Continuar, mas informar o erro
         }

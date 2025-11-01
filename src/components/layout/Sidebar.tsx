@@ -14,6 +14,7 @@ interface NavItemProps {
 // Definindo o tipo para os itens de navegação, incluindo isSubItem
 interface NavigationItem extends NavItemProps {
   isSubItem?: boolean;
+  parentPath?: string; // Adicionado para vincular sub-itens ao pai
 }
 
 const NavItem: React.FC<NavItemProps> = ({ to, icon, label }) => {
@@ -55,13 +56,13 @@ const Sidebar: React.FC<SidebarProps> = ({ isSuperAdmin, displayName, roleDispla
     { to: "/teachers", icon: <UserCheck className="h-5 w-5" />, label: "Professores" },
     { to: "/classes", icon: <BookOpen className="h-5 w-5" />, label: "Turmas" },
     // Sub-item de Turmas
-    { to: "/classes/courses", icon: <ListChecks className="h-5 w-5 ml-4" />, label: "Cursos/Séries", isSubItem: true },
+    { to: "/classes/courses", icon: <ListChecks className="h-5 w-5 ml-4" />, label: "Cursos/Séries", isSubItem: true, parentPath: '/classes' },
     { to: "/calendar", icon: <CalendarDays className="h-5 w-5" />, label: "Calendário" },
     { to: "/documents", icon: <FileText className="h-5 w-5" />, label: "Documentos" },
     // Financeiro
     { to: "/finance", icon: <DollarSign className="h-5 w-5" />, label: "Financeiro" },
-    { to: "/revenues", icon: <TrendingUp className="h-5 w-5 ml-4" />, label: "Receitas" },
-    { to: "/expenses", icon: <TrendingDown className="h-5 w-5 ml-4" />, label: "Despesas" },
+    { to: "/revenues", icon: <TrendingUp className="h-5 w-5 ml-4" />, label: "Receitas", isSubItem: true, parentPath: '/finance' },
+    { to: "/expenses", icon: <TrendingDown className="h-5 w-5 ml-4" />, label: "Despesas", isSubItem: true, parentPath: '/finance' },
     // Geral
     { to: "/backup", icon: <HardDrive className="h-5 w-5" />, label: "Backup" },
     { to: "/settings", icon: <Settings className="h-5 w-5" />, label: "Configurações" },
@@ -71,7 +72,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isSuperAdmin, displayName, roleDispla
     { to: "/dashboard", icon: <Home className="h-5 w-5" />, label: "Dashboard SA" },
     { to: "/super-admin/tenants", icon: <School className="h-5 w-5" />, label: "Escolas (Tenants)" },
     { to: "/super-admin/users", icon: <Users className="h-5 w-5" />, label: "Usuários SA" },
-    { to: "/super-admin/kiwify", icon: <ShoppingCart className="h-5 w-5" />, label: "Kiwify Metrics" }, // NOVO ITEM
+    { to: "/super-admin/kiwify", icon: <ShoppingCart className="h-5 w-5" />, label: "Kiwify Metrics" },
     { to: "/backup", icon: <HardDrive className="h-5 w-5" />, label: "Backup" },
   ];
 
@@ -96,7 +97,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isSuperAdmin, displayName, roleDispla
             }
             
             // Renderiza o sub-item se o item pai estiver ativo (Turmas)
-            if (item.isSubItem && isClassesActive) {
+            if (item.isSubItem && item.parentPath && location.pathname.startsWith(item.parentPath)) {
                 return (
                     <Link
                         key={item.to}

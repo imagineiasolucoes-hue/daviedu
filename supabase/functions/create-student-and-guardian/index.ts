@@ -115,7 +115,10 @@ serve(async (req) => {
 
     if (guardianInsertError) {
       console.error("Supabase Guardian Insert Error:", JSON.stringify(guardianInsertError, null, 2));
-      // Nota: Em um ambiente de produção, você pode querer reverter a criação do aluno aqui.
+      // NOTA: Em um ambiente de produção, para garantir atomicidade, a criação do aluno
+      // também deveria ser revertida se o responsável ou o vínculo falharem.
+      // Isso geralmente é feito com uma função de banco de dados (stored procedure)
+      // que encapsula todas as operações em uma única transação.
       throw new Error(`Erro ao cadastrar responsável: ${guardianInsertError.message}`);
     }
 
@@ -132,6 +135,8 @@ serve(async (req) => {
 
     if (linkError) {
       console.error("Supabase Link Error:", JSON.stringify(linkError, null, 2));
+      // NOTA: Similarmente, se o vínculo falhar, a criação do aluno e do responsável
+      // deveria ser revertida para manter a integridade dos dados.
       throw new Error(`Erro ao vincular responsável ao aluno: ${linkError.message}`);
     }
 

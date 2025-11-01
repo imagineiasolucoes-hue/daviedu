@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { X, ShieldAlert, AlertTriangle, Info, Database } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import useBackupStatus from '@/hooks/useBackupStatus';
+import useBackupStatus, { BackupStatus } from '@/hooks/useBackupStatus';
 import { format, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { Alert, AlertType } from '@/types/alerts'; // Importando os tipos definidos
@@ -35,13 +35,17 @@ const BackupAlerts: React.FC<BackupAlertsProps> = ({
       if (newAlert.type === 'info' && newAlert.title === 'Backup em Andamento' && prevAlerts.some(a => a.title === 'Backup em Andamento')) {
         return prevAlerts;
       }
-      // NEW: Previne múltiplos alertas "Backup Programado"
+      // Previne múltiplos alertas "Backup Programado"
       if (newAlert.type === 'info' && newAlert.title === 'Backup Programado' && prevAlerts.some(a => a.title === 'Backup Programado')) {
+        return prevAlerts;
+      }
+      // Previne múltiplos alertas "Backup Concluído"
+      if (newAlert.type === 'info' && newAlert.title === 'Backup Concluído!' && prevAlerts.some(a => a.title === 'Backup Concluído!')) {
         return prevAlerts;
       }
       return [...prevAlerts, { ...newAlert, id: crypto.randomUUID(), timestamp: new Date() }];
     });
-  }, []); // addAlert does not depend on alerts, so it's stable.
+  }, []);
 
   const removeAlert = useCallback((id: string) => {
     setAlerts((prevAlerts) => prevAlerts.filter((alert) => alert.id !== id));
@@ -126,7 +130,7 @@ const BackupAlerts: React.FC<BackupAlertsProps> = ({
     }
     lastBackupRef.current = lastBackup; // Atualiza a referência
 
-  }, [backupStatus, lastBackup, nextScheduled, isBackingUp, addAlert, autoDismissDelay, startBackup]); // Removed 'alerts' from dependencies
+  }, [backupStatus, lastBackup, nextScheduled, isBackingUp, addAlert, autoDismissDelay, startBackup]);
 
   // Efeito para persistência no localStorage
   useEffect(() => {
@@ -147,24 +151,29 @@ const BackupAlerts: React.FC<BackupAlertsProps> = ({
     try {
       const raw = localStorage.getItem(LOCAL_STORAGE_KEY);
       if (raw) {
-        const storedAlerts: Alert[] = JSON.parse(raw).map((alert: any) => ({
-          ...alert,
-          timestamp: new Date(alert.timestamp),
+        const storedAlerts: Alert[] = JSON.parse(raw).map((alert: any) => {
+          const restoredAlert: Alert = {
+            ...alert,
+            timestamp: new Date(alert.timestamp),
+          };
           // Re-anexa onClick para alertas críticos/de aviso
-          action: alert.action ? { label: alert.action.label, onClick: startBackup } : undefined,
-        }));
+          if (restoredAlert.action) {
+            restoredAlert.action.onClick = startBackup; // Re-anexa a função startBackup
+          }
+          return restoredAlert;
+        });
         // Filtra alertas que já deveriam ter sido auto-descartados ou que não são persistentes
         const now = new Date();
         const filteredStoredAlerts = storedAlerts.filter(a => 
             (a.type === 'critical' || a.type === 'warning') && 
-            (!a.autoDismiss || (now.getTime() - a.timestamp.getTime()) / 1000 < a.autoDismiss)
+            (!a.autoDismiss || (now.getTime() - a.timestamp.getTime()) / 1000 < a.autoDismiss * 1000) // Multiplica por 1000 para segundos
         );
         setAlerts(filteredStoredAlerts);
       }
     } catch (e) {
       console.warn("Não foi possível carregar os alertas do localStorage", e);
     }
-  }, [startBackup]); // Dependência em startBackup para re-anexar a ação
+  }, [startBackup]);
 
   const positionClasses = {
     'top-right': 'top-4 right-4 items-end',

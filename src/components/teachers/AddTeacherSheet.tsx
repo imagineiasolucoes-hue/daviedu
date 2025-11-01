@@ -23,19 +23,19 @@ const classAssignmentSchema = z.object({
 
 const teacherSchema = z.object({
   full_name: z.string().min(5, "Nome completo é obrigatório."),
-  main_subject: z.string().optional(),
+  main_subject: z.string().optional().nullable(), // Pode ser nulo
   base_salary: z.coerce.number().min(0, "Salário deve ser um valor positivo."),
-  hire_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Data de contratação inválida."),
+  hire_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Data de contratação inválida. Use o formato AAAA-MM-DD."),
   
   // Novos campos de contato e endereço
-  email: z.string().email("Email inválido.").optional().or(z.literal('')),
-  phone: z.string().optional(),
-  zip_code: z.string().optional(),
-  address_street: z.string().optional(),
-  address_number: z.string().optional(),
-  address_neighborhood: z.string().optional(),
-  address_city: z.string().optional(),
-  address_state: z.string().optional(),
+  email: z.string().email("Email inválido.").optional().or(z.literal('')).nullable(),
+  phone: z.string().optional().nullable(),
+  zip_code: z.string().optional().nullable(),
+  address_street: z.string().optional().nullable(),
+  address_number: z.string().optional().nullable(),
+  address_neighborhood: z.string().optional().nullable(),
+  address_city: z.string().optional().nullable(),
+  address_state: z.string().optional().nullable(),
 });
 
 type TeacherFormData = z.infer<typeof teacherSchema>;
@@ -88,10 +88,16 @@ const AddTeacherSheet: React.FC = () => {
     resolver: zodResolver(teacherSchema),
     defaultValues: {
       full_name: "",
-      main_subject: "",
+      main_subject: null,
       hire_date: "",
-      email: "",
-      phone: "",
+      email: null,
+      phone: null,
+      zip_code: null,
+      address_street: null,
+      address_number: null,
+      address_neighborhood: null,
+      address_city: null,
+      address_state: null,
     },
   });
 
@@ -142,6 +148,7 @@ const AddTeacherSheet: React.FC = () => {
         address_neighborhood: data.address_neighborhood || null,
         address_city: data.address_city || null,
         address_state: data.address_state || null,
+        main_subject: data.main_subject || null,
       };
 
       const { error } = await supabase.functions.invoke('create-teacher', {
@@ -187,7 +194,7 @@ const AddTeacherSheet: React.FC = () => {
               {form.formState.errors.full_name && <p className="text-sm text-destructive">{form.formState.errors.full_name.message}</p>}
             </div>
             <div className="space-y-2">
-              <Label htmlFor="main_subject">Matéria Principal</Label>
+              <Label htmlFor="main_subject">Matéria Principal (Opcional)</Label>
               <Input id="main_subject" {...form.register("main_subject")} />
             </div>
             <div className="grid grid-cols-2 gap-4">
@@ -211,12 +218,12 @@ const AddTeacherSheet: React.FC = () => {
             <h3 className="text-lg font-semibold">Contato</h3>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
+                <Label htmlFor="email">Email (Opcional)</Label>
                 <Input id="email" type="email" {...form.register("email")} />
                 {form.formState.errors.email && <p className="text-sm text-destructive">{form.formState.errors.email.message}</p>}
               </div>
               <div className="space-y-2">
-                <Label htmlFor="phone">Telefone</Label>
+                <Label htmlFor="phone">Telefone (Opcional)</Label>
                 <Input id="phone" type="tel" {...form.register("phone")} />
               </div>
             </div>
@@ -229,31 +236,31 @@ const AddTeacherSheet: React.FC = () => {
             <h3 className="text-lg font-semibold">Endereço</h3>
             <div className="grid grid-cols-3 gap-4">
               <div className="space-y-2 col-span-1">
-                <Label htmlFor="zip_code">CEP</Label>
+                <Label htmlFor="zip_code">CEP (Opcional)</Label>
                 <Input id="zip_code" {...form.register("zip_code")} />
               </div>
               <div className="space-y-2 col-span-2">
-                <Label htmlFor="address_street">Rua</Label>
+                <Label htmlFor="address_street">Rua (Opcional)</Label>
                 <Input id="address_street" {...form.register("address_street")} />
               </div>
             </div>
             <div className="grid grid-cols-3 gap-4">
               <div className="space-y-2 col-span-1">
-                <Label htmlFor="address_number">Número</Label>
+                <Label htmlFor="address_number">Número (Opcional)</Label>
                 <Input id="address_number" {...form.register("address_number")} />
               </div>
               <div className="space-y-2 col-span-2">
-                <Label htmlFor="address_neighborhood">Bairro</Label>
+                <Label htmlFor="address_neighborhood">Bairro (Opcional)</Label>
                 <Input id="address_neighborhood" {...form.register("address_neighborhood")} />
               </div>
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="address_city">Cidade</Label>
+                <Label htmlFor="address_city">Cidade (Opcional)</Label>
                 <Input id="address_city" {...form.register("address_city")} />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="address_state">Estado</Label>
+                <Label htmlFor="address_state">Estado (Opcional)</Label>
                 <Input id="address_state" {...form.register("address_state")} />
               </div>
             </div>

@@ -39,7 +39,8 @@ const Register = () => {
 
   const onSubmit = async (data: RegisterFormData) => {
     setIsSubmitting(true);
-    
+    let userId: string | null = null; // Variável para armazenar o ID do usuário criado
+
     try {
       // 1. Criar o usuário no Supabase Auth
       const { data: authData, error: authError } = await supabase.auth.signUp({
@@ -61,7 +62,7 @@ const Register = () => {
         throw new Error("Falha ao criar o usuário. Verifique seu email para confirmação.");
       }
 
-      const userId = authData.user.id;
+      userId = authData.user.id; // Armazena o ID do usuário
 
       // 2. Chamar a Edge Function para criar o Tenant e o Perfil Admin
       const { data: edgeFunctionData, error: edgeFunctionError } = await supabase.functions.invoke('create-tenant-and-admin', {
@@ -75,8 +76,11 @@ const Register = () => {
       });
 
       if (edgeFunctionError) {
-        // Se a Edge Function falhar, tentamos reverter a criação do usuário (opcional, mas boa prática)
-        await supabase.auth.admin.deleteUser(userId);
+        // Se a Edge Function falhar, tentamos reverter a criação do usuário
+        if (userId) {
+          await supabase.auth.admin.deleteUser(userId);
+          console.warn(`Usuário ${userId} deletado devido a falha na criação do tenant.`);
+        }
         throw new Error(edgeFunctionError.message);
       }
       
@@ -84,7 +88,10 @@ const Register = () => {
 
       if (response.error) {
         // Se a Edge Function retornar um erro de negócio (ex: escola já existe)
-        await supabase.auth.admin.deleteUser(userId);
+        if (userId) {
+          await supabase.auth.admin.deleteUser(userId);
+          console.warn(`Usuário ${userId} deletado devido a erro de negócio na criação do tenant: ${response.error}`);
+        }
         throw new Error(response.error);
       }
 

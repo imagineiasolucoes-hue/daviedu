@@ -15,9 +15,9 @@ import { Loader2 } from 'lucide-react';
 
 const studentSchema = z.object({
   full_name: z.string().min(5, "Nome completo é obrigatório."),
-  birth_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Data de nascimento inválida."),
-  phone: z.string().optional(),
-  email: z.string().email("Email inválido.").optional().or(z.literal('')),
+  birth_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Data de nascimento inválida. Use o formato AAAA-MM-DD."),
+  phone: z.string().optional().nullable(),
+  email: z.string().email("Email inválido.").optional().or(z.literal('')).nullable(),
   class_id: z.string().uuid("Selecione uma turma.").optional().nullable(),
   status: z.enum(['active', 'pre-enrolled', 'inactive']),
 });
@@ -81,8 +81,8 @@ const EditStudentSheet: React.FC<EditStudentSheetProps> = ({ studentId, open, on
       form.reset({
         full_name: student.full_name,
         birth_date: student.birth_date,
-        phone: student.phone || '',
-        email: student.email || '',
+        phone: student.phone || null,
+        email: student.email || null,
         class_id: student.class_id || null,
         status: student.status,
       });
@@ -98,6 +98,7 @@ const EditStudentSheet: React.FC<EditStudentSheetProps> = ({ studentId, open, on
           tenant_id: tenantId,
           class_id: data.class_id || null,
           email: data.email || null,
+          phone: data.phone || null,
         }),
       });
       if (error) throw new Error(error.message);
@@ -105,6 +106,7 @@ const EditStudentSheet: React.FC<EditStudentSheetProps> = ({ studentId, open, on
     onSuccess: () => {
       toast.success("Aluno atualizado com sucesso.");
       queryClient.invalidateQueries({ queryKey: ['students', tenantId] });
+      queryClient.invalidateQueries({ queryKey: ['student', studentId] }); // Refetch details
       onOpenChange(false);
     },
     onError: (error) => {
@@ -139,6 +141,7 @@ const EditStudentSheet: React.FC<EditStudentSheetProps> = ({ studentId, open, on
             <div className="space-y-2">
               <Label htmlFor="birth_date">Data de Nascimento</Label>
               <Input id="birth_date" type="date" {...form.register("birth_date")} />
+              {form.formState.errors.birth_date && <p className="text-sm text-destructive">{form.formState.errors.birth_date.message}</p>}
             </div>
             <div className="space-y-2">
               <Label htmlFor="phone">Telefone</Label>

@@ -18,19 +18,19 @@ import { Separator } from '@/components/ui/separator';
 
 // --- Tipos e Schemas ---
 const expenseSchema = z.object({
-  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Data inválida."),
+  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Data inválida. Use o formato AAAA-MM-DD."),
   category_id: z.string().uuid("Selecione uma categoria."),
-  description: z.string().optional(),
+  description: z.string().optional().nullable(),
   amount: z.coerce.number().min(0.01, "O valor deve ser maior que zero."),
   payment_method: z.enum(['Dinheiro', 'Cartão', 'Pix', 'Boleto', 'Transferência'], {
     required_error: "O método de pagamento é obrigatório.",
   }),
-  destination: z.string().optional(),
+  destination: z.string().optional().nullable(),
   status: z.enum(['pendente', 'pago'], {
     required_error: "O status é obrigatório.",
   }),
   is_recurring: z.boolean().default(false),
-  attachment_url: z.string().url("URL de anexo inválida.").optional().nullable(),
+  attachment_url: z.string().url("URL de anexo inválida.").optional().or(z.literal('')).nullable(),
   payroll_id: z.string().uuid("Selecione uma folha de pagamento.").optional().nullable(), // Para vincular a despesas de folha
 });
 
@@ -71,12 +71,13 @@ const AddExpenseSheet: React.FC = () => {
     resolver: zodResolver(expenseSchema),
     defaultValues: {
       date: new Date().toISOString().split('T')[0],
-      description: "",
+      description: null,
       amount: 0,
       is_recurring: false,
       status: 'pendente',
       attachment_url: null,
       payroll_id: null,
+      destination: null,
     },
   });
 
@@ -108,13 +109,13 @@ const AddExpenseSheet: React.FC = () => {
       queryClient.invalidateQueries({ queryKey: ['financeMetrics', tenantId] }); // Atualiza o financeiro
       form.reset({
         date: new Date().toISOString().split('T')[0],
-        description: "",
+        description: null,
         amount: 0,
         is_recurring: false,
         status: 'pendente',
         category_id: undefined,
         payment_method: undefined,
-        destination: "",
+        destination: null,
         attachment_url: null,
         payroll_id: null,
       });

@@ -61,8 +61,6 @@ const fetchSuperAdminMetrics = async (): Promise<SuperAdminMetrics> => {
   return data as SuperAdminMetrics;
 };
 
-// Removido fetchKiwifyMetrics e KiwifyMetrics interface daqui
-
 const Dashboard: React.FC = () => {
   const { profile, isLoading: isProfileLoading, isSuperAdmin, isSchoolUser } = useProfile();
   const tenantId = profile?.tenant_id;
@@ -88,8 +86,6 @@ const Dashboard: React.FC = () => {
     queryFn: fetchSuperAdminMetrics,
     enabled: isSuperAdmin, // Only fetch for Super Admin
   });
-
-  // Removido useQuery para kiwifyMetrics daqui
 
   const handleCopyLink = () => {
     if (!profile?.tenant_id) return;
@@ -133,7 +129,6 @@ const Dashboard: React.FC = () => {
               />
             </>
           )}
-          {/* Métricas do Kiwify removidas daqui */}
         </div>
 
         <Card>

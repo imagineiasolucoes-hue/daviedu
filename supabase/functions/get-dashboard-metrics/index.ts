@@ -36,34 +36,39 @@ serve(async (req) => {
     const lastDayOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString().split('T')[0];
 
     // --- Dados para o Gráfico de Barras (Últimos 6 meses) ---
-    const monthlyFinancialData = [];
     const monthNames = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
+    const monthlyDataPromises = [];
 
     for (let i = 5; i >= 0; i--) { // Últimos 6 meses (incluindo o atual)
       const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
       const monthStart = new Date(date.getFullYear(), date.getMonth(), 1).toISOString().split('T')[0];
       const monthEnd = new Date(date.getFullYear(), date.getMonth() + 1, 0).toISOString().split('T')[0];
 
-      const [
-        monthlyRevenueResult,
-        monthlyExpenseResult
-      ] = await Promise.all([
-        supabaseAdmin.from('revenues').select('amount').eq('tenant_id', tenant_id).eq('status', 'pago').gte('date', monthStart).lte('date', monthEnd),
-        supabaseAdmin.from('expenses').select('amount').eq('tenant_id', tenant_id).eq('status', 'pago').gte('date', monthStart).lte('date', monthEnd)
-      ]);
+      monthlyDataPromises.push(
+        (async () => {
+          const [
+            monthlyRevenueResult,
+            monthlyExpenseResult
+          ] = await Promise.all([
+            supabaseAdmin.from('revenues').select('amount').eq('tenant_id', tenant_id).eq('status', 'pago').gte('date', monthStart).lte('date', monthEnd),
+            supabaseAdmin.from('expenses').select('amount').eq('tenant_id', tenant_id).eq('status', 'pago').gte('date', monthStart).lte('date', monthEnd)
+          ]);
 
-      if (monthlyRevenueResult.error) throw new Error(`Erro ao buscar receita mensal: ${monthlyRevenueResult.error.message}`);
-      if (monthlyExpenseResult.error) throw new Error(`Erro ao buscar despesa mensal: ${monthlyExpenseResult.error.message}`);
+          if (monthlyRevenueResult.error) throw new Error(`Erro ao buscar receita mensal: ${monthlyRevenueResult.error.message}`);
+          if (monthlyExpenseResult.error) throw new Error(`Erro ao buscar despesa mensal: ${monthlyExpenseResult.error.message}`);
 
-      const totalMonthlyRevenue = monthlyRevenueResult.data?.reduce((sum, r) => sum + r.amount, 0) ?? 0;
-      const totalMonthlyExpense = monthlyExpenseResult.data?.reduce((sum, r) => sum + r.amount, 0) ?? 0;
+          const totalMonthlyRevenue = monthlyRevenueResult.data?.reduce((sum, r) => sum + r.amount, 0) ?? 0;
+          const totalMonthlyExpense = monthlyExpenseResult.data?.reduce((sum, r) => sum + r.amount, 0) ?? 0;
 
-      monthlyFinancialData.push({
-        name: monthNames[date.getMonth()],
-        Receita: totalMonthlyRevenue,
-        Despesa: totalMonthlyExpense,
-      });
+          return {
+            name: monthNames[date.getMonth()],
+            Receita: totalMonthlyRevenue,
+            Despesa: totalMonthlyExpense,
+          };
+        })()
+      );
     }
+    const monthlyFinancialData = await Promise.all(monthlyDataPromises);
 
     // --- Dados para o Gráfico de Pizza (Despesas Categorizadas do Mês Atual) ---
     const { data: categorizedExpensesData, error: categorizedExpensesError } = await supabaseAdmin

@@ -19,34 +19,34 @@ import GuardianForm, { guardianSchema, GuardianFormData } from './GuardianForm';
 // --- Schema de Validação ---
 const studentSchema = z.object({
   full_name: z.string().min(5, "Nome completo é obrigatório."),
-  birth_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Data de nascimento inválida."),
+  birth_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Data de nascimento inválida. Use o formato AAAA-MM-DD."),
   
   // Campos de relacionamento
   course_id: z.string().uuid("Selecione um curso/série.").optional().nullable(),
   class_id: z.string().uuid("Selecione uma turma.").optional().nullable(),
   
   // Contato e Documentos do Aluno
-  phone: z.string().optional(),
-  email: z.string().email("Email inválido.").optional().or(z.literal('')),
-  cpf: z.string().optional(),
-  rg: z.string().optional(),
+  phone: z.string().optional().nullable(), // Pode ser nulo
+  email: z.string().email("Email inválido.").optional().or(z.literal('')).nullable(), // Pode ser nulo ou string vazia
+  cpf: z.string().optional().nullable(), // Pode ser nulo
+  rg: z.string().optional().nullable(), // Pode ser nulo
   
   // Dados Pessoais do Aluno
   gender: z.enum(['Masculino', 'Feminino', 'Outro']).optional().nullable(),
-  nationality: z.string().optional(),
-  naturality: z.string().optional(), // Naturalidade (Cidade de nascimento)
+  nationality: z.string().optional().nullable(),
+  naturality: z.string().optional().nullable(), // Naturalidade (Cidade de nascimento)
 
   // Endereço
-  zip_code: z.string().optional(),
-  address_street: z.string().optional(),
-  address_number: z.string().optional(),
-  address_neighborhood: z.string().optional(),
-  address_city: z.string().optional(),
-  address_state: z.string().optional(),
+  zip_code: z.string().optional().nullable(),
+  address_street: z.string().optional().nullable(),
+  address_number: z.string().optional().nullable(),
+  address_neighborhood: z.string().optional().nullable(),
+  address_city: z.string().optional().nullable(),
+  address_state: z.string().optional().nullable(),
 
   // Informações Adicionais do Aluno
-  special_needs: z.string().optional(),
-  medication_use: z.string().optional(),
+  special_needs: z.string().optional().nullable(),
+  medication_use: z.string().optional().nullable(),
 }).merge(guardianSchema); // Mesclando com o schema do responsável
 
 type StudentFormData = z.infer<typeof studentSchema>;
@@ -107,28 +107,28 @@ const AddStudentSheet: React.FC = () => {
     defaultValues: {
       full_name: "",
       birth_date: "",
-      phone: "",
-      email: "",
+      phone: null,
+      email: null,
       course_id: null,
       class_id: null,
       gender: null,
-      nationality: "",
-      naturality: "",
-      cpf: "",
-      rg: "",
-      zip_code: "",
-      address_street: "",
-      address_number: "",
-      address_neighborhood: "",
-      address_city: "",
-      address_state: "",
+      nationality: null,
+      naturality: null,
+      cpf: null,
+      rg: null,
+      zip_code: null,
+      address_street: null,
+      address_number: null,
+      address_neighborhood: null,
+      address_city: null,
+      address_state: null,
       guardian_full_name: "",
       guardian_relationship: undefined,
-      guardian_phone: "",
-      guardian_email: "",
-      guardian_cpf: "",
-      special_needs: "",
-      medication_use: "",
+      guardian_phone: null,
+      guardian_email: null,
+      guardian_cpf: null,
+      special_needs: null,
+      medication_use: null,
     },
   });
 
@@ -175,7 +175,7 @@ const AddStudentSheet: React.FC = () => {
         ...studentData 
     } = data;
 
-    const guardianData: GuardianFormData = {
+    const guardianPayload: GuardianFormData = {
         guardian_full_name,
         guardian_relationship,
         guardian_phone: guardian_phone || null,
@@ -183,18 +183,31 @@ const AddStudentSheet: React.FC = () => {
         guardian_cpf: guardian_cpf || null,
     };
 
+    const studentPayload = {
+        ...studentData,
+        class_id: studentData.class_id || null,
+        gender: studentData.gender || null,
+        email: studentData.email || null,
+        phone: studentData.phone || null,
+        cpf: studentData.cpf || null,
+        rg: studentData.rg || null,
+        nationality: studentData.nationality || null,
+        naturality: studentData.naturality || null,
+        zip_code: studentData.zip_code || null,
+        address_street: studentData.address_street || null,
+        address_number: studentData.address_number || null,
+        address_neighborhood: studentData.address_neighborhood || null,
+        address_city: studentData.address_city || null,
+        address_state: studentData.address_state || null,
+        special_needs: studentData.special_needs || null,
+        medication_use: studentData.medication_use || null,
+    };
+
     const payload = {
         tenant_id: tenantId,
         school_year: selectedClass.school_year,
-        student: {
-            ...studentData,
-            class_id: studentData.class_id || null,
-            gender: studentData.gender || null,
-            email: studentData.email || null,
-            // Removendo o campo antigo guardian_name
-            guardian_name: undefined, 
-        },
-        guardian: guardianData,
+        student: studentPayload,
+        guardian: guardianPayload,
     };
 
     try {
@@ -253,11 +266,12 @@ const AddStudentSheet: React.FC = () => {
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="gender">Gênero</Label>
-                  <Select onValueChange={(value) => form.setValue('gender', value as any)} value={form.watch('gender') || ''}>
+                  <Select onValueChange={(value) => form.setValue('gender', value === "none" ? null : value as any)} value={form.watch('gender') || 'none'}>
                     <SelectTrigger>
                       <SelectValue placeholder="Selecione" />
                     </SelectTrigger>
                     <SelectContent>
+                      <SelectItem value="none">Não Informar</SelectItem>
                       <SelectItem value="Masculino">Masculino</SelectItem>
                       <SelectItem value="Feminino">Feminino</SelectItem>
                       <SelectItem value="Outro">Outro</SelectItem>
@@ -280,14 +294,15 @@ const AddStudentSheet: React.FC = () => {
               <div className="space-y-2">
                 <Label htmlFor="course_id">Curso / Série</Label>
                 <Select 
-                  onValueChange={(value) => form.setValue('course_id', value)} 
-                  value={form.watch('course_id') || ''}
+                  onValueChange={(value) => form.setValue('course_id', value === "none" ? null : value)} 
+                  value={form.watch('course_id') || 'none'}
                   disabled={isLoadingCourses}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder={isLoadingCourses ? "Carregando Cursos..." : "Selecione o curso/série"} />
                   </SelectTrigger>
                   <SelectContent>
+                    <SelectItem value="none">Nenhum Curso/Série</SelectItem>
                     {courses?.map((c) => (
                       <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
                     ))}
@@ -300,14 +315,15 @@ const AddStudentSheet: React.FC = () => {
               <div className="space-y-2">
                 <Label htmlFor="class_id">Turma</Label>
                 <Select 
-                  onValueChange={(value) => form.setValue('class_id', value)} 
-                  value={form.watch('class_id') || ''}
+                  onValueChange={(value) => form.setValue('class_id', value === "none" ? null : value)} 
+                  value={form.watch('class_id') || 'none'}
                   disabled={isLoadingClasses || !selectedCourseId}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder={!selectedCourseId ? "Selecione um curso primeiro" : (isLoadingClasses ? "Carregando Turmas..." : "Selecione uma turma")} />
                   </SelectTrigger>
                   <SelectContent>
+                    <SelectItem value="none">Nenhuma Turma</SelectItem>
                     {filteredClasses.map((c) => (
                       <SelectItem key={c.id} value={c.id}>{c.name} ({c.school_year})</SelectItem>
                     ))}

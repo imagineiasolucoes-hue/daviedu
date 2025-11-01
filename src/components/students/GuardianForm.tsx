@@ -12,9 +12,9 @@ export const guardianSchema = z.object({
   guardian_relationship: z.enum(['Pai', 'Mãe', 'Avô(ó)', 'Tutor', 'Outro'], {
     required_error: "O parentesco é obrigatório.",
   }),
-  guardian_phone: z.string().optional(),
-  guardian_email: z.string().email("Email inválido.").optional().or(z.literal('')),
-  guardian_cpf: z.string().optional(),
+  guardian_phone: z.string().optional().nullable(),
+  guardian_email: z.string().email("Email inválido.").optional().or(z.literal('')).nullable(),
+  guardian_cpf: z.string().optional().nullable(),
 });
 
 export type GuardianFormData = z.infer<typeof guardianSchema>;
@@ -53,7 +53,7 @@ const GuardianForm: React.FC = () => {
           {errors.guardian_relationship && <p className="text-sm text-destructive">{errors.guardian_relationship.message?.toString()}</p>}
         </div>
         <div className="space-y-2">
-          <Label htmlFor="guardian_phone">Telefone</Label>
+          <Label htmlFor="guardian_phone">Telefone (Opcional)</Label>
           <Input id="guardian_phone" type="tel" {...register("guardian_phone")} />
         </div>
       </div>

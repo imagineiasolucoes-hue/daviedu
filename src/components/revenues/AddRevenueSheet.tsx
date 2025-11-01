@@ -18,14 +18,14 @@ import { Separator } from '@/components/ui/separator';
 
 // --- Tipos e Schemas ---
 const revenueSchema = z.object({
-  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Data inválida."),
+  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Data inválida. Use o formato AAAA-MM-DD."),
   category_id: z.string().uuid("Selecione uma categoria."),
-  description: z.string().optional(),
+  description: z.string().optional().nullable(),
   amount: z.coerce.number().min(0.01, "O valor deve ser maior que zero."),
   payment_method: z.enum(['Dinheiro', 'Cartão', 'Pix', 'Boleto', 'Transferência'], {
     required_error: "O método de pagamento é obrigatório.",
   }),
-  source: z.string().optional(),
+  source: z.string().optional().nullable(),
   status: z.enum(['pendente', 'pago'], {
     required_error: "O status é obrigatório.",
   }),
@@ -90,11 +90,12 @@ const AddRevenueSheet: React.FC = () => {
     resolver: zodResolver(revenueSchema),
     defaultValues: {
       date: new Date().toISOString().split('T')[0],
-      description: "",
+      description: null,
       amount: 0,
       is_recurring: false,
       student_id: null,
       status: 'pendente',
+      source: null,
     },
   });
 
@@ -122,16 +123,17 @@ const AddRevenueSheet: React.FC = () => {
       toast.success("Receita registrada com sucesso.");
       queryClient.invalidateQueries({ queryKey: ['revenues', tenantId] });
       queryClient.invalidateQueries({ queryKey: ['dashboardMetrics', tenantId] }); // Atualiza o dashboard
+      queryClient.invalidateQueries({ queryKey: ['financeMetrics', tenantId] }); // Atualiza o financeiro
       form.reset({
         date: new Date().toISOString().split('T')[0],
-        description: "",
+        description: null,
         amount: 0,
         is_recurring: false,
         student_id: null,
         status: 'pendente',
         category_id: undefined,
         payment_method: undefined,
-        source: "",
+        source: null,
       });
       setIsOpen(false);
     } catch (error) {

@@ -29,7 +29,7 @@ const BarChartComponent: React.FC<BarChartComponentProps> = ({ data }) => {
             <XAxis dataKey="name" stroke="hsl(var(--muted-foreground))" />
             <YAxis 
               stroke="hsl(var(--muted-foreground))" 
-              tickFormatter={(value) => formatCurrency(value)}
+              tickFormatter={(value: number) => formatCurrency(value)}
             />
             <Tooltip 
               contentStyle={{ 
