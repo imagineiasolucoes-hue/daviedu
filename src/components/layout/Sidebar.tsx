@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Home, Users, Settings, LogOut, School, BookOpen, DollarSign, TrendingUp, TrendingDown, CalendarDays, FileText, UserCheck, ListChecks, HardDrive } from 'lucide-react';
+import { Home, Users, Settings, LogOut, School, BookOpen, DollarSign, TrendingUp, TrendingDown, CalendarDays, FileText, UserCheck, ListChecks, HardDrive, ShoppingCart } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { cn } from '@/lib/utils';
@@ -71,6 +71,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isSuperAdmin, displayName, roleDispla
     { to: "/dashboard", icon: <Home className="h-5 w-5" />, label: "Dashboard SA" },
     { to: "/super-admin/tenants", icon: <School className="h-5 w-5" />, label: "Escolas (Tenants)" },
     { to: "/super-admin/users", icon: <Users className="h-5 w-5" />, label: "Usuários SA" },
+    { to: "/super-admin/kiwify", icon: <ShoppingCart className="h-5 w-5" />, label: "Kiwify Metrics" }, // NOVO ITEM
     { to: "/backup", icon: <HardDrive className="h-5 w-5" />, label: "Backup" },
   ];
 

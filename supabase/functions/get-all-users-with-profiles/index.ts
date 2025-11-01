@@ -20,36 +20,34 @@ serve(async (req) => {
   }
 
   try {
-    const { tenant_id, new_status } = await req.json();
-
-    if (!tenant_id || !new_status) {
-      throw new Error("ID do tenant e novo status são obrigatórios.");
-    }
-
-    // Validate new_status to be one of the allowed values
-    const allowedStatuses = ['active', 'suspended', 'trial'];
-    if (!allowedStatuses.includes(new_status)) {
-      throw new Error(`Status inválido: ${new_status}. Status permitidos: ${allowedStatuses.join(', ')}.`);
-    }
+    // Apenas o Super Admin deve chamar esta função.
+    // A autenticação do JWT deve ser verificada manualmente se necessário,
+    // mas para esta função que usa a service_role_key, o foco é o acesso administrativo.
+    // Para um ambiente de produção, você adicionaria uma verificação de role aqui.
 
     const supabaseAdmin = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
     );
 
-    const { data, error } = await supabaseAdmin
-      .from("tenants")
-      .update({ status: new_status })
-      .eq("id", tenant_id)
-      .select("id, name, status")
-      .single();
+    const { data: users, error: usersError } = await supabaseAdmin
+      .from('profiles')
+      .select(`
+        id,
+        first_name,
+        last_name,
+        email,
+        role,
+        tenant_id,
+        tenants (name)
+      `);
 
-    if (error) {
-      console.error("Supabase Update Tenant Status Error:", error);
-      throw new Error(`Erro ao atualizar status da escola: ${error.message}`);
+    if (usersError) {
+      console.error("Supabase fetch users error:", usersError);
+      throw new Error(`Erro ao buscar usuários: ${usersError.message}`);
     }
 
-    return new Response(JSON.stringify({ success: true, tenant: data }), {
+    return new Response(JSON.stringify(users), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 200,
     });

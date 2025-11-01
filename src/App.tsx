@@ -13,6 +13,8 @@ import ProtectedRoute from "./components/auth/ProtectedRoute";
 import Dashboard from "./pages/Dashboard";
 import AppLayout from "./components/layout/AppLayout";
 import TenantsPage from "./pages/super-admin/TenantsPage";
+import UsersPage from "./pages/super-admin/UsersPage";
+import KiwifyPage from "./pages/super-admin/KiwifyPage"; // NOVO IMPORT
 import StudentsPage from "./pages/StudentsPage";
 import ClassesPage from "./pages/ClassesPage";
 import FinancePage from "./pages/FinancePage";
@@ -23,8 +25,7 @@ import CalendarPage from "./pages/CalendarPage";
 import DocumentsPage from "./pages/DocumentsPage";
 import TeachersPage from "./pages/TeachersPage";
 import CoursesPage from "./pages/CoursesPage";
-import BackupAlerts from "./components/BackupAlerts";
-import BackupDashboard from "./pages/BackupDashboard"; // Importando a nova página
+import BackupDashboard from "./pages/BackupDashboard";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -64,10 +65,12 @@ const App = () => {
                   <Route path="/revenues" element={<RevenuesPage />} />
                   <Route path="/expenses" element={<ExpensesPage />} />
                   <Route path="/settings" element={<SettingsPage />} />
-                  <Route path="/backup" element={<BackupDashboard />} /> {/* Nova rota para o Dashboard de Backup */}
+                  <Route path="/backup" element={<BackupDashboard />} />
                   
                   {/* Super Admin Routes */}
                   <Route path="/super-admin/tenants" element={<TenantsPage />} />
+                  <Route path="/super-admin/users" element={<UsersPage />} />
+                  <Route path="/super-admin/kiwify" element={<KiwifyPage />} /> {/* NOVA ROTA */}
                   
                   {/* Add other protected routes here later */}
                 </Route>
@@ -78,7 +81,6 @@ const App = () => {
             </Routes>
           </SessionContextProvider>
         </BrowserRouter>
-        <BackupAlerts />
       </TooltipProvider>
     </QueryClientProvider>
   );
