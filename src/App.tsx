@@ -23,7 +23,8 @@ import CalendarPage from "./pages/CalendarPage";
 import DocumentsPage from "./pages/DocumentsPage";
 import TeachersPage from "./pages/TeachersPage";
 import CoursesPage from "./pages/CoursesPage";
-import BackupAlerts from "./components/BackupAlerts"; // Importando o novo componente
+import BackupAlerts from "./components/BackupAlerts";
+import BackupDashboard from "./pages/BackupDashboard"; // Importando a nova página
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -63,6 +64,7 @@ const App = () => {
                   <Route path="/revenues" element={<RevenuesPage />} />
                   <Route path="/expenses" element={<ExpensesPage />} />
                   <Route path="/settings" element={<SettingsPage />} />
+                  <Route path="/backup" element={<BackupDashboard />} /> {/* Nova rota para o Dashboard de Backup */}
                   
                   {/* Super Admin Routes */}
                   <Route path="/super-admin/tenants" element={<TenantsPage />} />
@@ -76,7 +78,7 @@ const App = () => {
             </Routes>
           </SessionContextProvider>
         </BrowserRouter>
-        <BackupAlerts /> {/* Renderiza o componente de alertas aqui */}
+        <BackupAlerts />
       </TooltipProvider>
     </QueryClientProvider>
   );
