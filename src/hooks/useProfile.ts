@@ -23,6 +23,7 @@ const fetchProfile = async (userId: string): Promise<Profile> => {
     .single();
 
   if (error) {
+    console.error("Supabase fetchProfile error:", error); // Log detalhado do erro
     throw new Error(error.message);
   }
   
