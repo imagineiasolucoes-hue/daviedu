@@ -3,11 +3,17 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Loader2, CheckCircle, XCircle, Clock } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { Button } from '@/components/ui/button'; // Added Button import
+import { Button } from '@/components/ui/button';
+
+interface AdminProfile {
+  first_name: string | null;
+  last_name: string | null;
+  email: string | null;
+}
 
 interface Tenant {
   id: string;
@@ -15,14 +21,21 @@ interface Tenant {
   status: 'trial' | 'active' | 'suspended';
   trial_expires_at: string | null;
   created_at: string;
+  profiles: AdminProfile[];
 }
 
 const fetchTenants = async (): Promise<Tenant[]> => {
-  // Nota: Esta consulta requer que o usuário logado (SUPER ADM) tenha RLS para SELECT em 'tenants'.
-  // Assumindo que o SUPER ADM tem acesso total ou que a política de RLS permite a visualização.
   const { data, error } = await supabase
     .from('tenants')
-    .select('*')
+    .select(`
+      *,
+      profiles (
+        first_name,
+        last_name,
+        email
+      )
+    `)
+    .eq('profiles.role', 'admin')
     .order('created_at', { ascending: false });
 
   if (error) {
@@ -73,6 +86,8 @@ const TenantsPage: React.FC = () => {
             <TableHeader>
               <TableRow>
                 <TableHead>Nome da Escola</TableHead>
+                <TableHead>Administrador</TableHead>
+                <TableHead>Email do Admin</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Criada em</TableHead>
                 <TableHead>Expiração do Teste</TableHead>
@@ -80,21 +95,29 @@ const TenantsPage: React.FC = () => {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {tenants?.map((tenant) => (
-                <TableRow key={tenant.id}>
-                  <TableCell className="font-medium">{tenant.name}</TableCell>
-                  <TableCell>{getStatusBadge(tenant.status)}</TableCell>
-                  <TableCell>{format(new Date(tenant.created_at), 'dd/MM/yyyy', { locale: ptBR })}</TableCell>
-                  <TableCell>
-                    {tenant.trial_expires_at 
-                      ? format(new Date(tenant.trial_expires_at), 'dd/MM/yyyy', { locale: ptBR })
-                      : 'N/A'}
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <Button variant="outline" size="sm">Ver Detalhes</Button>
-                  </TableCell>
-                </TableRow>
-              ))}
+              {tenants?.map((tenant) => {
+                const admin = tenant.profiles?.[0];
+                const adminName = admin ? `${admin.first_name || ''} ${admin.last_name || ''}`.trim() : 'N/A';
+                const adminEmail = admin?.email || 'N/A';
+
+                return (
+                  <TableRow key={tenant.id}>
+                    <TableCell className="font-medium">{tenant.name}</TableCell>
+                    <TableCell>{adminName}</TableCell>
+                    <TableCell>{adminEmail}</TableCell>
+                    <TableCell>{getStatusBadge(tenant.status)}</TableCell>
+                    <TableCell>{format(new Date(tenant.created_at), 'dd/MM/yyyy', { locale: ptBR })}</TableCell>
+                    <TableCell>
+                      {tenant.trial_expires_at 
+                        ? format(new Date(tenant.trial_expires_at), 'dd/MM/yyyy', { locale: ptBR })
+                        : 'N/A'}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <Button variant="outline" size="sm">Ver Detalhes</Button>
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
             </TableBody>
           </Table>
         </div>

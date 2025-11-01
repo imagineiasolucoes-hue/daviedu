@@ -63,7 +63,7 @@ serve(async (req) => {
       // Profile exists, update it
       const { error: profileUpdateError } = await supabaseAdmin
         .from("profiles")
-        .update({ tenant_id: tenant.id, role: 'admin' })
+        .update({ tenant_id: tenant.id, role: 'admin', email: email })
         .eq("id", userId);
       if (profileUpdateError) throw profileUpdateError;
     } else {
@@ -75,7 +75,8 @@ serve(async (req) => {
           first_name: firstName,
           last_name: lastName,
           tenant_id: tenant.id,
-          role: 'admin'
+          role: 'admin',
+          email: email
         });
       if (profileInsertError) throw profileInsertError;
     }
