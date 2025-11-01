@@ -112,7 +112,7 @@ const Dashboard: React.FC = () => {
             </>
           ) : (
             <>
-              <MetricCard title="Usuários Cadastrados" value={saMetrics?.usersCount ?? 0} icon={Users} iconColor="text-primary" />
+              <MetricCard title="Usuários SaaS" value={saMetrics?.usersCount ?? 0} icon={Users} iconColor="text-primary" />
               <MetricCard title="Escolas (Tenants)" value={saMetrics?.tenantsCount ?? 0} icon={School} iconColor="text-green-500" />
             </>
           )}
