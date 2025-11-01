@@ -17,10 +17,7 @@ const corsHeaders = {
 async function generateNextRegistrationCode(supabaseAdmin: any, tenantId: string): Promise<string> {
     const now = new Date();
     const year = now.getFullYear();
-    const month = String(now.getMonth() + 1).padStart(2, '0');
-    const day = String(now.getDate()).padStart(2, '0');
-    
-    const prefix = `${year}${month}${day}`;
+    const prefix = String(year); // O prefixo agora é apenas o ano letivo (ex: 2024)
 
     const { data, error } = await supabaseAdmin
         .from("students")
@@ -40,7 +37,8 @@ async function generateNextRegistrationCode(supabaseAdmin: any, tenantId: string
 
     if (data?.registration_code) {
         const lastCode = data.registration_code;
-        const lastSequenceStr = lastCode.substring(8); // YYYYMMDD is 8 chars
+        // Assume que o código é YYYYSSS (Ano + Sequência de 3 dígitos)
+        const lastSequenceStr = lastCode.substring(4); 
         const lastSequence = parseInt(lastSequenceStr, 10);
 
         if (!isNaN(lastSequence)) {

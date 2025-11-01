@@ -9,7 +9,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { Loader2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
-import { toast } from '@/hooks/use-toast';
+import { toast } from 'sonner'; // Usando sonner
 
 // --- Schema de Validação ---
 const registerSchema = z.object({
@@ -88,20 +88,16 @@ const Register = () => {
         throw new Error(response.error);
       }
 
-      toast({
-        title: "Teste Iniciado!",
+      toast.success("Teste Iniciado!", {
         description: "Seu teste de 7 dias começou! Você será redirecionado para o login.",
-        variant: "default",
       });
 
       navigate('/login');
 
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : "Ocorreu um erro inesperado durante o cadastro.";
-      toast({
-        title: "Erro no Cadastro",
+      toast.error("Erro no Cadastro", {
         description: errorMessage,
-        variant: "destructive",
       });
     } finally {
       setIsSubmitting(false);

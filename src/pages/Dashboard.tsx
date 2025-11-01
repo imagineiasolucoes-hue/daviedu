@@ -12,6 +12,7 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { formatCurrency } from '@/lib/utils';
 import { Skeleton } from '@/components/ui/skeleton';
+import BackupStatusWidget from '@/components/dashboard/BackupStatusWidget'; // Importando o novo widget
 
 // Componente Placeholder para o Gráfico
 const EnrollmentChartPlaceholder: React.FC = () => (
@@ -161,6 +162,11 @@ const Dashboard: React.FC = () => {
           <EnrollmentChartPlaceholder />
         </div>
         <RecentActivity />
+      </div>
+      
+      {/* Adicionando o Backup Status Widget em uma linha separada para destaque */}
+      <div className="grid gap-4 lg:grid-cols-3">
+        <BackupStatusWidget />
       </div>
     </div>
   );

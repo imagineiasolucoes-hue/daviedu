@@ -2,7 +2,7 @@ import React, { createContext, useContext, useEffect, useState } from 'react';
 import { Session, User } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
-import { toast } from '@/hooks/use-toast';
+import { toast } from 'sonner'; // Usando sonner
 
 interface AuthContextType {
   session: Session | null;
@@ -46,8 +46,12 @@ export const SessionContextProvider: React.FC<SessionContextProviderProps> = ({ 
         if (window.location.pathname !== '/login' && window.location.pathname !== '/register' && window.location.pathname !== '/pre-matricula') {
           navigate('/login', { replace: true });
         }
+      } else if (event === 'AUTH_API_ERROR' as string) { // Asserção de tipo para corrigir o erro TS2367
+        // Tratamento de erro de API de autenticação
+        toast.error("Erro de Autenticação", {
+          description: "Ocorreu um erro na API de autenticação. Tente novamente.",
+        });
       }
-      // Removed: else if (event === 'AUTH_API_ERROR') due to TS error.
       
       setIsLoading(false);
     });
