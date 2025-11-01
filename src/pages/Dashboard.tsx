@@ -14,7 +14,7 @@ import { formatCurrency } from '@/lib/utils';
 import { Skeleton } from '@/components/ui/skeleton';
 import SchoolEvolutionIndicator from '@/components/dashboard/SchoolEvolutionIndicator';
 import MonthlyEnrollmentChart from '@/components/dashboard/MonthlyEnrollmentChart';
-import HelpButton from '@/components/HelpButton'; // NOVO IMPORT
+// import HelpButton from '@/components/HelpButton'; // REMOVIDO
 
 const MetricCardSkeleton: React.FC = () => (
   <Card>
@@ -142,7 +142,7 @@ const Dashboard: React.FC = () => {
             </p>
           </CardContent>
         </Card>
-        <HelpButton /> {/* Botão de ajuda para Super Admin */}
+        {/* <HelpButton /> */}
       </div>
     );
   }
@@ -162,7 +162,7 @@ const Dashboard: React.FC = () => {
             </p>
           </CardContent>
         </Card>
-        <HelpButton /> {/* Botão de ajuda para usuários não associados a escola */}
+        {/* <HelpButton /> */}
       </div>
     );
   }
@@ -221,7 +221,7 @@ const Dashboard: React.FC = () => {
       </div>
 
       <SchoolEvolutionIndicator />
-      <HelpButton /> {/* Botão de ajuda para usuários de escola */}
+      {/* <HelpButton /> */}
     </div>
   );
 };

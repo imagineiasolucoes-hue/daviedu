@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Home, Users, Settings, LogOut, School, BookOpen, DollarSign, TrendingUp, TrendingDown, CalendarDays, FileText, UserCheck, ListChecks, HardDrive, ShoppingCart } from 'lucide-react';
+import { Home, Users, Settings, LogOut, School, BookOpen, DollarSign, TrendingUp, TrendingDown, CalendarDays, FileText, UserCheck, ListChecks, HardDrive, ShoppingCart, HelpCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { cn } from '@/lib/utils';
@@ -64,8 +64,8 @@ const Sidebar: React.FC<SidebarProps> = ({ isSuperAdmin, displayName, roleDispla
     { to: "/revenues", icon: <TrendingUp className="h-5 w-5 ml-4" />, label: "Receitas", isSubItem: true, parentPath: '/finance' },
     { to: "/expenses", icon: <TrendingDown className="h-5 w-5 ml-4" />, label: "Despesas", isSubItem: true, parentPath: '/finance' },
     // Geral
-    // { to: "/backup", icon: <HardDrive className="h-5 w-5" />, label: "Backup" }, // REMOVIDO PARA ADMIN
     { to: "/settings", icon: <Settings className="h-5 w-5" />, label: "Configurações" },
+    { to: "/faq", icon: <HelpCircle className="h-5 w-5" />, label: "Ajuda (FAQ)" }, // NOVO ITEM DE FAQ
   ];
 
   const superAdminNavItems: NavigationItem[] = [
@@ -73,7 +73,8 @@ const Sidebar: React.FC<SidebarProps> = ({ isSuperAdmin, displayName, roleDispla
     { to: "/super-admin/tenants", icon: <School className="h-5 w-5" />, label: "Escolas (Tenants)" },
     { to: "/super-admin/users", icon: <Users className="h-5 w-5" />, label: "Usuários SA" },
     { to: "/super-admin/kiwify", icon: <ShoppingCart className="h-5 w-5" />, label: "Kiwify Metrics" },
-    { to: "/backup", icon: <HardDrive className="h-5 w-5" />, label: "Backup" }, // MANTIDO PARA SUPER ADMIN
+    { to: "/backup", icon: <HardDrive className="h-5 w-5" />, label: "Backup" },
+    { to: "/faq", icon: <HelpCircle className="h-5 w-5" />, label: "Ajuda (FAQ)" }, // NOVO ITEM DE FAQ PARA SUPER ADMIN
   ];
 
   const navigationItems = isSuperAdmin ? superAdminNavItems : adminNavItems;
