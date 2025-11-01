@@ -174,7 +174,26 @@ const SchoolSettingsForm: React.FC = () => {
     return <div className="flex justify-center items-center h-64"><Loader2 className="h-8 w-8 animate-spin" /></div>;
   }
 
+  // Adicionando verificação explícita para tenantId e tenant
+  if (!tenantId || !tenant) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>Configurações da Escola</CardTitle>
+          <CardDescription>Gerencie as informações, logo e QR code da sua instituição.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <p className="text-destructive">
+            Erro: Não foi possível carregar as configurações da escola. O ID da escola pode estar ausente ou inválido para o seu perfil.
+            Por favor, entre em contato com o suporte.
+          </p>
+        </CardContent>
+      </Card>
+    );
+  }
+
   const preEnrollmentLink = `${window.location.origin}/pre-matricula/${tenantId}`;
+  console.log("Generated Pre-Enrollment Link:", preEnrollmentLink); // Log para depuração
 
   return (
     <form onSubmit={form.handleSubmit(onSubmit)}>

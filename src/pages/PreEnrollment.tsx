@@ -39,6 +39,7 @@ const fetchSchoolName = async (tenantId: string): Promise<string | null> => {
 
 const PreEnrollment: React.FC = () => {
   const { tenantId } = useParams<{ tenantId: string }>();
+  console.log("PreEnrollment Page - tenantId from useParams:", tenantId); // Log para depuração
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [successCode, setSuccessCode] = useState<string | null>(null);
 
