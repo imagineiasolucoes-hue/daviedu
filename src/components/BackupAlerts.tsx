@@ -35,9 +35,13 @@ const BackupAlerts: React.FC<BackupAlertsProps> = ({
       if (newAlert.type === 'info' && newAlert.title === 'Backup em Andamento' && prevAlerts.some(a => a.title === 'Backup em Andamento')) {
         return prevAlerts;
       }
+      // NEW: Previne múltiplos alertas "Backup Programado"
+      if (newAlert.type === 'info' && newAlert.title === 'Backup Programado' && prevAlerts.some(a => a.title === 'Backup Programado')) {
+        return prevAlerts;
+      }
       return [...prevAlerts, { ...newAlert, id: crypto.randomUUID(), timestamp: new Date() }];
     });
-  }, []);
+  }, []); // addAlert does not depend on alerts, so it's stable.
 
   const removeAlert = useCallback((id: string) => {
     setAlerts((prevAlerts) => prevAlerts.filter((alert) => alert.id !== id));
@@ -86,16 +90,13 @@ const BackupAlerts: React.FC<BackupAlertsProps> = ({
 
     // Alerta de Informação: Próximo Agendado (apenas se não for crítico/aviso)
     if (backupStatus === 'healthy' && nextScheduled) {
-      // Verifica se já existe um alerta de "Backup Programado" para evitar duplicatas
-      if (!alerts.some(a => a.type === 'info' && a.title === 'Backup Programado')) {
-        addAlert({
-          type: 'info',
-          title: 'Backup Programado',
-          message: `Próximo backup agendado para ${format(parseISO(nextScheduled), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}.`,
-          action: { label: 'Visualizar Agenda', onClick: () => console.log('Visualizar agenda clicado') }, // Ação placeholder
-          autoDismiss: autoDismissDelay,
-        });
-      }
+      addAlert({
+        type: 'info',
+        title: 'Backup Programado',
+        message: `Próximo backup agendado para ${format(parseISO(nextScheduled), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}.`,
+        action: { label: 'Visualizar Agenda', onClick: () => console.log('Visualizar agenda clicado') }, // Ação placeholder
+        autoDismiss: autoDismissDelay,
+      });
     } else {
         // Descarta alertas de "Backup Programado" se o status não for saudável ou não houver próximo agendamento
         setAlerts(prev => prev.filter(a => !(a.type === 'info' && a.title === 'Backup Programado')));
@@ -125,7 +126,7 @@ const BackupAlerts: React.FC<BackupAlertsProps> = ({
     }
     lastBackupRef.current = lastBackup; // Atualiza a referência
 
-  }, [backupStatus, lastBackup, nextScheduled, isBackingUp, addAlert, autoDismissDelay, startBackup, alerts]); // Adicionado 'alerts' para o efeito de "Backup Programado"
+  }, [backupStatus, lastBackup, nextScheduled, isBackingUp, addAlert, autoDismissDelay, startBackup]); // Removed 'alerts' from dependencies
 
   // Efeito para persistência no localStorage
   useEffect(() => {
