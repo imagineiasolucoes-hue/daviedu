@@ -19,19 +19,16 @@ const BackupDashboard: React.FC = () => {
   const handleQuickBackup = async () => {
     console.log("Executando backup completo...");
     await new Promise(resolve => setTimeout(resolve, 2000)); // Simula API call
-    toast.success("Backup Completo Concluído!", { description: "Todos os dados foram salvos com sucesso." });
   };
 
   const handleSelectiveBackup = async (type: 'database' | 'files' | 'code') => {
     console.log(`Executando backup seletivo: ${type}...`);
     await new Promise(resolve => setTimeout(resolve, 1500)); // Simula API call
-    toast.success(`Backup Seletivo (${type}) Concluído!`, { description: `Os dados de ${type} foram salvos.` });
   };
 
   const handleEmergencyRestore = async () => {
     console.log("Executando restauração de emergência...");
     await new Promise(resolve => setTimeout(resolve, 3000)); // Simula API call
-    toast.success("Restauração Concluída!", { description: "O último backup estável foi restaurado." });
   };
 
   if (isProfileLoading) {
