@@ -10,9 +10,7 @@ const Login = () => {
     <div className="flex items-center justify-center min-h-screen bg-gray-50 dark:bg-gray-900 p-4">
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
-          <CardTitle className="flex justify-center">
-            <img src="/logo-retangular.png" alt="Davi EDU Logo" className="h-10" />
-          </CardTitle>
+          <CardTitle className="text-2xl font-bold text-accent">Acesso Davi EDU</CardTitle>
         </CardHeader>
         <CardContent>
           <Auth

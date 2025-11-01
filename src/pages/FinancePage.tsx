@@ -14,10 +14,9 @@ interface FinanceMetrics {
   paidRevenueMonth: number;
   pendingRevenueMonth: number;
   paidExpenseMonth: number;
+  // Adicionando métricas de saldo e anual (mockadas por enquanto)
   balanceMonth: number;
-  paidRevenueYear: number; // Ainda mockado, mas mantido para o layout
-  monthlyFinancialData: { name: string; Receita: number; Despesa: number }[]; // Novo
-  categorizedExpenses: { name: string; value: number }[]; // Novo
+  paidRevenueYear: number;
 }
 
 // Função para buscar métricas financeiras (reutilizando a função do dashboard, mas tipando o retorno)
@@ -33,8 +32,6 @@ const fetchFinanceMetrics = async (tenantId: string): Promise<FinanceMetrics> =>
     paidRevenueMonth: number;
     pendingRevenueMonth: number;
     paidExpenseMonth: number;
-    monthlyFinancialData: { name: string; Receita: number; Despesa: number }[];
-    categorizedExpenses: { name: string; value: number }[];
   };
 
   // Cálculo de Saldo (simplificado)
@@ -128,8 +125,8 @@ const FinancePage: React.FC = () => {
 
       {/* Gráficos */}
       <div className="grid gap-6 lg:grid-cols-2">
-        <BarChartComponent data={metrics?.monthlyFinancialData || []} />
-        <PieChartComponent data={metrics?.categorizedExpenses || []} />
+        <BarChartComponent />
+        <PieChartComponent />
       </div>
 
       {/* Resumo Anual (Placeholder) */}

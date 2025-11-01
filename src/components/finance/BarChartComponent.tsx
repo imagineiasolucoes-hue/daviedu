@@ -3,17 +3,17 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, Responsive
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { formatCurrency } from '@/lib/utils';
 
-interface BarChartData {
-  name: string;
-  Receita: number;
-  Despesa: number;
-}
+const mockData = [
+  { name: 'Jan', Receita: 4000, Despesa: 2400 },
+  { name: 'Fev', Receita: 3000, Despesa: 1398 },
+  { name: 'Mar', Receita: 2000, Despesa: 980 },
+  { name: 'Abr', Receita: 2780, Despesa: 3908 },
+  { name: 'Mai', Receita: 1890, Despesa: 4800 },
+  { name: 'Jun', Receita: 2390, Despesa: 3800 },
+  { name: 'Jul', Receita: 3490, Despesa: 4300 },
+];
 
-interface BarChartComponentProps {
-  data: BarChartData[];
-}
-
-const BarChartComponent: React.FC<BarChartComponentProps> = ({ data }) => {
+const BarChartComponent: React.FC = () => {
   return (
     <Card className="h-full">
       <CardHeader>
@@ -22,7 +22,7 @@ const BarChartComponent: React.FC<BarChartComponentProps> = ({ data }) => {
       <CardContent className="h-[350px] p-2 md:p-6">
         <ResponsiveContainer width="100%" height="100%">
           <BarChart
-            data={data}
+            data={mockData}
             margin={{ top: 5, right: 10, left: 0, bottom: 5 }}
           >
             <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--muted))" />
