@@ -1,7 +1,7 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useProfile } from '@/hooks/useProfile';
-import { Loader2, Users, UserPlus, GraduationCap, User, Briefcase, DollarSign, Clock, ArrowDownCircle, Share2, School, LayoutDashboard } from 'lucide-react';
+import { Loader2, Users, UserPlus, GraduationCap, User, Briefcase, DollarSign, Clock, ArrowDownCircle, Share2, School, LayoutDashboard, ShoppingCart, Repeat } from 'lucide-react';
 import MetricCard from '@/components/dashboard/MetricCard';
 import RecentActivity from '@/components/dashboard/RecentActivity';
 import { Button } from '@/components/ui/button';
@@ -12,7 +12,7 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { formatCurrency } from '@/lib/utils';
 import { Skeleton } from '@/components/ui/skeleton';
-import SchoolEvolutionIndicator from '@/components/dashboard/SchoolEvolutionIndicator'; // NEW IMPORT
+import SchoolEvolutionIndicator from '@/components/dashboard/SchoolEvolutionIndicator';
 
 // Componente Placeholder para o Gráfico
 const EnrollmentChartPlaceholder: React.FC = () => (
@@ -53,12 +53,25 @@ interface SuperAdminMetrics {
   totalUsers: number;
 }
 
+interface KiwifyMetrics {
+  totalSales: number;
+  totalSubscriptions: number;
+}
+
 const fetchSuperAdminMetrics = async (): Promise<SuperAdminMetrics> => {
   const { data, error } = await supabase.functions.invoke('get-super-admin-metrics');
   if (error) throw new Error(error.message);
   // @ts-ignore
   if (data.error) throw new Error(data.error);
   return data as SuperAdminMetrics;
+};
+
+const fetchKiwifyMetrics = async (): Promise<KiwifyMetrics> => {
+  const { data, error } = await supabase.functions.invoke('get-kiwify-metrics');
+  if (error) throw new Error(error.message);
+  // @ts-ignore
+  if (data.error) throw new Error(data.error);
+  return data as KiwifyMetrics;
 };
 
 const Dashboard: React.FC = () => {
@@ -84,6 +97,12 @@ const Dashboard: React.FC = () => {
   const { data: superAdminMetrics, isLoading: areSuperAdminMetricsLoading } = useQuery<SuperAdminMetrics, Error>({
     queryKey: ['superAdminMetrics'],
     queryFn: fetchSuperAdminMetrics,
+    enabled: isSuperAdmin, // Only fetch for Super Admin
+  });
+
+  const { data: kiwifyMetrics, isLoading: areKiwifyMetricsLoading } = useQuery<KiwifyMetrics, Error>({
+    queryKey: ['kiwifyMetrics'],
+    queryFn: fetchKiwifyMetrics,
     enabled: isSuperAdmin, // Only fetch for Super Admin
   });
 
@@ -127,7 +146,22 @@ const Dashboard: React.FC = () => {
                 icon={Users} 
                 iconColor="text-indigo-500" 
               />
-              {/* Adicione mais métricas específicas para Super Admin aqui, se necessário */}
+            </>
+          )}
+          {areKiwifyMetricsLoading ? Array.from({ length: 2 }).map((_, i) => <MetricCardSkeleton key={i} />) : (
+            <>
+              <MetricCard 
+                title="Vendas Kiwify (Total)" 
+                value={formatCurrency(kiwifyMetrics?.totalSales ?? 0)} 
+                icon={ShoppingCart} 
+                iconColor="text-kiwify" 
+              />
+              <MetricCard 
+                title="Assinaturas Ativas" 
+                value={kiwifyMetrics?.totalSubscriptions ?? 0} 
+                icon={Repeat} 
+                iconColor="text-kiwify" 
+              />
             </>
           )}
         </div>
