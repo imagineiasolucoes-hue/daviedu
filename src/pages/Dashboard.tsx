@@ -1,7 +1,7 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useProfile } from '@/hooks/useProfile';
-import { Loader2, Users, UserPlus, GraduationCap, User, Briefcase, DollarSign, Clock, ArrowDownCircle, Share2, School, TrendingUp, ShieldCheck, BookOpen, ListChecks } from 'lucide-react';
+import { Loader2, Users, UserPlus, GraduationCap, User, Briefcase, DollarSign, Clock, ArrowDownCircle, Share2 } from 'lucide-react';
 import MetricCard from '@/components/dashboard/MetricCard';
 import RecentActivity from '@/components/dashboard/RecentActivity';
 import { Button } from '@/components/ui/button';
@@ -12,14 +12,9 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { formatCurrency } from '@/lib/utils';
 import { Skeleton } from '@/components/ui/skeleton';
-
-// Super Admin Components
-import SuperAdminMetricCard from '@/components/super-admin/SuperAdminMetricCard';
-import TenantStatusOverview from '@/components/super-admin/TenantStatusOverview';
-import SchoolGrowthChart from '@/components/super-admin/SchoolGrowthChart';
-import SystemUsageOverview from '@/components/super-admin/SystemUsageOverview';
-import TopSchoolsByUsage from '@/components/super-admin/TopSchoolsByUsage';
-import KiwifyIntegrationCard from '@/components/super-admin/KiwifyIntegrationCard';
+// Removendo imports de BackupStatusWidget e QuickBackupPanel
+// import BackupStatusWidget from '@/components/dashboard/BackupStatusWidget';
+// import QuickBackupPanel from '@/components/backup/QuickBackupPanel'; // Importando o novo componente
 
 // Componente Placeholder para o Gráfico
 const EnrollmentChartPlaceholder: React.FC = () => (
@@ -55,52 +50,24 @@ const MetricCardSkeleton: React.FC = () => (
   </Card>
 );
 
-interface SuperAdminMetrics {
-  totalTenants: number;
-  activeTenants: number;
-  trialTenants: number;
-  suspendedTenants: number;
-  newTenantsLast30Days: number;
-  totalUsers: number;
-  usersByRole: { [key: string]: number };
-  totalStudents: number;
-  totalTeachers: number;
-  totalClasses: number;
-  top5SchoolsByStudents: { tenant_id: string; tenant_name: string; student_count: number }[];
-}
-
-const fetchDashboardMetrics = async (tenantId: string) => {
-  const { data, error } = await supabase.functions.invoke('get-dashboard-metrics', {
-    body: JSON.stringify({ tenant_id: tenantId }),
-  });
-  if (error) throw new Error(error.message);
-  // @ts-ignore
-  if (data.error) throw new Error(data.error);
-  return data;
-};
-
-const fetchSuperAdminMetrics = async (): Promise<SuperAdminMetrics> => {
-  const { data, error } = await supabase.functions.invoke('get-super-admin-metrics');
-  if (error) throw new Error(error.message);
-  // @ts-ignore
-  if (data.error) throw new Error(data.error);
-  return data as SuperAdminMetrics;
-};
-
 const Dashboard: React.FC = () => {
   const { profile, isLoading: isProfileLoading, isSuperAdmin, isSchoolUser } = useProfile();
   const tenantId = profile?.tenant_id;
 
+  const fetchDashboardMetrics = async (tenantId: string) => {
+    const { data, error } = await supabase.functions.invoke('get-dashboard-metrics', {
+      body: JSON.stringify({ tenant_id: tenantId }),
+    });
+    if (error) throw new Error(error.message);
+    // @ts-ignore
+    if (data.error) throw new Error(data.error);
+    return data;
+  };
+
   const { data: metrics, isLoading: areMetricsLoading } = useQuery({
     queryKey: ['dashboardMetrics', tenantId],
     queryFn: () => fetchDashboardMetrics(tenantId!),
-    enabled: !!tenantId && !isSuperAdmin,
-  });
-
-  const { data: superAdminMetrics, isLoading: areSuperAdminMetricsLoading } = useQuery<SuperAdminMetrics, Error>({
-    queryKey: ['superAdminMetrics'],
-    queryFn: fetchSuperAdminMetrics,
-    enabled: isSuperAdmin,
+    enabled: !!tenantId,
   });
 
   const handleCopyLink = () => {
@@ -112,7 +79,30 @@ const Dashboard: React.FC = () => {
     });
   };
 
-  if (isProfileLoading || (isSuperAdmin && areSuperAdminMetricsLoading) || (!isSuperAdmin && areMetricsLoading)) {
+  // Mock data e handlers para o QuickBackupPanel (removidos daqui)
+  // const mockDiskUsage = {
+  //   used: 750,
+  //   total: 1024,
+  //   percent: (750 / 1024) * 100,
+  // };
+
+  // const handleQuickBackup = async () => {
+  //   console.log("Executando backup completo...");
+  //   await new Promise(resolve => setTimeout(resolve, 2000)); // Simula API call
+  // };
+
+  // const handleSelectiveBackup = async (type: 'database' | 'files' | 'code') => {
+  //   console.log(`Executando backup seletivo: ${type}...`);
+  //   await new Promise(resolve => setTimeout(resolve, 1500)); // Simula API call
+  // };
+
+  // const handleEmergencyRestore = async () => {
+  //   console.log("Executando restauração de emergência...");
+  //   await new Promise(resolve => setTimeout(resolve, 3000)); // Simula API call
+  // };
+
+
+  if (isProfileLoading) {
     return (
       <div className="flex items-center justify-center h-full min-h-[50vh]">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -121,64 +111,19 @@ const Dashboard: React.FC = () => {
   }
 
   if (isSuperAdmin) {
-    const saMetrics = superAdminMetrics!; // Garantido que não é nulo devido ao `enabled` do useQuery
     return (
       <div className="space-y-6">
-        <h1 className="text-3xl font-bold flex items-center gap-2">
-          <ShieldCheck className="h-8 w-8 text-primary" />
-          Dashboard Super Administrador
-        </h1>
-
-        {/* KPIs Gerais */}
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-          <SuperAdminMetricCard title="Total de Escolas" value={saMetrics.totalTenants} icon={School} iconColor="text-primary" />
-          <SuperAdminMetricCard title="Novas Escolas (30 dias)" value={saMetrics.newTenantsLast30Days} icon={TrendingUp} iconColor="text-green-500" />
-          <SuperAdminMetricCard title="Total de Usuários" value={saMetrics.totalUsers} icon={Users} iconColor="text-indigo-500" />
-          <SuperAdminMetricCard title="Admins de Escolas" value={saMetrics.usersByRole['admin'] || 0} icon={User} iconColor="text-blue-500" />
-        </div>
-
-        {/* Status de Clientes e Crescimento */}
-        <div className="grid gap-4 lg:grid-cols-3">
-          <TenantStatusOverview
-            totalTenants={saMetrics.totalTenants}
-            activeTenants={saMetrics.activeTenants}
-            trialTenants={saMetrics.trialTenants}
-            suspendedTenants={saMetrics.suspendedTenants}
-          />
-          <div className="lg:col-span-2">
-            <SchoolGrowthChart /> {/* Placeholder para o gráfico de crescimento */}
-          </div>
-        </div>
-
-        {/* Uso do Sistema e Top Escolas */}
-        <div className="grid gap-4 lg:grid-cols-3">
-          <SystemUsageOverview
-            totalStudents={saMetrics.totalStudents}
-            totalTeachers={saMetrics.totalTeachers}
-            totalClasses={saMetrics.totalClasses}
-          />
-          <div className="lg:col-span-2">
-            <TopSchoolsByUsage topSchools={saMetrics.top5SchoolsByStudents} />
-          </div>
-        </div>
-
-        {/* Indicadores Financeiros e Kiwify */}
-        <div className="grid gap-4 lg:grid-cols-2">
-          <Card className="h-full flex flex-col">
-            <CardHeader>
-              <CardTitle className="text-xl font-semibold flex items-center gap-2">
-                <DollarSign className="h-5 w-5 text-green-600" />
-                Indicadores Financeiros
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="flex-grow flex items-center justify-center">
-              <p className="text-muted-foreground text-center">
-                Esta seção será desenvolvida para exibir métricas financeiras globais.
-              </p>
-            </CardContent>
-          </Card>
-          <KiwifyIntegrationCard />
-        </div>
+        <h1 className="text-3xl font-bold">Dashboard Super Administrador</h1>
+        <Card>
+          <CardHeader>
+            <CardTitle>Visão Geral do Sistema</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-muted-foreground">
+              Use o menu lateral para navegar para a Gestão de Escolas.
+            </p>
+          </CardContent>
+        </Card>
       </div>
     );
   }
@@ -243,6 +188,20 @@ const Dashboard: React.FC = () => {
         </div>
         <RecentActivity />
       </div>
+      
+      {/* Adicionando o Backup Status Widget e o QuickBackupPanel em uma linha separada para destaque */}
+      {/* REMOVIDO DAQUI */}
+      {/* <div className="grid gap-4 lg:grid-cols-3">
+        <BackupStatusWidget />
+        <div className="lg:col-span-2">
+          <QuickBackupPanel
+            onQuickBackup={handleQuickBackup}
+            onSelectiveBackup={handleSelectiveBackup}
+            onEmergencyRestore={handleEmergencyRestore}
+            diskUsage={mockDiskUsage}
+          />
+        </div>
+      </div> */}
     </div>
   );
 };
