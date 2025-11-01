@@ -1,7 +1,7 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useProfile } from '@/hooks/useProfile';
-import { Loader2, Users, UserPlus, GraduationCap, User, Briefcase, DollarSign, Clock, ArrowDownCircle, Share2 } from 'lucide-react';
+import { Loader2, Users, UserPlus, GraduationCap, User, Briefcase, DollarSign, Clock, ArrowDownCircle, Share2, School, LayoutDashboard } from 'lucide-react';
 import MetricCard from '@/components/dashboard/MetricCard';
 import RecentActivity from '@/components/dashboard/RecentActivity';
 import { Button } from '@/components/ui/button';
@@ -12,9 +12,6 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { formatCurrency } from '@/lib/utils';
 import { Skeleton } from '@/components/ui/skeleton';
-// Removendo imports de BackupStatusWidget e QuickBackupPanel
-// import BackupStatusWidget from '@/components/dashboard/BackupStatusWidget';
-// import QuickBackupPanel from '@/components/backup/QuickBackupPanel'; // Importando o novo componente
 
 // Componente Placeholder para o Gráfico
 const EnrollmentChartPlaceholder: React.FC = () => (
@@ -50,6 +47,19 @@ const MetricCardSkeleton: React.FC = () => (
   </Card>
 );
 
+interface SuperAdminMetrics {
+  totalTenants: number;
+  totalUsers: number;
+}
+
+const fetchSuperAdminMetrics = async (): Promise<SuperAdminMetrics> => {
+  const { data, error } = await supabase.functions.invoke('get-super-admin-metrics');
+  if (error) throw new Error(error.message);
+  // @ts-ignore
+  if (data.error) throw new Error(data.error);
+  return data as SuperAdminMetrics;
+};
+
 const Dashboard: React.FC = () => {
   const { profile, isLoading: isProfileLoading, isSuperAdmin, isSchoolUser } = useProfile();
   const tenantId = profile?.tenant_id;
@@ -67,7 +77,13 @@ const Dashboard: React.FC = () => {
   const { data: metrics, isLoading: areMetricsLoading } = useQuery({
     queryKey: ['dashboardMetrics', tenantId],
     queryFn: () => fetchDashboardMetrics(tenantId!),
-    enabled: !!tenantId,
+    enabled: !!tenantId && !isSuperAdmin, // Only fetch for school users
+  });
+
+  const { data: superAdminMetrics, isLoading: areSuperAdminMetricsLoading } = useQuery<SuperAdminMetrics, Error>({
+    queryKey: ['superAdminMetrics'],
+    queryFn: fetchSuperAdminMetrics,
+    enabled: isSuperAdmin, // Only fetch for Super Admin
   });
 
   const handleCopyLink = () => {
@@ -78,29 +94,6 @@ const Dashboard: React.FC = () => {
       description: "O link de pré-matrícula foi copiado para a área de transferência.",
     });
   };
-
-  // Mock data e handlers para o QuickBackupPanel (removidos daqui)
-  // const mockDiskUsage = {
-  //   used: 750,
-  //   total: 1024,
-  //   percent: (750 / 1024) * 100,
-  // };
-
-  // const handleQuickBackup = async () => {
-  //   console.log("Executando backup completo...");
-  //   await new Promise(resolve => setTimeout(resolve, 2000)); // Simula API call
-  // };
-
-  // const handleSelectiveBackup = async (type: 'database' | 'files' | 'code') => {
-  //   console.log(`Executando backup seletivo: ${type}...`);
-  //   await new Promise(resolve => setTimeout(resolve, 1500)); // Simula API call
-  // };
-
-  // const handleEmergencyRestore = async () => {
-  //   console.log("Executando restauração de emergência...");
-  //   await new Promise(resolve => setTimeout(resolve, 3000)); // Simula API call
-  // };
-
 
   if (isProfileLoading) {
     return (
@@ -113,14 +106,38 @@ const Dashboard: React.FC = () => {
   if (isSuperAdmin) {
     return (
       <div className="space-y-6">
-        <h1 className="text-3xl font-bold">Dashboard Super Administrador</h1>
+        <h1 className="text-3xl font-bold flex items-center gap-2">
+          <LayoutDashboard className="h-8 w-8 text-primary" />
+          Dashboard Super Administrador
+        </h1>
+        
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+          {areSuperAdminMetricsLoading ? Array.from({ length: 2 }).map((_, i) => <MetricCardSkeleton key={i} />) : (
+            <>
+              <MetricCard 
+                title="Total de Escolas" 
+                value={superAdminMetrics?.totalTenants ?? 0} 
+                icon={School} 
+                iconColor="text-primary" 
+              />
+              <MetricCard 
+                title="Total de Usuários" 
+                value={superAdminMetrics?.totalUsers ?? 0} 
+                icon={Users} 
+                iconColor="text-indigo-500" 
+              />
+              {/* Adicione mais métricas específicas para Super Admin aqui, se necessário */}
+            </>
+          )}
+        </div>
+
         <Card>
           <CardHeader>
             <CardTitle>Visão Geral do Sistema</CardTitle>
           </CardHeader>
           <CardContent>
             <p className="text-muted-foreground">
-              Use o menu lateral para navegar para a Gestão de Escolas.
+              Use o menu lateral para navegar para a Gestão de Escolas e Usuários.
             </p>
           </CardContent>
         </Card>
@@ -188,20 +205,6 @@ const Dashboard: React.FC = () => {
         </div>
         <RecentActivity />
       </div>
-      
-      {/* Adicionando o Backup Status Widget e o QuickBackupPanel em uma linha separada para destaque */}
-      {/* REMOVIDO DAQUI */}
-      {/* <div className="grid gap-4 lg:grid-cols-3">
-        <BackupStatusWidget />
-        <div className="lg:col-span-2">
-          <QuickBackupPanel
-            onQuickBackup={handleQuickBackup}
-            onSelectiveBackup={handleSelectiveBackup}
-            onEmergencyRestore={handleEmergencyRestore}
-            diskUsage={mockDiskUsage}
-          />
-        </div>
-      </div> */}
     </div>
   );
 };
