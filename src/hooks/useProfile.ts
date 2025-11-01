@@ -13,7 +13,6 @@ export interface Profile {
   role: UserRole;
   updated_at: string | null;
   phone: string | null;
-  email: string | null; // Adicionado o campo email
 }
 
 const fetchProfile = async (userId: string): Promise<Profile> => {

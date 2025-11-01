@@ -26,20 +26,19 @@ serve(async (req) => {
     );
 
     // Busca as métricas em paralelo para mais eficiência
-    const [saasUsersCountResult, tenantsCountResult] = await Promise.all([
-      // Usando a nova função para contar apenas usuários associados a tenants (SaaS)
-      supabaseAdmin.rpc('count_saas_users'),
+    const [usersCountResult, tenantsCountResult] = await Promise.all([
+      supabaseAdmin.rpc('count_users'),
       supabaseAdmin.from("tenants").select("*", { count: "exact", head: true })
     ]);
 
-    const { data: saasUsersCount, error: saasUsersError } = saasUsersCountResult;
-    if (saasUsersError) throw saasUsersError;
+    const { data: usersCount, error: usersError } = usersCountResult;
+    if (usersError) throw usersError;
 
     const { count: tenantsCount, error: tenantsError } = tenantsCountResult;
     if (tenantsError) throw tenantsError;
 
     const metrics = {
-      usersCount: saasUsersCount, // Agora reflete apenas usuários SaaS
+      usersCount: usersCount,
       tenantsCount: tenantsCount ?? 0,
     };
 
