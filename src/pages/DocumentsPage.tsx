@@ -45,8 +45,8 @@ interface SupabaseFetchedDocument {
   metadata: any;
   related_entity_id: string | null;
   description: string | null;
-  // Alterado para aceitar um array de perfis, ou null
-  profiles: { first_name: string | null; last_name: string | null; }[] | null; 
+  // Alterado para usar o nome da coluna diretamente para a junção
+  generated_by: { first_name: string | null; last_name: string | null; } | null; 
 }
 
 // Função para buscar documentos
@@ -58,11 +58,10 @@ const fetchDocuments = async (tenantId: string): Promise<Document[]> => {
       document_type,
       file_url,
       generated_at,
-      generated_by,
+      generated_by (first_name, last_name),
       related_entity_id,
       metadata,
-      description,
-      profiles:generated_by (first_name, last_name)
+      description
     `)
     .eq('tenant_id', tenantId)
     .order('generated_at', { ascending: false });
@@ -72,8 +71,11 @@ const fetchDocuments = async (tenantId: string): Promise<Document[]> => {
   // Mapeia os dados brutos para a interface Document
   return (data as SupabaseFetchedDocument[]).map(doc => ({
     ...doc,
-    // Se profiles for um array, pega o primeiro elemento, caso contrário, null
-    generated_by_profile: doc.profiles && doc.profiles.length > 0 ? doc.profiles[0] : null,
+    // O campo 'generated_by' agora contém o objeto do perfil
+    generated_by_profile: doc.generated_by,
+    // O campo 'generated_by' original (UUID) não é mais necessário no objeto final, 
+    // mas mantemos a tipagem da interface Document para compatibilidade.
+    generated_by: doc.generated_by?.id || null, // Isso é um placeholder, pois o select não retorna o ID do generated_by
   }));
 };
 
