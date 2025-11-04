@@ -35,6 +35,10 @@ export const SessionContextProvider: React.FC<SessionContextProviderProps> = ({ 
       if (event === 'SIGNED_IN' || event === 'INITIAL_SESSION') {
         setSession(currentSession);
         setUser(currentSession?.user ?? null);
+        // TEMPORARY: Log user ID for Super Admin setup
+        if (currentSession?.user) {
+          console.log("Current User ID:", currentSession.user.id);
+        }
         if (currentSession && (window.location.pathname === '/login' || window.location.pathname === '/register')) {
           // Redirect authenticated users away from login/register page
           navigate('/dashboard', { replace: true });
