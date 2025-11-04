@@ -1,12 +1,16 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import AddClassSheet from '@/components/classes/AddClassSheet';
+import EditClassSheet from '@/components/classes/EditClassSheet'; // Importar o componente de edição
+import DeleteClassDialog from '@/components/classes/DeleteClassDialog'; // Importar o componente de exclusão
 import { BookOpen, Loader2, MoreHorizontal, Pencil, Trash2 } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useProfile } from '@/hooks/useProfile';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { Button } from '@/components/ui/button';
 
 interface Class {
   id: string;
@@ -33,11 +37,25 @@ const ClassesPage: React.FC = () => {
   const { profile, isLoading: isProfileLoading } = useProfile();
   const tenantId = profile?.tenant_id;
 
+  const [isEditSheetOpen, setIsEditSheetOpen] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [selectedClass, setSelectedClass] = useState<Class | null>(null);
+
   const { data: classes, isLoading: isClassesLoading, error } = useQuery<Class[], Error>({
     queryKey: ['classes', tenantId],
     queryFn: () => fetchClasses(tenantId!),
     enabled: !!tenantId,
   });
+
+  const handleEdit = (classItem: Class) => {
+    setSelectedClass(classItem);
+    setIsEditSheetOpen(true);
+  };
+
+  const handleDelete = (classItem: Class) => {
+    setSelectedClass(classItem);
+    setIsDeleteDialogOpen(true);
+  };
 
   if (isProfileLoading || isClassesLoading) {
     return <div className="flex justify-center items-center h-64"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>;
@@ -85,8 +103,21 @@ const ClassesPage: React.FC = () => {
                     </TableCell>
                     <TableCell>{classItem.room || 'N/A'}</TableCell>
                     <TableCell className="text-right">
-                      {/* Placeholder para Ações */}
-                      <MoreHorizontal className="h-4 w-4 text-muted-foreground inline-block" />
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="icon">
+                            <MoreHorizontal className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem onClick={() => handleEdit(classItem)}>
+                            <Pencil className="mr-2 h-4 w-4" /> Editar
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => handleDelete(classItem)} className="text-destructive">
+                            <Trash2 className="mr-2 h-4 w-4" /> Excluir
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     </TableCell>
                   </TableRow>
                 ))}
@@ -98,6 +129,18 @@ const ClassesPage: React.FC = () => {
           )}
         </CardContent>
       </Card>
+
+      <EditClassSheet
+        classId={selectedClass?.id || null}
+        open={isEditSheetOpen}
+        onOpenChange={setIsEditSheetOpen}
+      />
+      <DeleteClassDialog
+        classId={selectedClass?.id || null}
+        className={selectedClass?.name || null}
+        open={isDeleteDialogOpen}
+        onOpenChange={setIsDeleteDialogOpen}
+      />
     </div>
   );
 };
