@@ -15,7 +15,6 @@ import Dashboard from "./pages/Dashboard";
 import AppLayout from "./components/layout/AppLayout";
 import TenantsPage from "./pages/super-admin/TenantsPage";
 import UsersPage from "./pages/super-admin/UsersPage";
-// import KiwifyPage from "./pages/super-admin/KiwifyPage"; // Removido
 import StudentsPage from "./pages/StudentsPage";
 import ClassesPage from "./pages/ClassesPage";
 import FinancePage from "./pages/FinancePage";
@@ -27,7 +26,7 @@ import DocumentsPage from "./pages/DocumentsPage";
 import TeachersPage from "./pages/TeachersPage";
 import CoursesPage from "./pages/CoursesPage";
 import BackupDashboard from "./pages/BackupDashboard";
-import FAQPage from "./pages/FAQPage"; // NOVO IMPORT
+import FAQPage from "./pages/FAQPage";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -52,7 +51,7 @@ const App = () => {
               <Route path="/register" element={<Register />} />
               <Route path="/pre-matricula" element={<PreEnrollmentInfoPage />} />
               <Route path="/pre-matricula/:tenantId" element={<PreEnrollment />} />
-              <Route path="/faq" element={<FAQPage />} /> {/* NOVA ROTA */}
+              <Route path="/faq" element={<FAQPage />} />
 
               {/* Protected Routes using AppLayout */}
               <Route element={<ProtectedRoute />}>
@@ -74,7 +73,6 @@ const App = () => {
                     <Route path="/backup" element={<BackupDashboard />} />
                     <Route path="/super-admin/tenants" element={<TenantsPage />} />
                     <Route path="/super-admin/users" element={<UsersPage />} />
-                    {/* A rota /super-admin/kiwify foi removida */}
                   </Route>
                   
                   {/* Add other protected routes here later */}

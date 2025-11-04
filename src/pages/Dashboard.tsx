@@ -14,7 +14,7 @@ import { formatCurrency } from '@/lib/utils';
 import { Skeleton } from '@/components/ui/skeleton';
 import SchoolEvolutionIndicator from '@/components/dashboard/SchoolEvolutionIndicator';
 import MonthlyEnrollmentChart from '@/components/dashboard/MonthlyEnrollmentChart';
-// import HelpButton from '@/components/HelpButton'; // REMOVIDO
+import SuperAdminOverviewPage from './super-admin/SuperAdminOverviewPage'; // NOVO IMPORT
 
 const MetricCardSkeleton: React.FC = () => (
   <Card>
@@ -87,28 +87,8 @@ const Dashboard: React.FC = () => {
   }
 
   if (isSuperAdmin) {
-    return (
-      <div className="space-y-6">
-        <h1 className="text-3xl font-bold flex items-center gap-2">
-          <LayoutDashboard className="h-8 w-8 text-primary" />
-          Dashboard Super Administrador
-        </h1>
-        
-        <Card>
-          <CardHeader>
-            <CardTitle>Visão Geral do Sistema</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-muted-foreground">
-              Use o menu lateral para navegar para as seções de configuração global: 
-              <Link to="/super-admin/tenants" className="text-primary hover:underline ml-1">Gestão de Escolas</Link>, 
-              <Link to="/super-admin/users" className="text-primary hover:underline ml-1">Gestão de Usuários</Link> e 
-              <Link to="/backup" className="text-primary hover:underline ml-1">Backup Global</Link>.
-            </p>
-          </CardContent>
-        </Card>
-      </div>
-    );
+    // Renderiza a nova página de visão geral do Super Admin
+    return <SuperAdminOverviewPage />;
   }
   
   if (!isSchoolUser) {

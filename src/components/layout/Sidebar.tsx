@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Home, Users, Settings, LogOut, School, BookOpen, DollarSign, TrendingUp, TrendingDown, CalendarDays, FileText, UserCheck, ListChecks, HardDrive, ShoppingCart, HelpCircle } from 'lucide-react';
+import { Home, Users, Settings, LogOut, School, BookOpen, DollarSign, TrendingUp, TrendingDown, CalendarDays, FileText, UserCheck, ListChecks, HardDrive, ShoppingCart, HelpCircle, LayoutDashboard } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { cn } from '@/lib/utils';
@@ -74,6 +74,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isSuperAdmin, displayName, roleDispla
   ];
 
   const superAdminNavItems: NavigationItem[] = [
+    { to: "/dashboard", icon: <LayoutDashboard className="h-5 w-5" />, label: "Visão Geral" }, // Novo item de dashboard para Super Admin
     { to: "/super-admin/tenants", icon: <School className="h-5 w-5" />, label: "Gestão de Escolas" },
     { to: "/super-admin/users", icon: <Users className="h-5 w-5" />, label: "Gestão de Usuários" },
     { to: "/backup", icon: <HardDrive className="h-5 w-5" />, label: "Backup Global" },
