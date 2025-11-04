@@ -2,15 +2,15 @@ import React from 'react';
 import { Outlet } from 'react-router-dom';
 import { Menu, LogOut, Home, Users, Settings, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
+import { Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet';
 import { Separator } from '@/components/ui/separator';
 import { useAuth } from '@/components/auth/SessionContextProvider';
 import { supabase } from '@/integrations/supabase/client';
 import { useProfile } from '@/hooks/useProfile';
 import Sidebar from './Sidebar';
 import AppFooter from './AppFooter';
-import BackupAlerts from '@/components/BackupAlerts'; // Importando BackupAlerts
-import { useBackupMonitoring } from '@/hooks/useBackupMonitoring'; // Importando o novo hook de monitoramento
+import BackupAlerts from '@/components/BackupAlerts'; 
+import { useBackupMonitoring } from '@/hooks/useBackupMonitoring'; 
 
 const AppLayout: React.FC = () => {
   const { user } = useAuth();
@@ -53,6 +53,11 @@ const AppLayout: React.FC = () => {
               </Button>
             </SheetTrigger>
             <SheetContent side="left" className="sm:max-w-xs p-0">
+              {/* Adicionando SheetHeader, Title e Description para acessibilidade (sr-only) */}
+              <SheetHeader className="sr-only">
+                <SheetTitle>Menu de Navegação</SheetTitle>
+                <SheetDescription>Navegue pelas seções do aplicativo.</SheetDescription>
+              </SheetHeader>
               <Sidebar isSuperAdmin={isSuperAdmin} displayName={displayName} roleDisplay={roleDisplay} onLogout={handleLogout} />
             </SheetContent>
           </Sheet>
