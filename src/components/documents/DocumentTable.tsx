@@ -25,7 +25,8 @@ interface Document {
   document_type: 'contract' | 'receipt' | 'report_card' | 'transcript' | 'payslip' | 'other';
   file_url: string;
   generated_at: string;
-  profiles: {
+  generated_by: string | null; // Keep generated_by as UUID
+  generated_by_profile: { // New field for joined profile data
     first_name: string | null;
     last_name: string | null;
   } | null;
@@ -85,7 +86,7 @@ const DocumentTable: React.FC<DocumentTableProps> = ({ documents, onView, onDele
                   {doc.generated_at ? format(new Date(doc.generated_at), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR }) : 'N/A'}
                 </TableCell>
                 <TableCell>
-                  {doc.profiles ? `${doc.profiles.first_name} ${doc.profiles.last_name}` : 'Sistema'}
+                  {doc.generated_by_profile ? `${doc.generated_by_profile.first_name} ${doc.generated_by_profile.last_name}` : 'Sistema'}
                 </TableCell>
                 <TableCell className="text-right">
                   <DropdownMenu>

@@ -5,7 +5,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useProfile } from '@/hooks/useProfile';
 import DocumentTable from '@/components/documents/DocumentTable';
-import AddDocumentSheet from '@/components/documents/AddDocumentSheet'; // Importar o novo componente
+import AddDocumentSheet from '@/components/documents/AddDocumentSheet';
 import { toast } from 'sonner';
 import {
   AlertDialog,
@@ -19,29 +19,34 @@ import {
 } from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
 
-// Definindo a interface para o tipo de documento (deve ser a mesma do DocumentTable)
+// Definindo a interface para o tipo de documento
 interface Document {
   id: string;
   document_type: 'contract' | 'receipt' | 'report_card' | 'transcript' | 'payslip' | 'other';
   file_url: string;
   generated_at: string;
-  profiles: {
+  generated_by: string | null; // Keep generated_by as UUID
+  generated_by_profile: { // New field for joined profile data
     first_name: string | null;
     last_name: string | null;
   } | null;
   metadata: any; // JSONB
   related_entity_id: string | null;
+  description: string | null;
 }
 
-// Interface para o tipo de retorno bruto do Supabase, caso 'profiles' venha como array
+// Interface para o tipo de retorno bruto do Supabase
 interface SupabaseFetchedDocument {
   id: string;
   document_type: 'contract' | 'receipt' | 'report_card' | 'transcript' | 'payslip' | 'other';
   file_url: string;
   generated_at: string;
-  related_entity_id: string | null;
+  generated_by: string | null;
   metadata: any;
-  profiles: Array<{ first_name: string | null; last_name: string | null; }> | null;
+  related_entity_id: string | null;
+  description: string | null;
+  // Alterado para aceitar um array de perfis, ou null
+  profiles: { first_name: string | null; last_name: string | null; }[] | null; 
 }
 
 // Função para buscar documentos
@@ -53,19 +58,22 @@ const fetchDocuments = async (tenantId: string): Promise<Document[]> => {
       document_type,
       file_url,
       generated_at,
+      generated_by,
       related_entity_id,
       metadata,
-      profiles (first_name, last_name)
+      description,
+      profiles:generated_by (first_name, last_name)
     `)
     .eq('tenant_id', tenantId)
     .order('generated_at', { ascending: false });
 
   if (error) throw new Error(error.message);
   
-  // Mapeia os dados brutos para a interface Document, garantindo que 'profiles' seja um objeto único ou null
+  // Mapeia os dados brutos para a interface Document
   return (data as SupabaseFetchedDocument[]).map(doc => ({
     ...doc,
-    profiles: doc.profiles && doc.profiles.length > 0 ? doc.profiles[0] : null,
+    // Se profiles for um array, pega o primeiro elemento, caso contrário, null
+    generated_by_profile: doc.profiles && doc.profiles.length > 0 ? doc.profiles[0] : null,
   }));
 };
 
@@ -162,7 +170,7 @@ const DocumentsPage: React.FC = () => {
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h1 className="text-3xl font-bold">Gestão de Documentos</h1>
-        <AddDocumentSheet /> {/* Adicionado o botão para abrir o sheet de adicionar documento */}
+        <AddDocumentSheet />
       </div>
       
       <Card>
@@ -186,7 +194,7 @@ const DocumentsPage: React.FC = () => {
           <AlertDialogHeader>
             <AlertDialogTitle>Confirmar Exclusão</AlertDialogTitle>
             <AlertDialogDescription>
-              Tem certeza que deseja excluir o documento "{selectedDocument?.metadata?.description || selectedDocument?.document_type}"? Esta ação não pode ser desfeita e removerá o arquivo permanentemente.
+              Tem certeza que deseja excluir o documento "{selectedDocument?.metadata?.description || selectedDocument?.description || selectedDocument?.document_type}"? Esta ação não pode ser desfeita e removerá o arquivo permanentemente.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
