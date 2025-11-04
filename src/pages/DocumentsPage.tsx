@@ -40,18 +40,33 @@ const fetchDocuments = async (tenantId: string): Promise<SchoolDocument[]> => {
   if (error) throw new Error(error.message);
   
   // Mapeia os dados brutos para a interface SchoolDocument
-  const fetchedRawData: SupabaseFetchedDocument[] = data || [];
+  // Usamos 'any[]' para o dado bruto para evitar conflitos de inferência do Supabase,
+  // e depois mapeamos para o tipo 'SupabaseFetchedDocument' antes de converter para 'SchoolDocument'.
+  const rawData: any[] = data || [];
 
-  return fetchedRawData.map((doc: SupabaseFetchedDocument) => ({
-    id: doc.id,
-    document_type: doc.document_type,
-    file_url: doc.file_url,
-    generated_at: doc.generated_at,
-    generated_by_profile: doc.generated_by, // Atribui o objeto do perfil diretamente
-    metadata: doc.metadata,
-    related_entity_id: doc.related_entity_id,
-    description: doc.description,
-  }));
+  return rawData.map((doc: any) => {
+    let generatedByProfile: { first_name: string | null; last_name: string | null; } | null = null;
+
+    // Supabase's PostgREST usually returns a single object for a one-to-one join.
+    // However, the TypeScript error implies it might be inferred as an array.
+    // We handle both possibilities to ensure type safety.
+    if (Array.isArray(doc.generated_by) && doc.generated_by.length > 0) {
+      generatedByProfile = doc.generated_by[0]; // Take the first element if it's an array
+    } else if (doc.generated_by && typeof doc.generated_by === 'object') {
+      generatedByProfile = doc.generated_by; // If it's a single object
+    }
+
+    return {
+      id: doc.id,
+      document_type: doc.document_type,
+      file_url: doc.file_url,
+      generated_at: doc.generated_at,
+      generated_by_profile: generatedByProfile, // Atribui o objeto do perfil diretamente
+      metadata: doc.metadata,
+      related_entity_id: doc.related_entity_id,
+      description: doc.description,
+    };
+  });
 };
 
 const DocumentsPage: React.FC = () => {
@@ -136,7 +151,11 @@ const DocumentsPage: React.FC = () => {
   };
 
   if (isProfileLoading || isDocumentsLoading) {
-    return <div className="flex justify-center items-center h-64"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>;
+    return (
+      <div className="flex justify-center items-center h-64">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
   }
 
   if (error) {
@@ -149,7 +168,7 @@ const DocumentsPage: React.FC = () => {
         <h1 className="text-3xl font-bold">Gestão de Documentos</h1>
         <AddDocumentSheet />
       </div>
-      
+
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
@@ -171,7 +190,10 @@ const DocumentsPage: React.FC = () => {
           <AlertDialogHeader>
             <AlertDialogTitle>Confirmar Exclusão</AlertDialogTitle>
             <AlertDialogDescription>
-              Tem certeza que deseja excluir o documento "{selectedDocument?.metadata?.description || selectedDocument?.description || selectedDocument?.document_type}"? Esta ação não pode ser desfeita e removerá o arquivo permanentemente.
+              Tem certeza que deseja excluir o documento "
+              {selectedDocument?.metadata?.description ||
+                selectedDocument?.description ||
+                selectedDocument?.document_type}"? Esta ação não pode ser desfeita e removerá o arquivo permanentemente.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
