@@ -28,23 +28,10 @@ const MetricCardSkeleton: React.FC = () => (
   </Card>
 );
 
-interface SuperAdminMetrics {
-  totalTenants: number;
-  totalUsers: number;
-}
-
 interface MonthlyEnrollmentData {
   name: string;
   'Novas Matrículas': number;
 }
-
-const fetchSuperAdminMetrics = async (): Promise<SuperAdminMetrics> => {
-  const { data, error } = await supabase.functions.invoke('get-super-admin-metrics');
-  if (error) throw new Error(error.message);
-  // @ts-ignore
-  if (data.error) throw new Error(data.error);
-  return data as SuperAdminMetrics;
-};
 
 const fetchMonthlyEnrollments = async (tenantId: string): Promise<MonthlyEnrollmentData[]> => {
   const { data, error } = await supabase.functions.invoke('get-monthly-enrollments', {
@@ -74,12 +61,6 @@ const Dashboard: React.FC = () => {
     queryKey: ['dashboardMetrics', tenantId],
     queryFn: () => fetchDashboardMetrics(tenantId!),
     enabled: !!tenantId && !isSuperAdmin, // Only fetch for school users
-  });
-
-  const { data: superAdminMetrics, isLoading: areSuperAdminMetricsLoading } = useQuery<SuperAdminMetrics, Error>({
-    queryKey: ['superAdminMetrics'],
-    queryFn: fetchSuperAdminMetrics,
-    enabled: isSuperAdmin, // Only fetch for Super Admin
   });
 
   const { data: monthlyEnrollments, isLoading: areMonthlyEnrollmentsLoading } = useQuery<MonthlyEnrollmentData[], Error>({
@@ -113,36 +94,19 @@ const Dashboard: React.FC = () => {
           Dashboard Super Administrador
         </h1>
         
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-          {areSuperAdminMetricsLoading ? Array.from({ length: 2 }).map((_, i) => <MetricCardSkeleton key={i} />) : (
-            <>
-              <MetricCard 
-                title="Total de Escolas" 
-                value={superAdminMetrics?.totalTenants ?? 0} 
-                icon={School} 
-                iconColor="text-primary" 
-              />
-              <MetricCard 
-                title="Total de Usuários" 
-                value={superAdminMetrics?.totalUsers ?? 0} 
-                icon={Users} 
-                iconColor="text-indigo-500" 
-              />
-            </>
-          )}
-        </div>
-
         <Card>
           <CardHeader>
             <CardTitle>Visão Geral do Sistema</CardTitle>
           </CardHeader>
           <CardContent>
             <p className="text-muted-foreground">
-              Use o menu lateral para navegar para a Gestão de Escolas, Usuários e Métricas Kiwify.
+              Use o menu lateral para navegar para as seções de configuração global: 
+              <Link to="/super-admin/tenants" className="text-primary hover:underline ml-1">Gestão de Escolas</Link>, 
+              <Link to="/super-admin/users" className="text-primary hover:underline ml-1">Gestão de Usuários</Link> e 
+              <Link to="/backup" className="text-primary hover:underline ml-1">Backup Global</Link>.
             </p>
           </CardContent>
         </Card>
-        {/* <HelpButton /> */}
       </div>
     );
   }
@@ -162,7 +126,6 @@ const Dashboard: React.FC = () => {
             </p>
           </CardContent>
         </Card>
-        {/* <HelpButton /> */}
       </div>
     );
   }
@@ -221,7 +184,6 @@ const Dashboard: React.FC = () => {
       </div>
 
       <SchoolEvolutionIndicator />
-      {/* <HelpButton /> */}
     </div>
   );
 };
