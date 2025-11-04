@@ -19,14 +19,13 @@ import {
 } from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
 
-// Definindo a interface para o tipo de documento
-interface Document {
+// Definindo a interface para o tipo de documento (EXPORTADO para ser usado em DocumentTable)
+export interface SchoolDocument { // Renamed from Document
   id: string;
   document_type: 'contract' | 'receipt' | 'report_card' | 'transcript' | 'payslip' | 'other';
   file_url: string;
   generated_at: string;
-  // Removido generated_by: string | null; pois o select retorna o objeto do perfil diretamente
-  generated_by_profile: { // Agora este campo é o que contém os dados do perfil
+  generated_by_profile: { // Este campo contém os dados do perfil
     first_name: string | null;
     last_name: string | null;
   } | null;
@@ -49,7 +48,7 @@ interface SupabaseFetchedDocument {
 }
 
 // Função para buscar documentos
-const fetchDocuments = async (tenantId: string): Promise<Document[]> => {
+const fetchDocuments = async (tenantId: string): Promise<SchoolDocument[]> => { // Updated return type
   const { data, error } = await supabase
     .from('documents')
     .select(`
@@ -68,7 +67,9 @@ const fetchDocuments = async (tenantId: string): Promise<Document[]> => {
   if (error) throw new Error(error.message);
   
   // Mapeia os dados brutos para a interface Document
-  return (data as SupabaseFetchedDocument[]).map(doc => ({
+  const fetchedRawData: any[] = data || []; // Use any[] for raw data
+
+  return fetchedRawData.map((doc: any) => ({ // Map from any to SchoolDocument
     id: doc.id,
     document_type: doc.document_type,
     file_url: doc.file_url,
@@ -77,7 +78,7 @@ const fetchDocuments = async (tenantId: string): Promise<Document[]> => {
     metadata: doc.metadata,
     related_entity_id: doc.related_entity_id,
     description: doc.description,
-  }));
+  })) as SchoolDocument[]; // Cast the result to SchoolDocument[]
 };
 
 const DocumentsPage: React.FC = () => {
@@ -86,9 +87,9 @@ const DocumentsPage: React.FC = () => {
   const tenantId = profile?.tenant_id;
 
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-  const [selectedDocument, setSelectedDocument] = useState<Document | null>(null);
+  const [selectedDocument, setSelectedDocument] = useState<SchoolDocument | null>(null); // Updated type
 
-  const { data: documents, isLoading: isDocumentsLoading, error } = useQuery<Document[], Error>({
+  const { data: documents, isLoading: isDocumentsLoading, error } = useQuery<SchoolDocument[], Error>({ // Updated type
     queryKey: ['documents', tenantId],
     queryFn: () => fetchDocuments(tenantId!),
     enabled: !!tenantId,
@@ -146,11 +147,11 @@ const DocumentsPage: React.FC = () => {
     },
   });
 
-  const handleViewDocument = (doc: Document) => {
+  const handleViewDocument = (doc: SchoolDocument) => { // Updated type
     window.open(doc.file_url, '_blank');
   };
 
-  const handleDeleteDocument = (doc: Document) => {
+  const handleDeleteDocument = (doc: SchoolDocument) => { // Updated type
     setSelectedDocument(doc);
     setIsDeleteDialogOpen(true);
   };
@@ -185,7 +186,7 @@ const DocumentsPage: React.FC = () => {
         </CardHeader>
         <CardContent>
           <DocumentTable
-            documents={documents || []}
+            documents={documents || []} // Updated type
             onView={handleViewDocument}
             onDelete={handleDeleteDocument}
           />

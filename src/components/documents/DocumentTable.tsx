@@ -18,30 +18,15 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { MoreHorizontal, Eye, Trash2 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
-
-// Definindo a interface para o tipo de documento
-interface Document {
-  id: string;
-  document_type: 'contract' | 'receipt' | 'report_card' | 'transcript' | 'payslip' | 'other';
-  file_url: string;
-  generated_at: string;
-  generated_by: string | null; // Keep generated_by as UUID
-  generated_by_profile: { // New field for joined profile data
-    first_name: string | null;
-    last_name: string | null;
-  } | null;
-  metadata: any; // JSONB
-  related_entity_id: string | null;
-  description: string | null; // Adicionado a propriedade 'description'
-}
+import { SchoolDocument } from '@/pages/DocumentsPage'; // Importando a interface RENOMEADA
 
 interface DocumentTableProps {
-  documents: Document[];
-  onView: (document: Document) => void;
-  onDelete: (document: Document) => void;
+  documents: SchoolDocument[]; // Updated type
+  onView: (document: SchoolDocument) => void; // Updated type
+  onDelete: (document: SchoolDocument) => void; // Updated type
 }
 
-const getDocumentTypeLabel = (type: Document['document_type']) => {
+const getDocumentTypeLabel = (type: SchoolDocument['document_type']) => { // Updated type
   switch (type) {
     case 'contract': return 'Contrato';
     case 'receipt': return 'Recibo';
