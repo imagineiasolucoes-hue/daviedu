@@ -155,11 +155,13 @@ const BackupAlerts: React.FC<BackupAlertsProps> = ({
                   {action.label}
                 </Button>
               ))}
-              {/* Adiciona um botão de fechar padrão se não houver ações ou se for um modal de erro sem ação de fechar */}
+              {/* Adiciona um botão de fechar padrão se não houver ações */}
               {!modal.actions || modal.actions.length === 0 ? (
-                <Button onClick={() => dismissNotification(modal.id)} variant="outline">
-                  Fechar
-                </Button>
+                <AlertDialogCancel asChild>
+                  <Button onClick={() => dismissNotification(modal.id)} variant="outline">
+                    Fechar
+                  </Button>
+                </AlertDialogCancel>
               ) : null}
             </AlertDialogFooter>
           </AlertDialogContent>
