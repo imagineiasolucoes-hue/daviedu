@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useEffect, useState, useMemo } from 'react';
 import { Session, User } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
@@ -35,10 +35,12 @@ export const SessionContextProvider: React.FC<SessionContextProviderProps> = ({ 
       if (event === 'SIGNED_IN' || event === 'INITIAL_SESSION') {
         setSession(currentSession);
         setUser(currentSession?.user ?? null);
-        // TEMPORARY: Log user ID for Super Admin setup
-        if (currentSession?.user) {
-          console.log("Current User ID:", currentSession.user.id);
+        
+        // Log do User ID apenas na sessão inicial ou sign in
+        if (currentSession?.user && event === 'INITIAL_SESSION') {
+          console.log("Current User ID (Initial Session):", currentSession.user.id);
         }
+
         if (currentSession && (window.location.pathname === '/login' || window.location.pathname === '/register')) {
           // Redirect authenticated users away from login/register page
           navigate('/dashboard', { replace: true });
@@ -63,7 +65,8 @@ export const SessionContextProvider: React.FC<SessionContextProviderProps> = ({ 
     return () => subscription.unsubscribe();
   }, [navigate]);
 
-  const value = { session, user, isLoading };
+  // Memoiza o valor do contexto para evitar re-renders desnecessários nos consumidores
+  const value = useMemo(() => ({ session, user, isLoading }), [session, user, isLoading]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
