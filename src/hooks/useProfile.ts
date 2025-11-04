@@ -16,22 +16,41 @@ export interface Profile {
 }
 
 const fetchProfile = async (userId: string): Promise<Profile | null> => {
-  const { data, error } = await supabase
+  // 1. Tenta buscar o perfil existente
+  let { data, error } = await supabase
     .from('profiles')
     .select('*')
     .eq('id', userId)
-    .maybeSingle(); // Changed from .single() to .maybeSingle()
+    .maybeSingle();
 
   if (error) {
-    console.error("Supabase fetchProfile error:", error); // Log detalhado do erro
+    console.error("Supabase fetchProfile error:", error);
     throw new Error(error.message);
   }
   
+  // 2. Se o perfil não for encontrado, tenta criar um registro básico
   if (!data) {
-    return null; // No profile found
+    console.warn(`Profile missing for user ${userId}. Attempting immediate creation.`);
+    
+    // Insere apenas o ID. O campo 'role' usará o default 'student'.
+    // Outros campos (first_name, email) serão nulos, mas o perfil existirá.
+    const { data: insertData, error: insertError } = await supabase
+        .from('profiles')
+        .insert({ id: userId }) 
+        .select('*')
+        .single();
+
+    if (insertError) {
+        console.error("Failed to create fallback profile:", insertError);
+        // Se falhar, retorna null e o AppLayout mostrará 'N/A'
+        return null; 
+    }
+    
+    // Usa o dado recém-inserido
+    data = insertData;
   }
 
-  // Ensure role is correctly typed, defaulting if necessary
+  // 3. Garante que o campo role está presente (embora o schema garanta um default)
   if (!data.role) {
       data.role = 'student' as UserRole;
   }
