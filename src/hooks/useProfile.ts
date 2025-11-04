@@ -15,18 +15,22 @@ export interface Profile {
   phone: string | null;
 }
 
-const fetchProfile = async (userId: string): Promise<Profile> => {
+const fetchProfile = async (userId: string): Promise<Profile | null> => {
   const { data, error } = await supabase
     .from('profiles')
     .select('*')
     .eq('id', userId)
-    .single();
+    .maybeSingle(); // Changed from .single() to .maybeSingle()
 
   if (error) {
     console.error("Supabase fetchProfile error:", error); // Log detalhado do erro
     throw new Error(error.message);
   }
   
+  if (!data) {
+    return null; // No profile found
+  }
+
   // Ensure role is correctly typed, defaulting if necessary
   if (!data.role) {
       data.role = 'student' as UserRole;
@@ -39,7 +43,7 @@ export const useProfile = () => {
   const { user, isLoading: isAuthLoading } = useAuth();
   const userId = user?.id;
 
-  const { data: profile, isLoading: isProfileLoading, error, refetch } = useQuery<Profile, Error>({
+  const { data: profile, isLoading: isProfileLoading, error, refetch } = useQuery<Profile | null, Error>({
     queryKey: ['profile', userId],
     queryFn: () => fetchProfile(userId!),
     enabled: !!userId, // Only run if user is logged in

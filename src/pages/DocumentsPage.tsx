@@ -18,37 +18,10 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
-
-// Definindo a interface para o tipo de documento (EXPORTADO para ser usado em DocumentTable)
-export interface SchoolDocument { // Renamed from Document
-  id: string;
-  document_type: 'contract' | 'receipt' | 'report_card' | 'transcript' | 'payslip' | 'other';
-  file_url: string;
-  generated_at: string;
-  generated_by_profile: { // Este campo contém os dados do perfil
-    first_name: string | null;
-    last_name: string | null;
-  } | null;
-  metadata: any; // JSONB
-  related_entity_id: string | null;
-  description: string | null;
-}
-
-// Interface para o tipo de retorno bruto do Supabase
-interface SupabaseFetchedDocument {
-  id: string;
-  document_type: 'contract' | 'receipt' | 'report_card' | 'transcript' | 'payslip' | 'other';
-  file_url: string;
-  generated_at: string;
-  // O campo 'generated_by' agora representa o objeto do perfil retornado pela junção
-  generated_by: { first_name: string | null; last_name: string | null; } | null; 
-  metadata: any;
-  related_entity_id: string | null;
-  description: string | null;
-}
+import { SchoolDocument, SupabaseFetchedDocument } from '@/types/documents'; // Importando as interfaces centralizadas
 
 // Função para buscar documentos
-const fetchDocuments = async (tenantId: string): Promise<SchoolDocument[]> => { // Updated return type
+const fetchDocuments = async (tenantId: string): Promise<SchoolDocument[]> => {
   const { data, error } = await supabase
     .from('documents')
     .select(`
@@ -66,10 +39,10 @@ const fetchDocuments = async (tenantId: string): Promise<SchoolDocument[]> => { 
 
   if (error) throw new Error(error.message);
   
-  // Mapeia os dados brutos para a interface Document
-  const fetchedRawData: any[] = data || []; // Use any[] for raw data
+  // Mapeia os dados brutos para a interface SchoolDocument
+  const fetchedRawData: SupabaseFetchedDocument[] = data || [];
 
-  return fetchedRawData.map((doc: any) => ({ // Map from any to SchoolDocument
+  return fetchedRawData.map((doc: SupabaseFetchedDocument) => ({
     id: doc.id,
     document_type: doc.document_type,
     file_url: doc.file_url,
@@ -78,7 +51,7 @@ const fetchDocuments = async (tenantId: string): Promise<SchoolDocument[]> => { 
     metadata: doc.metadata,
     related_entity_id: doc.related_entity_id,
     description: doc.description,
-  })) as SchoolDocument[]; // Cast the result to SchoolDocument[]
+  }));
 };
 
 const DocumentsPage: React.FC = () => {
@@ -87,9 +60,9 @@ const DocumentsPage: React.FC = () => {
   const tenantId = profile?.tenant_id;
 
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-  const [selectedDocument, setSelectedDocument] = useState<SchoolDocument | null>(null); // Updated type
+  const [selectedDocument, setSelectedDocument] = useState<SchoolDocument | null>(null);
 
-  const { data: documents, isLoading: isDocumentsLoading, error } = useQuery<SchoolDocument[], Error>({ // Updated type
+  const { data: documents, isLoading: isDocumentsLoading, error } = useQuery<SchoolDocument[], Error>({
     queryKey: ['documents', tenantId],
     queryFn: () => fetchDocuments(tenantId!),
     enabled: !!tenantId,
@@ -147,11 +120,11 @@ const DocumentsPage: React.FC = () => {
     },
   });
 
-  const handleViewDocument = (doc: SchoolDocument) => { // Updated type
+  const handleViewDocument = (doc: SchoolDocument) => {
     window.open(doc.file_url, '_blank');
   };
 
-  const handleDeleteDocument = (doc: SchoolDocument) => { // Updated type
+  const handleDeleteDocument = (doc: SchoolDocument) => {
     setSelectedDocument(doc);
     setIsDeleteDialogOpen(true);
   };
@@ -186,7 +159,7 @@ const DocumentsPage: React.FC = () => {
         </CardHeader>
         <CardContent>
           <DocumentTable
-            documents={documents || []} // Updated type
+            documents={documents || []}
             onView={handleViewDocument}
             onDelete={handleDeleteDocument}
           />

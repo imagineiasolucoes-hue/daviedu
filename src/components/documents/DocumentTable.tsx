@@ -18,15 +18,15 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { MoreHorizontal, Eye, Trash2 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
-import { SchoolDocument } from '@/pages/DocumentsPage'; // Importando a interface RENOMEADA
+import { SchoolDocument } from '@/types/documents'; // Importando a interface centralizada
 
 interface DocumentTableProps {
-  documents: SchoolDocument[]; // Updated type
-  onView: (document: SchoolDocument) => void; // Updated type
-  onDelete: (document: SchoolDocument) => void; // Updated type
+  documents: SchoolDocument[];
+  onView: (document: SchoolDocument) => void;
+  onDelete: (document: SchoolDocument) => void;
 }
 
-const getDocumentTypeLabel = (type: SchoolDocument['document_type']) => { // Updated type
+const getDocumentTypeLabel = (type: SchoolDocument['document_type']) => {
   switch (type) {
     case 'contract': return 'Contrato';
     case 'receipt': return 'Recibo';
