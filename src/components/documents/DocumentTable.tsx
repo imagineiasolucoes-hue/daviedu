@@ -31,6 +31,7 @@ interface Document {
   } | null;
   metadata: any; // JSONB
   related_entity_id: string | null;
+  description: string | null; // Adicionado a propriedade 'description'
 }
 
 interface DocumentTableProps {
