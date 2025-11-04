@@ -21,6 +21,8 @@ serve(async (req) => {
 
   try {
     const body = await req.json();
+    console.log("create-teacher: Incoming request body:", JSON.stringify(body, null, 2)); // Log do corpo da requisição
+
     const { tenant_id, classes_to_teach, ...teacherInfo } = body; // Capturando classes_to_teach
 
     if (!tenant_id) {
@@ -60,6 +62,7 @@ serve(async (req) => {
       .single();
 
     if (insertError) {
+      console.error("create-teacher: Supabase Insert Error (employees):", JSON.stringify(insertError, null, 2)); // Log detalhado do erro de inserção
       throw new Error(`Erro no banco de dados ao criar professor: ${insertError.message}`);
     }
     
@@ -78,6 +81,7 @@ serve(async (req) => {
             .insert(links);
 
         if (linkError) {
+            console.error("create-teacher: Supabase Insert Error (teacher_classes):", JSON.stringify(linkError, null, 2)); // Log detalhado do erro de vínculo
             // NOTA: Em um ambiente de produção, para garantir atomicidade, a criação do professor
             // também deveria ser revertida se o vínculo das turmas falhar.
             // Isso geralmente é feito com uma função de banco de dados (stored procedure)
@@ -94,6 +98,7 @@ serve(async (req) => {
 
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : "Ocorreu um erro inesperado.";
+    console.error("create-teacher: Edge Function CATCH block error:", errorMessage); // Log do erro geral
     return new Response(JSON.stringify({ error: errorMessage }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 400,

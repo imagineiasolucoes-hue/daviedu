@@ -24,7 +24,7 @@ const classAssignmentSchema = z.object({
 const teacherSchema = z.object({
   full_name: z.string().min(5, "Nome completo é obrigatório."),
   main_subject: z.string().optional().nullable(), // Pode ser nulo
-  base_salary: z.coerce.number().min(0, "Salário deve ser um valor positivo."),
+  base_salary: z.coerce.number().min(0.01, "Salário deve ser um valor positivo."),
   hire_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Data de contratação inválida. Use o formato AAAA-MM-DD."),
   
   // Novos campos de contato e endereço
@@ -150,6 +150,8 @@ const AddTeacherSheet: React.FC = () => {
         address_state: data.address_state || null,
         main_subject: data.main_subject || null,
       };
+
+      console.log("AddTeacherSheet: Payload sent to create-teacher Edge Function:", JSON.stringify(payload, null, 2)); // Log do payload
 
       const { error } = await supabase.functions.invoke('create-teacher', {
         body: JSON.stringify(payload),
