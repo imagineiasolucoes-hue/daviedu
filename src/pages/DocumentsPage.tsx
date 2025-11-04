@@ -25,8 +25,8 @@ interface Document {
   document_type: 'contract' | 'receipt' | 'report_card' | 'transcript' | 'payslip' | 'other';
   file_url: string;
   generated_at: string;
-  generated_by: string | null; // Keep generated_by as UUID
-  generated_by_profile: { // New field for joined profile data
+  // Removido generated_by: string | null; pois o select retorna o objeto do perfil diretamente
+  generated_by_profile: { // Agora este campo é o que contém os dados do perfil
     first_name: string | null;
     last_name: string | null;
   } | null;
@@ -41,12 +41,11 @@ interface SupabaseFetchedDocument {
   document_type: 'contract' | 'receipt' | 'report_card' | 'transcript' | 'payslip' | 'other';
   file_url: string;
   generated_at: string;
-  generated_by: string | null;
+  // O campo 'generated_by' agora representa o objeto do perfil retornado pela junção
+  generated_by: { first_name: string | null; last_name: string | null; } | null; 
   metadata: any;
   related_entity_id: string | null;
   description: string | null;
-  // Alterado para usar o nome da coluna diretamente para a junção
-  generated_by: { first_name: string | null; last_name: string | null; } | null; 
 }
 
 // Função para buscar documentos
@@ -70,12 +69,14 @@ const fetchDocuments = async (tenantId: string): Promise<Document[]> => {
   
   // Mapeia os dados brutos para a interface Document
   return (data as SupabaseFetchedDocument[]).map(doc => ({
-    ...doc,
-    // O campo 'generated_by' agora contém o objeto do perfil
-    generated_by_profile: doc.generated_by,
-    // O campo 'generated_by' original (UUID) não é mais necessário no objeto final, 
-    // mas mantemos a tipagem da interface Document para compatibilidade.
-    generated_by: doc.generated_by?.id || null, // Isso é um placeholder, pois o select não retorna o ID do generated_by
+    id: doc.id,
+    document_type: doc.document_type,
+    file_url: doc.file_url,
+    generated_at: doc.generated_at,
+    generated_by_profile: doc.generated_by, // Atribui o objeto do perfil diretamente
+    metadata: doc.metadata,
+    related_entity_id: doc.related_entity_id,
+    description: doc.description,
   }));
 };
 
