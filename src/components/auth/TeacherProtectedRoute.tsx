@@ -6,7 +6,7 @@ import { Loader2 } from 'lucide-react';
 
 const TeacherProtectedRoute: React.FC = () => {
   const { user, isLoading: isAuthLoading } = useAuth();
-  const { profile, isLoading: isProfileLoading, isTeacher } = useProfile();
+  const { profile, isLoading: isProfileLoading, isTeacher, isAdmin } = useProfile(); // Adicionado isAdmin
 
   if (isAuthLoading || isProfileLoading) {
     return (
@@ -16,13 +16,13 @@ const TeacherProtectedRoute: React.FC = () => {
     );
   }
 
-  if (!user || !isTeacher) {
-    // Se não estiver autenticado ou não for Professor, redireciona para o dashboard normal.
-    // O ProtectedRoute pai já lida com usuários não logados.
+  // Permite acesso se o usuário estiver autenticado E for Professor OU Administrador
+  if (!user || (!isTeacher && !isAdmin)) {
+    // Se não estiver autenticado ou não for Professor/Admin, redireciona para o dashboard normal.
     return <Navigate to="/dashboard" replace />;
   }
 
-  // Usuário é Professor, renderiza as rotas filhas
+  // Usuário é Professor ou Administrador, renderiza as rotas filhas
   return <Outlet />;
 };
 
