@@ -57,6 +57,7 @@ export const useProfile = () => {
   const isLoading = isAuthLoading || isProfileLoading;
   const isSuperAdmin = profile?.role === 'super_admin';
   const isAdmin = profile?.role === 'admin';
+  const isTeacher = profile?.role === 'teacher'; // Adicionado
   const isSchoolUser = profile?.tenant_id !== null;
 
   return {
@@ -66,6 +67,7 @@ export const useProfile = () => {
     refetch,
     isSuperAdmin,
     isAdmin,
+    isTeacher, // Adicionado
     isSchoolUser,
   };
 };
