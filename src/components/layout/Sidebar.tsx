@@ -1,9 +1,10 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Home, Users, Settings, LogOut, School, BookOpen, DollarSign, TrendingUp, TrendingDown, CalendarDays, FileText, UserCheck, ListChecks, HardDrive, ShoppingCart, HelpCircle, LayoutDashboard } from 'lucide-react';
+import { Home, Users, Settings, LogOut, School, BookOpen, DollarSign, TrendingUp, TrendingDown, CalendarDays, FileText, UserCheck, ListChecks, HardDrive, ShoppingCart, HelpCircle, LayoutDashboard, ClipboardList, GraduationCap } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { cn } from '@/lib/utils';
+import { useProfile } from '@/hooks/useProfile'; // Importar useProfile
 
 interface NavItemProps {
   to: string;
@@ -55,7 +56,7 @@ interface SidebarProps {
 
 const Sidebar: React.FC<SidebarProps> = ({ isSuperAdmin, displayName, roleDisplay, onLogout, onCloseSheet }) => {
   const location = useLocation();
-  const isClassesActive = location.pathname.startsWith('/classes');
+  const { isTeacher, isAdmin } = useProfile(); // Usar o hook useProfile para verificar se é professor e admin
 
   const adminNavItems: NavigationItem[] = [
     { to: "/dashboard", icon: <Home className="h-5 w-5" />, label: "Dashboard" },
@@ -71,6 +72,9 @@ const Sidebar: React.FC<SidebarProps> = ({ isSuperAdmin, displayName, roleDispla
     { to: "/finance", icon: <DollarSign className="h-5 w-5" />, label: "Financeiro" },
     { to: "/revenues", icon: <TrendingUp className="h-5 w-5 ml-4" />, label: "Receitas", isSubItem: true, parentPath: '/finance' },
     { to: "/expenses", icon: <TrendingDown className="h-5 w-5 ml-4" />, label: "Despesas", isSubItem: true, parentPath: '/finance' },
+    // Ferramentas do Professor (para Admins)
+    { to: "/teacher/grade-entry", icon: <GraduationCap className="h-5 w-5" />, label: "Lançar Notas (Professor)" },
+    { to: "/teacher/class-diary", icon: <BookOpen className="h-5 w-5" />, label: "Diário de Classe (Professor)" },
     // Geral
     { to: "/settings", icon: <Settings className="h-5 w-5" />, label: "Configurações" },
     { to: "/faq", icon: <HelpCircle className="h-5 w-5" />, label: "Ajuda (FAQ)", variant: 'accent' }, // Destaque laranja para FAQ
@@ -83,7 +87,22 @@ const Sidebar: React.FC<SidebarProps> = ({ isSuperAdmin, displayName, roleDispla
     { to: "/backup", icon: <HardDrive className="h-5 w-5" />, label: "Backup Global" },
   ];
 
-  const navigationItems = isSuperAdmin ? superAdminNavItems : adminNavItems;
+  const teacherNavItems: NavigationItem[] = [
+    { to: "/teacher/dashboard", icon: <LayoutDashboard className="h-5 w-5" />, label: "Meu Painel" },
+    { to: "/teacher/grade-entry", icon: <GraduationCap className="h-5 w-5" />, label: "Lançar Notas" },
+    { to: "/teacher/class-diary", icon: <BookOpen className="h-5 w-5" />, label: "Diário de Classe" },
+    { to: "/settings", icon: <Settings className="h-5 w-5" />, label: "Configurações" },
+    { to: "/faq", icon: <HelpCircle className="h-5 w-5" />, label: "Ajuda (FAQ)", variant: 'accent' },
+  ];
+
+  let navigationItems: NavigationItem[];
+  if (isSuperAdmin) {
+    navigationItems = superAdminNavItems;
+  } else if (isTeacher) {
+    navigationItems = teacherNavItems;
+  } else { // Inclui isAdmin aqui, que agora terá os links do professor
+    navigationItems = adminNavItems;
+  }
 
   return (
     <div className="flex h-full max-h-screen flex-col gap-2 bg-sidebar p-4 border-r border-sidebar-border">
@@ -103,8 +122,9 @@ const Sidebar: React.FC<SidebarProps> = ({ isSuperAdmin, displayName, roleDispla
               return <NavItem key={item.to} {...item} onCloseSheet={onCloseSheet} />;
             }
             
-            // Renderiza o sub-item se o item pai estiver ativo (Turmas)
-            if (item.isSubItem && item.parentPath && location.pathname.startsWith(item.parentPath)) {
+            // Renderiza o sub-item se o item pai estiver ativo (Turmas ou Financeiro)
+            // E se o usuário não for professor (professores têm seu próprio menu simplificado)
+            if (!isTeacher && item.isSubItem && item.parentPath && location.pathname.startsWith(item.parentPath)) {
                 return (
                     <Link
                         key={item.to}
