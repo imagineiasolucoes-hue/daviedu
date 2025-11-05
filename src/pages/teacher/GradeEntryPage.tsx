@@ -204,12 +204,12 @@ const GradeEntryPage: React.FC = () => {
     return allClassesForEntry.filter(c => c.course_id === selectedCourseId);
   }, [allClassesForEntry, selectedCourseId]);
 
-  useEffect(() => {
-    // Resetar classId se o curso mudar
-    if (selectedCourseId) {
-      form.setValue('classId', '');
-    }
-  }, [selectedCourseId, form]);
+  // REMOVIDO: O useEffect que resetava classId ao mudar courseId
+  // useEffect(() => {
+  //   if (selectedCourseId) {
+  //     form.setValue('classId', '');
+  //   }
+  // }, [selectedCourseId, form]);
 
   const { data: students, isLoading: isLoadingStudents } = useQuery<Student[], Error>({
     queryKey: ['studentsInClass', selectedClassId, tenantId],
@@ -249,7 +249,7 @@ const GradeEntryPage: React.FC = () => {
       return;
     }
 
-    const selectedClass = classesForEntry?.find(c => c.id === data.classId);
+    const selectedClass = allClassesForEntry?.find(c => c.id === data.classId); // Usar allClassesForEntry para encontrar a turma
     if (!selectedClass) {
       toast.error("Erro", { description: "Turma selecionada inválida." });
       return;
@@ -344,20 +344,29 @@ const GradeEntryPage: React.FC = () => {
         </CardHeader>
         <CardContent>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-            {/* Seleção de Série/Ano, Turma, Matéria, Tipo e Período */}
+            {/* Seleção de Turma, Série/Ano, Matéria, Tipo e Período */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-              {/* CAMPO: Turma (agora primeiro) */}
+              {/* CAMPO: Turma (primeiro) */}
               <div className="space-y-2">
                 <Label htmlFor="classId">Turma</Label>
                 <Select 
-                  onValueChange={(value) => form.setValue('classId', value)} 
-                  value={form.watch('classId')}
+                  onValueChange={(value) => {
+                    form.setValue('classId', value);
+                    const selectedClass = allClassesForEntry?.find(c => c.id === value);
+                    if (selectedClass && selectedClass.course_id) {
+                      form.setValue('courseId', selectedClass.course_id, { shouldValidate: true });
+                    } else if (value === 'none') {
+                      form.setValue('courseId', null, { shouldValidate: true });
+                    }
+                  }} 
+                  value={form.watch('classId') || 'none'}
                   disabled={isLoadingClassesForEntry || classesForEntry.length === 0}
                 >
                   <SelectTrigger id="classId">
                     <SelectValue placeholder={isLoadingClassesForEntry ? "Carregando turmas..." : "Selecione a turma"} />
                   </SelectTrigger>
                   <SelectContent>
+                    <SelectItem value="none">Nenhuma Turma</SelectItem>
                     {classesForEntry?.map(c => (
                       <SelectItem key={c.id} value={c.id}>
                         {c.name} ({c.school_year})
@@ -373,11 +382,22 @@ const GradeEntryPage: React.FC = () => {
                 )}
               </div>
 
-              {/* CAMPO: Série/Ano (agora segundo) */}
+              {/* CAMPO: Série / Ano (segundo) */}
               <div className="space-y-2">
                 <Label htmlFor="courseId">Série / Ano</Label>
                 <Select 
-                  onValueChange={(value) => form.setValue('courseId', value === "none" ? null : value)} 
+                  onValueChange={(value) => {
+                    const newCourseId = value === "none" ? null : value;
+                    form.setValue('courseId', newCourseId, { shouldValidate: true });
+
+                    const currentClassId = form.getValues('classId');
+                    if (currentClassId) {
+                      const currentClass = allClassesForEntry?.find(c => c.id === currentClassId);
+                      if (currentClass && currentClass.course_id !== newCourseId) {
+                        form.setValue('classId', '', { shouldValidate: true }); // Limpa a turma se for incompatível
+                      }
+                    }
+                  }} 
                   value={form.watch('courseId') || 'none'}
                   disabled={isLoadingCourses || (courses && courses.length === 0)}
                 >
@@ -478,7 +498,7 @@ const GradeEntryPage: React.FC = () => {
             {/* Tabela de Alunos e Notas */}
             <h3 className="text-lg font-semibold flex items-center gap-2">
               <GraduationCap className="h-5 w-5 text-primary" />
-              Alunos da Turma {selectedClassId ? `(${classesForEntry?.find(c => c.id === selectedClassId)?.name})` : ''}
+              Alunos da Turma {selectedClassId ? `(${allClassesForEntry?.find(c => c.id === selectedClassId)?.name})` : ''}
             </h3>
             {selectedClassId && students && students.length > 0 ? (
               <div className="overflow-x-auto">
