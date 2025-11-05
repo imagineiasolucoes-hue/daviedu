@@ -1,15 +1,232 @@
-import React from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { ClipboardList, Loader2 } from 'lucide-react';
+import React, { useState, useEffect, useMemo } from 'react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import * as z from 'zod';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
 import { useProfile } from '@/hooks/useProfile';
+import { toast } from 'sonner';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Loader2, ClipboardList, GraduationCap, BookOpen } from 'lucide-react';
+import { Separator } from '@/components/ui/separator';
+
+// --- Tipos de Dados ---
+interface Class {
+  id: string;
+  name: string;
+  school_year: number;
+  course_id: string | null;
+  courses: { name: string } | null;
+}
+
+interface Student {
+  id: string;
+  full_name: string;
+  registration_code: string;
+}
+
+interface TeacherClassAssignment {
+  class_id: string;
+  period: 'Manhã' | 'Tarde' | 'Noite' | 'Integral';
+  classes: Class | null;
+}
+
+interface TeacherProfile {
+  id: string;
+  full_name: string;
+  teacher_classes: TeacherClassAssignment[];
+}
+
+// --- Schemas de Validação ---
+const gradeEntrySchema = z.object({
+  classId: z.string().uuid("Selecione uma turma."),
+  subjectName: z.string().min(1, "Selecione uma matéria."),
+  assessmentType: z.string().min(1, "Selecione o tipo de avaliação."),
+  period: z.string().min(1, "Selecione o período da avaliação."), // Ex: "1º Bimestre"
+  grades: z.array(z.object({
+    studentId: z.string().uuid(),
+    gradeValue: z.coerce.number().min(0, "A nota deve ser 0 ou maior.").max(10, "A nota máxima é 10.").optional().nullable(),
+  })).min(1, "Nenhum aluno para lançar notas."),
+});
+
+type GradeEntryFormData = z.infer<typeof gradeEntrySchema>;
+
+// --- Listas de Opções (Hardcoded por enquanto) ---
+const availableSubjects = [
+  'Português', 'Matemática', 'História', 'Geografia', 'Ciências',
+  'Inglês', 'Artes', 'Educação Física', 'Filosofia', 'Sociologia', 'Química', 'Física', 'Biologia'
+];
+
+const assessmentTypes = [
+  'Prova', 'Trabalho', 'Participação', 'Projeto', 'Recuperação', 'Outro'
+];
+
+const academicPeriods = [
+  '1º Bimestre', '2º Bimestre', '3º Bimestre', '4º Bimestre', 'Final'
+];
+
+// --- Funções de Busca de Dados ---
+const fetchTeacherAssignedClasses = async (employeeId: string, tenantId: string): Promise<TeacherClassAssignment[]> => {
+  const { data, error } = await supabase
+    .from('teacher_classes')
+    .select(`
+      class_id,
+      period,
+      classes (
+        id,
+        name,
+        school_year,
+        course_id,
+        courses (name)
+      )
+    `)
+    .eq('employee_id', employeeId);
+
+  if (error) throw new Error(error.message);
+  return data as unknown as TeacherClassAssignment[];
+};
+
+const fetchStudentsByClass = async (classId: string, tenantId: string): Promise<Student[]> => {
+  const { data, error } = await supabase
+    .from('students')
+    .select('id, full_name, registration_code')
+    .eq('class_id', classId)
+    .eq('tenant_id', tenantId)
+    .order('full_name');
+  if (error) throw new Error(error.message);
+  return data;
+};
 
 const GradeEntryPage: React.FC = () => {
-  const { profile, isLoading } = useProfile();
+  const { profile, isLoading: isProfileLoading, isTeacher, isAdmin } = useProfile();
+  const queryClient = useQueryClient();
+  const tenantId = profile?.tenant_id;
+  const teacherId = profile?.id;
+
+  const form = useForm<GradeEntryFormData>({
+    resolver: zodResolver(gradeEntrySchema),
+    defaultValues: {
+      classId: '',
+      subjectName: '',
+      assessmentType: '',
+      period: '',
+      grades: [],
+    },
+  });
+
+  const selectedClassId = form.watch('classId');
+
+  // Fetch teacher's assigned classes
+  const { data: teacherClasses, isLoading: isLoadingTeacherClasses } = useQuery<TeacherClassAssignment[], Error>({
+    queryKey: ['teacherClasses', teacherId, tenantId],
+    queryFn: () => fetchTeacherAssignedClasses(teacherId!, tenantId!),
+    enabled: !!teacherId && !!tenantId && (isTeacher || isAdmin),
+  });
+
+  // Fetch students for the selected class
+  const { data: students, isLoading: isLoadingStudents } = useQuery<Student[], Error>({
+    queryKey: ['studentsInClass', selectedClassId, tenantId],
+    queryFn: () => fetchStudentsByClass(selectedClassId, tenantId!),
+    enabled: !!selectedClassId && !!tenantId,
+  });
+
+  // Update form's grades array when students data changes
+  useEffect(() => {
+    if (students) {
+      form.setValue('grades', students.map(s => ({ studentId: s.id, gradeValue: null })));
+    } else {
+      form.setValue('grades', []);
+    }
+  }, [students, form]);
+
+  const onSubmit = async (data: GradeEntryFormData) => {
+    if (!tenantId || !teacherId) {
+      toast.error("Erro", { description: "Dados do usuário ou da escola ausentes." });
+      return;
+    }
+
+    const selectedClass = teacherClasses?.find(tc => tc.class_id === data.classId)?.classes;
+    if (!selectedClass) {
+      toast.error("Erro", { description: "Turma selecionada inválida." });
+      return;
+    }
+
+    const gradesToInsert = data.grades
+      .filter(g => g.gradeValue !== null && g.gradeValue !== undefined) // Apenas notas preenchidas
+      .map(g => ({
+        tenant_id: tenantId,
+        student_id: g.studentId,
+        class_id: data.classId,
+        course_id: selectedClass.course_id, // Pega o course_id da turma
+        subject_name: data.subjectName,
+        grade_value: g.gradeValue,
+        assessment_type: data.assessmentType,
+        period: data.period,
+        teacher_id: teacherId,
+        date_recorded: new Date().toISOString().split('T')[0], // Data de hoje
+      }));
+
+    if (gradesToInsert.length === 0) {
+      toast.warning("Nenhuma nota para salvar", { description: "Preencha pelo menos uma nota para submeter." });
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from('grades')
+        .insert(gradesToInsert);
+
+      if (error) throw new Error(error.message);
+
+      toast.success("Notas lançadas com sucesso!");
+      queryClient.invalidateQueries({ queryKey: ['studentGrades'] }); // Invalida queries de notas
+      form.reset({
+        classId: data.classId, // Mantém a turma selecionada
+        subjectName: data.subjectName,
+        assessmentType: data.assessmentType,
+        period: data.period,
+        grades: students?.map(s => ({ studentId: s.id, gradeValue: null })) || [], // Limpa as notas, mas mantém alunos
+      });
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : "Ocorreu um erro inesperado.";
+      toast.error("Erro ao Lançar Notas", {
+        description: errorMessage,
+      });
+    }
+  };
+
+  const isLoading = isProfileLoading || isLoadingTeacherClasses || isLoadingStudents;
 
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-full min-h-[50vh]">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if (!isTeacher && !isAdmin) {
+    return (
+      <div className="space-y-6">
+        <h1 className="text-3xl font-bold flex items-center gap-2">
+          <ClipboardList className="h-8 w-8 text-primary" />
+          Lançamento de Notas
+        </h1>
+        <Card>
+          <CardHeader>
+            <CardTitle>Acesso Negado</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-destructive">
+              Você não tem permissão para acessar esta página. Apenas professores e administradores podem lançar notas.
+            </p>
+          </CardContent>
+        </Card>
       </div>
     );
   }
@@ -23,13 +240,150 @@ const GradeEntryPage: React.FC = () => {
       
       <Card>
         <CardHeader>
-          <CardTitle>Minhas Turmas e Alunos</CardTitle>
+          <CardTitle>Registrar Notas de Avaliação</CardTitle>
         </CardHeader>
         <CardContent>
-          <p className="text-muted-foreground">
-            Esta área será usada para você selecionar uma turma e lançar as notas dos seus alunos.
-            Funcionalidades como seleção de turma, disciplina e tipo de avaliação serão adicionadas aqui.
-          </p>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+            {/* Seleção de Turma, Matéria, Tipo e Período */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="classId">Turma</Label>
+                <Select 
+                  onValueChange={(value) => form.setValue('classId', value)} 
+                  value={form.watch('classId')}
+                  disabled={isLoadingTeacherClasses}
+                >
+                  <SelectTrigger id="classId">
+                    <SelectValue placeholder={isLoadingTeacherClasses ? "Carregando turmas..." : "Selecione a turma"} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {teacherClasses?.map(tc => tc.classes && (
+                      <SelectItem key={tc.class_id} value={tc.class_id}>
+                        {tc.classes.name} ({tc.classes.school_year})
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {form.formState.errors.classId && <p className="text-sm text-destructive">{form.formState.errors.classId.message}</p>}
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="subjectName">Matéria</Label>
+                <Select 
+                  onValueChange={(value) => form.setValue('subjectName', value)} 
+                  value={form.watch('subjectName')}
+                  disabled={!selectedClassId}
+                >
+                  <SelectTrigger id="subjectName">
+                    <SelectValue placeholder="Selecione a matéria" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {availableSubjects.map(subject => (
+                      <SelectItem key={subject} value={subject}>{subject}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {form.formState.errors.subjectName && <p className="text-sm text-destructive">{form.formState.errors.subjectName.message}</p>}
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="assessmentType">Tipo de Avaliação</Label>
+                <Select 
+                  onValueChange={(value) => form.setValue('assessmentType', value)} 
+                  value={form.watch('assessmentType')}
+                  disabled={!selectedClassId}
+                >
+                  <SelectTrigger id="assessmentType">
+                    <SelectValue placeholder="Selecione o tipo" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {assessmentTypes.map(type => (
+                      <SelectItem key={type} value={type}>{type}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {form.formState.errors.assessmentType && <p className="text-sm text-destructive">{form.formState.errors.assessmentType.message}</p>}
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="period">Período</Label>
+                <Select 
+                  onValueChange={(value) => form.setValue('period', value)} 
+                  value={form.watch('period')}
+                  disabled={!selectedClassId}
+                >
+                  <SelectTrigger id="period">
+                    <SelectValue placeholder="Selecione o período" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {academicPeriods.map(period => (
+                      <SelectItem key={period} value={period}>{period}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {form.formState.errors.period && <p className="text-sm text-destructive">{form.formState.errors.period.message}</p>}
+              </div>
+            </div>
+
+            <Separator />
+
+            {/* Tabela de Alunos e Notas */}
+            <h3 className="text-lg font-semibold flex items-center gap-2">
+              <GraduationCap className="h-5 w-5 text-primary" />
+              Alunos da Turma {selectedClassId ? `(${teacherClasses?.find(tc => tc.class_id === selectedClassId)?.classes?.name})` : ''}
+            </h3>
+            {selectedClassId && students && students.length > 0 ? (
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Nome do Aluno</TableHead>
+                      <TableHead>Matrícula</TableHead>
+                      <TableHead className="w-[120px] text-right">Nota (0-10)</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {students.map((student, index) => (
+                      <TableRow key={student.id}>
+                        <TableCell className="font-medium">{student.full_name}</TableCell>
+                        <TableCell>{student.registration_code}</TableCell>
+                        <TableCell className="text-right">
+                          <Input
+                            type="number"
+                            step="0.1"
+                            min="0"
+                            max="10"
+                            placeholder="N/A"
+                            {...form.register(`grades.${index}.gradeValue`, { valueAsNumber: true })}
+                            className="w-24 text-right"
+                          />
+                          {form.formState.errors.grades?.[index]?.gradeValue && (
+                            <p className="text-xs text-destructive mt-1">
+                              {form.formState.errors.grades[index]?.gradeValue?.message}
+                            </p>
+                          )}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            ) : (
+              <p className="text-center py-8 text-muted-foreground">
+                {selectedClassId ? "Nenhum aluno encontrado nesta turma." : "Selecione uma turma para ver os alunos."}
+              </p>
+            )}
+            {form.formState.errors.grades && <p className="text-sm text-destructive mt-2">{form.formState.errors.grades.message}</p>}
+
+            <Button 
+              type="submit" 
+              className="w-full mt-6" 
+              disabled={form.formState.isSubmitting || !selectedClassId || !form.watch('subjectName') || !form.watch('assessmentType') || !form.watch('period')}
+            >
+              {form.formState.isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Salvar Notas
+            </Button>
+          </form>
         </CardContent>
       </Card>
     </div>
