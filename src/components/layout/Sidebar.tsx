@@ -23,7 +23,7 @@ interface NavigationItem extends Omit<NavItemProps, 'onCloseSheet'> { // Omitind
 const NavItem: React.FC<NavItemProps> = ({ to, icon, label, variant = 'default', onCloseSheet }) => {
   const location = useLocation();
   // Verifica se a rota atual é exatamente a rota do item ou se é uma sub-rota (para manter o pai ativo)
-  const isActive = location.pathname === to || (to === '/classes' && location.pathname.startsWith('/classes/'));
+  const isActive = location.pathname === to || (to === '/classes' && location.pathname.startsWith('/classes/')) || (to === '/teachers' && location.pathname.startsWith('/teacher/'));
 
   const activeClasses = variant === 'accent'
     ? "bg-accent text-accent-foreground hover:bg-accent/90" // Estilo laranja para destaque
@@ -63,6 +63,9 @@ const Sidebar: React.FC<SidebarProps> = ({ isSuperAdmin, displayName, roleDispla
     // Secretaria
     { to: "/students", icon: <Users className="h-5 w-5" />, label: "Alunos" },
     { to: "/teachers", icon: <UserCheck className="h-5 w-5" />, label: "Professores" },
+    // Sub-itens de Professores
+    { to: "/teacher/grade-entry", icon: <GraduationCap className="h-5 w-5 ml-4" />, label: "Lançar Notas", isSubItem: true, parentPath: '/teachers' },
+    { to: "/teacher/class-diary", icon: <BookOpen className="h-5 w-5 ml-4" />, label: "Diário de Classe", isSubItem: true, parentPath: '/teachers' },
     { to: "/classes", icon: <BookOpen className="h-5 w-5" />, label: "Turmas" },
     // Sub-item de Turmas
     { to: "/classes/courses", icon: <ListChecks className="h-5 w-5 ml-4" />, label: "Cursos/Séries", isSubItem: true, parentPath: '/classes' },
@@ -72,9 +75,6 @@ const Sidebar: React.FC<SidebarProps> = ({ isSuperAdmin, displayName, roleDispla
     { to: "/finance", icon: <DollarSign className="h-5 w-5" />, label: "Financeiro" },
     { to: "/revenues", icon: <TrendingUp className="h-5 w-5 ml-4" />, label: "Receitas", isSubItem: true, parentPath: '/finance' },
     { to: "/expenses", icon: <TrendingDown className="h-5 w-5 ml-4" />, label: "Despesas", isSubItem: true, parentPath: '/finance' },
-    // Ferramentas do Professor (para Admins)
-    { to: "/teacher/grade-entry", icon: <GraduationCap className="h-5 w-5" />, label: "Lançar Notas (Professor)" },
-    { to: "/teacher/class-diary", icon: <BookOpen className="h-5 w-5" />, label: "Diário de Classe (Professor)" },
     // Geral
     { to: "/settings", icon: <Settings className="h-5 w-5" />, label: "Configurações" },
     { to: "/faq", icon: <HelpCircle className="h-5 w-5" />, label: "Ajuda (FAQ)", variant: 'accent' }, // Destaque laranja para FAQ
@@ -122,7 +122,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isSuperAdmin, displayName, roleDispla
               return <NavItem key={item.to} {...item} onCloseSheet={onCloseSheet} />;
             }
             
-            // Renderiza o sub-item se o item pai estiver ativo (Turmas ou Financeiro)
+            // Renderiza o sub-item se o item pai estiver ativo (Turmas, Financeiro ou Professores)
             // E se o usuário não for professor (professores têm seu próprio menu simplificado)
             if (!isTeacher && item.isSubItem && item.parentPath && location.pathname.startsWith(item.parentPath)) {
                 return (
