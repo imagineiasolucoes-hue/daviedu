@@ -146,13 +146,16 @@ const Sidebar: React.FC<SidebarProps> = ({ isSuperAdmin, displayName, roleDispla
             <React.Fragment key={item.to}>
               {item.children && item.children.length > 0 ? (
                 <div className="flex items-center justify-between">
-                  <NavItem
-                    to={item.to}
-                    icon={item.icon}
-                    label={item.label}
-                    variant={item.variant}
-                    onCloseSheet={item.onCloseSheet}
-                  />
+                  {/* Envolve o NavItem em um div para controlar o espaço */}
+                  <div className="flex-grow"> 
+                    <NavItem
+                      to={item.to}
+                      icon={item.icon}
+                      label={item.label}
+                      variant={item.variant}
+                      onCloseSheet={item.onCloseSheet}
+                    />
+                  </div>
                   <Button
                     variant="ghost"
                     size="icon"
