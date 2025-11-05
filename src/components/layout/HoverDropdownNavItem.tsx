@@ -15,19 +15,23 @@ interface HoverDropdownNavItemProps {
 const HoverDropdownNavItem: React.FC<HoverDropdownNavItemProps> = ({ to, icon, label, children, onCloseSheet }) => {
   const location = useLocation();
   const [isOpen, setIsOpen] = useState(false);
-  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const openTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const closeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  const handleMouseEnter = () => {
-    if (timeoutRef.current) {
-      clearTimeout(timeoutRef.current);
+  const handleOpen = () => {
+    if (closeTimeoutRef.current) {
+      clearTimeout(closeTimeoutRef.current);
     }
-    setIsOpen(true);
+    // Adiciona um pequeno atraso para abrir, evitando aberturas acidentais
+    openTimeoutRef.current = setTimeout(() => setIsOpen(true), 100); 
   };
 
-  const handleMouseLeave = () => {
-    timeoutRef.current = setTimeout(() => {
-      setIsOpen(false);
-    }, 150); // Pequeno atraso para evitar fechamento acidental
+  const handleClose = () => {
+    if (openTimeoutRef.current) {
+      clearTimeout(openTimeoutRef.current);
+    }
+    // Mantém o atraso para fechar, permitindo mover o mouse para o conteúdo
+    closeTimeoutRef.current = setTimeout(() => setIsOpen(false), 150); 
   };
 
   // Determina se o item pai deve estar ativo com base em sua própria rota ou na rota de qualquer filho ativo
@@ -37,49 +41,49 @@ const HoverDropdownNavItem: React.FC<HoverDropdownNavItemProps> = ({ to, icon, l
   const inactiveClasses = "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground";
 
   return (
-    <DropdownMenu open={isOpen} onOpenChange={setIsOpen}>
-      <DropdownMenuTrigger asChild>
-        <Link
-          to={to}
-          onClick={onCloseSheet}
-          className={cn(
-            "flex items-center justify-between gap-3 rounded-lg px-3 py-2 transition-all cursor-pointer",
-            isActive ? activeClasses : inactiveClasses
-          )}
-          onMouseEnter={handleMouseEnter}
-          onMouseLeave={handleMouseLeave}
+    // A div externa agora gerencia os eventos de mouse para todo o componente dropdown
+    <div onMouseEnter={handleOpen} onMouseLeave={handleClose}>
+      <DropdownMenu open={isOpen} onOpenChange={setIsOpen}>
+        <DropdownMenuTrigger asChild>
+          <Link
+            to={to}
+            onClick={onCloseSheet}
+            className={cn(
+              "flex items-center justify-between gap-3 rounded-lg px-3 py-2 transition-all cursor-pointer",
+              isActive ? activeClasses : inactiveClasses
+            )}
+          >
+            <div className="flex items-center gap-3">
+              {icon}
+              {label}
+            </div>
+            <ChevronDown className={cn("h-4 w-4 transition-transform", isOpen && "rotate-180")} />
+          </Link>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent
+          side="right"
+          align="start"
+          className="w-48 p-1 ml-2"
+          // Não precisamos mais de onMouseEnter/onMouseLeave aqui, a div pai já cuida
         >
-          <div className="flex items-center gap-3">
-            {icon}
-            {label}
-          </div>
-          <ChevronDown className={cn("h-4 w-4 transition-transform", isOpen && "rotate-180")} />
-        </Link>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent
-        side="right"
-        align="start"
-        className="w-48 p-1 ml-2"
-        onMouseEnter={handleMouseEnter} // Mantém aberto ao passar o mouse sobre o conteúdo
-        onMouseLeave={handleMouseLeave} // Fecha ao sair do conteúdo
-      >
-        {children.map((child) => (
-          <DropdownMenuItem key={child.to} asChild>
-            <Link
-              to={child.to}
-              onClick={onCloseSheet}
-              className={cn(
-                "flex items-center gap-3 rounded-md px-3 py-2 transition-all",
-                location.pathname === child.to ? "bg-sidebar-primary text-sidebar-primary-foreground" : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
-              )}
-            >
-              {child.icon}
-              {child.label}
-            </Link>
-          </DropdownMenuItem>
-        ))}
-      </DropdownMenuContent>
-    </DropdownMenu>
+          {children.map((child) => (
+            <DropdownMenuItem key={child.to} asChild>
+              <Link
+                to={child.to}
+                onClick={onCloseSheet}
+                className={cn(
+                  "flex items-center gap-3 rounded-md px-3 py-2 transition-all",
+                  location.pathname === child.to ? "bg-sidebar-primary text-sidebar-primary-foreground" : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+                )}
+              >
+                {child.icon}
+                {child.label}
+              </Link>
+            </DropdownMenuItem>
+          ))}
+        </DropdownMenuContent>
+      </DropdownMenu>
+    </div>
   );
 };
 
