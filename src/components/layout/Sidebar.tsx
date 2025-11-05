@@ -75,7 +75,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isSuperAdmin, displayName, roleDispla
       to: "/teachers",
       icon: <UserCheck className="h-5 w-5" />,
       label: "Professores",
-      onCloseSheet: () => toggleParent("/teachers"), // Alterna ao clicar
+      onCloseSheet: () => onCloseSheet(), // Close sheet when main link is clicked
       children: [
         { to: "/teacher/grade-entry", icon: <GraduationCap className="h-5 w-5" />, label: "Lançar Notas", onCloseSheet, isSubItem: true },
         { to: "/teacher/class-diary", icon: <BookOpen className="h-5 w-5" />, label: "Diário de Classe", onCloseSheet, isSubItem: true },
@@ -85,7 +85,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isSuperAdmin, displayName, roleDispla
       to: "/classes",
       icon: <BookOpen className="h-5 w-5" />,
       label: "Turmas",
-      onCloseSheet: () => toggleParent("/classes"),
+      onCloseSheet: () => onCloseSheet(), // Close sheet when main link is clicked
       children: [
         { to: "/classes/courses", icon: <ListChecks className="h-5 w-5" />, label: "Séries/Anos", onCloseSheet, isSubItem: true },
       ],
@@ -96,7 +96,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isSuperAdmin, displayName, roleDispla
       to: "/finance",
       icon: <DollarSign className="h-5 w-5" />,
       label: "Financeiro",
-      onCloseSheet: () => toggleParent("/finance"),
+      onCloseSheet: () => onCloseSheet(), // Close sheet when main link is clicked
       children: [
         { to: "/revenues", icon: <TrendingUp className="h-5 w-5" />, label: "Receitas", onCloseSheet, isSubItem: true },
         { to: "/expenses", icon: <TrendingDown className="h-5 w-5" />, label: "Despesas", onCloseSheet, isSubItem: true },
@@ -145,24 +145,29 @@ const Sidebar: React.FC<SidebarProps> = ({ isSuperAdmin, displayName, roleDispla
           {navigationItems.map((item) => (
             <React.Fragment key={item.to}>
               {item.children && item.children.length > 0 ? (
-                // Renderiza o item pai com um botão de toggle
-                <button
-                  onClick={() => toggleParent(item.to)} // Chama a função de toggle do item
-                  className={cn(
-                    "flex items-center justify-between w-full gap-3 rounded-lg px-3 py-2 transition-all",
-                    isParentActive(item)
-                      ? "bg-sidebar-primary text-sidebar-primary-foreground hover:bg-sidebar-primary/90"
-                      : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
-                  )}
-                >
-                  <div className="flex items-center gap-3">
-                    {item.icon}
-                    {item.label}
-                  </div>
-                  <ChevronDown className={cn("h-4 w-4 transition-transform", openParent === item.to && "rotate-180")} />
-                </button>
+                <div className="flex items-center justify-between">
+                  <NavItem
+                    to={item.to}
+                    icon={item.icon}
+                    label={item.label}
+                    variant={item.variant}
+                    onCloseSheet={item.onCloseSheet}
+                  />
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => toggleParent(item.to)}
+                    className={cn(
+                      "h-8 w-8",
+                      isParentActive(item)
+                        ? "text-sidebar-primary-foreground hover:bg-sidebar-primary/90"
+                        : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+                    )}
+                  >
+                    <ChevronDown className={cn("h-4 w-4 transition-transform", openParent === item.to && "rotate-180")} />
+                  </Button>
+                </div>
               ) : (
-                // Renderiza um item normal
                 <NavItem {...item} />
               )}
 
