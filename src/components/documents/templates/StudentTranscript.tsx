@@ -1,26 +1,38 @@
-import React from 'react';
-import { useParams } from 'react-router-dom';
+import React, { useRef } from 'react';
+import { useParams, Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { Loader2, Printer, ArrowLeft, School, User, Calendar, BookOpen } from 'lucide-react';
+import { Loader2, Printer, ArrowLeft, School, User, Calendar, BookOpen, GraduationCap } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'; // Adicionado CardHeader e CardTitle
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import { useProfile } from '@/hooks/useProfile';
 
+// --- Tipos de Dados ---
 interface StudentDetails {
+  id: string;
   full_name: string;
   registration_code: string;
   birth_date: string;
-  gender: string | null;
-  classes: { name: string; school_year: number; courses: { name: string } | null } | null;
+  tenant_id: string;
+  // Corrigido: classes é um objeto único ou nulo, e inclui o curso aninhado
+  classes: { 
+    name: string; 
+    school_year: number; 
+    courses: { name: string } | null 
+  } | null;
+}
+
+interface TenantConfig {
+  logo_url: string | null;
 }
 
 interface TenantDetails {
   name: string;
-  config: { logo_url: string | null } | null;
+  config: TenantConfig | null;
 }
 
 interface Grade {
@@ -28,23 +40,19 @@ interface Grade {
   grade_value: number;
   assessment_type: string;
   period: string;
+  date_recorded: string;
 }
 
-// Mock de dados de notas (será substituído pela busca real na tabela 'grades')
-const mockGrades: Grade[] = [
-  { subject_name: 'Matemática', grade_value: 8.5, assessment_type: 'Média Final', period: '2024' },
-  { subject_name: 'Português', grade_value: 9.2, assessment_type: 'Média Final', period: '2024' },
-  { subject_name: 'História', grade_value: 7.8, assessment_type: 'Média Final', period: '2024' },
-];
-
-const fetchStudentData = async (studentId: string) => {
+// --- Funções de Busca ---
+const fetchStudentData = async (studentId: string): Promise<StudentDetails> => {
   const { data, error } = await supabase
     .from('students')
     .select(`
+      id, 
       full_name, 
       registration_code, 
       birth_date, 
-      gender,
+      tenant_id, 
       classes (
         name, 
         school_year,
@@ -54,10 +62,10 @@ const fetchStudentData = async (studentId: string) => {
     .eq('id', studentId)
     .single();
   if (error) throw new Error(error.message);
-  return data as StudentDetails;
+  return data as unknown as StudentDetails;
 };
 
-const fetchTenantData = async (tenantId: string) => {
+const fetchTenantDetails = async (tenantId: string): Promise<TenantDetails> => {
   const { data, error } = await supabase
     .from('tenants')
     .select('name, config')
@@ -67,27 +75,50 @@ const fetchTenantData = async (tenantId: string) => {
   return data as TenantDetails;
 };
 
+const fetchGrades = async (studentId: string): Promise<Grade[]> => {
+  const { data, error } = await supabase
+    .from('grades')
+    .select(`subject_name, grade_value, assessment_type, period, date_recorded`)
+    .eq('student_id', studentId)
+    .order('period')
+    .order('subject_name');
+  
+  if (error) throw new Error(error.message);
+  return data as Grade[];
+};
+
 const StudentTranscript: React.FC = () => {
   const { entityId: studentId } = useParams<{ entityId: string }>();
-  const tenantId = supabase.auth.getSession()?.user?.user_metadata.tenant_id; // Assumindo que o tenantId está no metadata da sessão
+  const { profile } = useProfile();
+  const tenantId = profile?.tenant_id;
+  const printRef = useRef<HTMLDivElement>(null);
 
-  const { data: student, isLoading: isLoadingStudent, error: studentError } = useQuery({
+  const { data: student, isLoading: isLoadingStudent, error: studentError } = useQuery<StudentDetails, Error>({
     queryKey: ['studentDetails', studentId],
-    queryFn: () => fetchStudentData(studentId!),
+    queryFn: () => fetchStudentData(studentId!), // Corrigido o nome da função
     enabled: !!studentId,
   });
 
-  const { data: tenant, isLoading: isLoadingTenant, error: tenantError } = useQuery({
+  const { data: tenant, isLoading: isLoadingTenant, error: tenantError } = useQuery<TenantDetails, Error>({
     queryKey: ['tenantDetails', tenantId],
-    queryFn: () => fetchTenantData(tenantId!),
-    enabled: !!tenantId,
+    queryFn: () => fetchTenantDetails(tenantId!),
+    enabled: !!tenantId && !!student?.tenant_id,
+  });
+
+  const { data: grades, isLoading: isLoadingGrades, error: gradesError } = useQuery<Grade[], Error>({
+    queryKey: ['studentGrades', studentId],
+    queryFn: () => fetchGrades(studentId!),
+    enabled: !!studentId,
   });
 
   const handlePrint = () => {
     window.print();
   };
 
-  if (isLoadingStudent || isLoadingTenant) {
+  const isLoading = isLoadingStudent || isLoadingTenant || isLoadingGrades;
+  const error = studentError || tenantError || gradesError;
+
+  if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -95,55 +126,70 @@ const StudentTranscript: React.FC = () => {
     );
   }
 
-  if (studentError || tenantError || !student || !tenant) {
+  if (error) {
     return (
       <div className="p-8 text-center">
         <h1 className="text-2xl text-destructive">Erro ao Carregar Dados</h1>
-        <p className="text-muted-foreground">Verifique se o aluno e a escola estão corretamente cadastrados.</p>
+        <p className="text-muted-foreground">Verifique se o aluno e a escola estão corretamente cadastrados. Erro: {error.message}</p>
         <Button asChild variant="link" className="mt-4 print-hidden">
-          <a href="/documents">
+          <Link to="/documents">
             <ArrowLeft className="mr-2 h-4 w-4" /> Voltar
-          </a>
+          </Link>
         </Button>
       </div>
     );
   }
 
+  if (!student || !tenant) {
+    return <div className="text-destructive p-8">Aluno ou escola não encontrados.</div>;
+  }
+
+  // Agrupar notas por período e disciplina para exibição
+  const groupedGrades = grades?.reduce((acc, grade) => {
+    if (!acc[grade.period]) {
+      acc[grade.period] = {};
+    }
+    if (!acc[grade.period][grade.subject_name]) {
+      acc[grade.period][grade.subject_name] = [];
+    }
+    acc[grade.period][grade.subject_name].push(grade);
+    return acc;
+  }, {} as Record<string, Record<string, Grade[]>>);
+
+
   return (
-    <div className="max-w-4xl mx-auto p-6 bg-white shadow-lg print:shadow-none print:p-0">
+    <div className="max-w-4xl mx-auto bg-white p-6 shadow-lg print:shadow-none print:p-0" ref={printRef}>
       
       {/* Botões de Ação (Ocultos na Impressão) */}
       <div className="flex justify-between items-center mb-6 print-hidden">
-        <Button asChild variant="outline">
-          <a href="/documents">
+        <Button variant="outline" asChild>
+          <Link to="/documents">
             <ArrowLeft className="mr-2 h-4 w-4" /> Voltar
-          </a>
+          </Link>
         </Button>
         <Button onClick={handlePrint}>
-          <Printer className="mr-2 h-4 w-4" /> Imprimir Documento
+          <Printer className="mr-2 h-4 w-4" /> Imprimir Histórico
         </Button>
       </div>
 
       {/* Cabeçalho do Documento */}
-      <div className="flex justify-between items-center border-b-2 border-primary pb-4 mb-6">
-        <div className="flex items-center gap-4">
-          {tenant.config?.logo_url && (
-            <img src={tenant.config.logo_url} alt="Logo da Escola" className="h-16 w-auto object-contain" />
-          )}
-          <div>
-            <h1 className="text-2xl font-bold text-primary">{tenant.name}</h1>
-            <p className="text-sm text-muted-foreground">Histórico Escolar Oficial</p>
-          </div>
-        </div>
-        <div className="text-right text-sm">
-          <p>Data de Emissão: {format(new Date(), 'dd/MM/yyyy', { locale: ptBR })}</p>
-          <p>Ano Letivo: {student.classes?.school_year || 'N/A'}</p>
-        </div>
+      <div className="text-center mb-8 border-b pb-4">
+        {tenant.config?.logo_url && (
+          <img src={tenant.config.logo_url} alt="Logo da Escola" className="h-16 mx-auto mb-3" />
+        )}
+        <h1 className="text-2xl font-bold text-primary">{tenant.name}</h1>
+        <p className="text-sm text-muted-foreground">Histórico Escolar do Aluno</p>
       </div>
 
       {/* Dados do Aluno */}
-      <Card className="mb-6 border-dashed print:border-solid">
-        <CardContent className="p-4 grid grid-cols-2 gap-4 text-sm">
+      <Card className="mb-6 border-dashed">
+        <CardHeader>
+          <CardTitle className="text-xl flex items-center gap-2">
+            <GraduationCap className="h-5 w-5 text-accent" />
+            {student.full_name}
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="grid grid-cols-2 gap-4 text-sm">
           <div className="flex items-center gap-2">
             <User className="h-4 w-4 text-muted-foreground" />
             <span className="font-semibold">Nome:</span> {student.full_name}
@@ -166,48 +212,47 @@ const StudentTranscript: React.FC = () => {
         </CardContent>
       </Card>
 
-      {/* Tabela de Notas (Histórico) */}
-      <h2 className="text-xl font-semibold mb-4 border-b pb-2">Registro de Notas</h2>
-      <Table className="border">
-        <TableHeader>
-          <TableRow className="bg-muted/50">
-            <TableHead>Disciplina</TableHead>
-            <TableHead>Tipo de Avaliação</TableHead>
-            <TableHead className="text-right">Nota</TableHead>
-            <TableHead className="text-right">Período</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {mockGrades.map((grade, index) => (
-            <TableRow key={index}>
-              <TableCell className="font-medium">{grade.subject_name}</TableCell>
-              <TableCell>{grade.assessment_type}</TableCell>
-              <TableCell className="text-right font-bold">{grade.grade_value.toFixed(1)}</TableCell>
-              <TableCell className="text-right">{grade.period}</TableCell>
-            </TableRow>
-          ))}
-          {mockGrades.length === 0 && (
-            <TableRow>
-              <TableCell colSpan={4} className="text-center text-muted-foreground py-4">
-                Nenhuma nota registrada para este aluno.
-              </TableCell>
-            </TableRow>
-          )}
-        </TableBody>
-      </Table>
+      {/* Seção de Notas e Histórico */}
+      <h2 className="text-xl font-bold mb-4">Registro Acadêmico</h2>
+      
+      {grades && grades.length > 0 ? (
+        Object.entries(groupedGrades || {}).map(([period, subjects]) => (
+          <div key={period} className="mb-8 break-inside-avoid">
+            <h3 className="text-lg font-semibold mb-3 p-2 bg-muted rounded-md">{period}</h3>
+            
+            {Object.entries(subjects).map(([subjectName, subjectGrades]) => (
+              <div key={subjectName} className="mb-4 border p-3 rounded-md">
+                <h4 className="font-medium text-primary mb-2">{subjectName}</h4>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Avaliação</TableHead>
+                      <TableHead className="text-right">Nota</TableHead>
+                      <TableHead>Data</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {subjectGrades.map((grade, index) => (
+                      <TableRow key={index}>
+                        <TableCell>{grade.assessment_type}</TableCell>
+                        <TableCell className="text-right font-bold">{grade.grade_value.toFixed(1)}</TableCell>
+                        <TableCell>{format(new Date(grade.date_recorded), 'dd/MM/yyyy')}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            ))}
+          </div>
+        ))
+      ) : (
+        <p className="text-center py-8 text-muted-foreground">Nenhuma nota registrada para este aluno ainda.</p>
+      )}
 
-      {/* Rodapé para Assinaturas (Apenas na Impressão) */}
-      <div className="mt-16 pt-8 border-t border-dashed print:border-solid print:border-gray-400 print-only">
-        <div className="flex justify-around text-sm">
-          <div className="text-center">
-            <Separator className="w-48 mx-auto mb-2" />
-            <p>Assinatura do Diretor(a)</p>
-          </div>
-          <div className="text-center">
-            <Separator className="w-48 mx-auto mb-2" />
-            <p>Assinatura do Secretário(a)</p>
-          </div>
-        </div>
+      {/* Rodapé do Documento (para impressão) */}
+      <div className="mt-12 pt-4 border-t text-center text-xs text-muted-foreground print:mt-4">
+        <p>Documento gerado pelo sistema Davi EDU em {format(new Date(), 'dd/MM/yyyy HH:mm', { locale: ptBR })}.</p>
+        <p>Validade sujeita à conferência da Secretaria Escolar.</p>
       </div>
     </div>
   );
