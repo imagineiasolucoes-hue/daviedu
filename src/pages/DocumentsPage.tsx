@@ -6,6 +6,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useProfile } from '@/hooks/useProfile';
 import DocumentTable from '@/components/documents/DocumentTable';
 import AddDocumentSheet from '@/components/documents/AddDocumentSheet';
+import DocumentGenerationPanel from '@/components/documents/DocumentGenerationPanel';
 import { toast } from 'sonner';
 import {
   AlertDialog,
@@ -18,12 +19,10 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
-import { SchoolDocument, SupabaseFetchedDocument } from '@/types/documents'; // Importando as interfaces centralizadas
+import { SchoolDocument } from '@/types/documents';
 
-// Função para buscar documentos
+// Função para buscar documentos (mantida a lógica de RLS e busca de perfis)
 const fetchDocuments = async (tenantId: string): Promise<SchoolDocument[]> => {
-  // NOTA: O filtro .eq('tenant_id', tenantId) foi removido.
-  // Confiamos na política RLS: (tenant_id = get_current_user_tenant_id())
   const { data, error } = await supabase
     .from('documents')
     .select(`
@@ -42,7 +41,6 @@ const fetchDocuments = async (tenantId: string): Promise<SchoolDocument[]> => {
   
   const rawData: any[] = data || [];
 
-  // Se houver IDs de usuários geradores, buscamos os nomes dos perfis em lote
   const generatedByIds = rawData.map(doc => doc.generated_by).filter(Boolean);
   let profilesMap: Map<string, { first_name: string | null; last_name: string | null; }> = new Map();
 
@@ -55,7 +53,6 @@ const fetchDocuments = async (tenantId: string): Promise<SchoolDocument[]> => {
 
     if (profilesError) {
       console.error("Erro ao buscar perfis dos geradores:", profilesError);
-      // Continuar mesmo com erro, mas os nomes serão N/A
     } else {
       profilesData?.forEach(p => {
         profilesMap.set(p.id, { first_name: p.first_name, last_name: p.last_name });
@@ -97,7 +94,7 @@ const DocumentsPage: React.FC = () => {
     mutationFn: async (docId: string) => {
       if (!tenantId) throw new Error("ID da escola não encontrado.");
 
-      // Primeiro, deletar o arquivo do Supabase Storage
+      // Lógica de exclusão do arquivo do storage e do registro do DB (mantida)
       const { data: docData, error: fetchError } = await supabase
         .from('documents')
         .select('file_url')
@@ -107,11 +104,9 @@ const DocumentsPage: React.FC = () => {
       if (fetchError) throw new Error(`Erro ao buscar URL do arquivo: ${fetchError.message}`);
       if (!docData?.file_url) throw new Error("URL do arquivo não encontrada para exclusão.");
 
-      // Extrair o caminho do arquivo do URL público
-      // Ex: https://fhrxqkzswawlellkiaak.supabase.co/storage/v1/object/public/school-documents/TENANT_ID/document_type/file_name.pdf
       const pathSegments = docData.file_url.split('/');
-      const bucketName = pathSegments[6]; // 'school-documents'
-      const filePath = pathSegments.slice(7).join('/'); // 'TENANT_ID/document_type/file_name.pdf'
+      const bucketName = pathSegments[6];
+      const filePath = pathSegments.slice(7).join('/');
 
       if (bucketName !== 'school-documents') {
         throw new Error("Bucket de armazenamento inválido para exclusão.");
@@ -123,15 +118,13 @@ const DocumentsPage: React.FC = () => {
 
       if (storageError) {
         console.warn("Erro ao deletar arquivo do storage (pode já ter sido removido):", storageError.message);
-        // Não lançar erro fatal aqui, pois o registro do DB é o mais importante
       }
 
-      // Depois, deletar o registro do banco de dados
       const { error: dbError } = await supabase
         .from('documents')
         .delete()
         .eq('id', docId)
-        .eq('tenant_id', tenantId); // RLS já deve garantir isso, mas é uma boa prática
+        .eq('tenant_id', tenantId);
 
       if (dbError) throw new Error(`Erro ao deletar registro do documento: ${dbError.message}`);
     },
@@ -176,15 +169,20 @@ const DocumentsPage: React.FC = () => {
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h1 className="text-3xl font-bold">Gestão de Documentos</h1>
-        <AddDocumentSheet />
+        {/* O botão de Novo Documento agora está dentro do painel de upload */}
       </div>
 
+      {/* Painel de Geração Dinâmica */}
+      <DocumentGenerationPanel />
+
+      {/* Painel de Upload Manual e Lista de Documentos */}
       <Card>
-        <CardHeader>
+        <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle className="flex items-center gap-2">
             <FileText className="h-5 w-5 text-primary" />
-            Lista de Documentos ({documents?.length || 0})
+            Documentos Carregados Manualmente ({documents?.length || 0})
           </CardTitle>
+          <AddDocumentSheet />
         </CardHeader>
         <CardContent>
           <DocumentTable

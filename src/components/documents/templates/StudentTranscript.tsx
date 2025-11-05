@@ -6,7 +6,7 @@ import { Loader2, Printer, ArrowLeft, School, User, Calendar, BookOpen, Graduati
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'; // Adicionado CardHeader e CardTitle
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { useProfile } from '@/hooks/useProfile';
@@ -95,7 +95,7 @@ const StudentTranscript: React.FC = () => {
 
   const { data: student, isLoading: isLoadingStudent, error: studentError } = useQuery<StudentDetails, Error>({
     queryKey: ['studentDetails', studentId],
-    queryFn: () => fetchStudentData(studentId!), // Corrigido o nome da função
+    queryFn: () => fetchStudentData(studentId!),
     enabled: !!studentId,
   });
 
