@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import AddClassSheet from '@/components/classes/AddClassSheet';
-import EditClassSheet from '@/components/classes/EditClassSheet'; // Importar o componente de edição
-import DeleteClassDialog from '@/components/classes/DeleteClassDialog'; // Importar o componente de exclusão
+import EditClassSheet from '@/components/classes/EditClassSheet';
+import DeleteClassDialog from '@/components/classes/DeleteClassDialog';
 import { BookOpen, Loader2, MoreHorizontal, Pencil, Trash2 } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';

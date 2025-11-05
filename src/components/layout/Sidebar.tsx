@@ -75,19 +75,19 @@ const Sidebar: React.FC<SidebarProps> = ({ isSuperAdmin, displayName, roleDispla
       to: "/teachers",
       icon: <UserCheck className="h-5 w-5" />,
       label: "Professores",
-      onCloseSheet: () => onCloseSheet(), // Close sheet when main link is clicked
+      onCloseSheet: () => onCloseSheet(),
       children: [
         { to: "/teacher/grade-entry", icon: <GraduationCap className="h-5 w-5" />, label: "Lançar Notas", onCloseSheet, isSubItem: true },
         { to: "/teacher/class-diary", icon: <BookOpen className="h-5 w-5" />, label: "Diário de Classe", onCloseSheet, isSubItem: true },
       ],
     },
     {
-      to: "/classes",
+      to: "/classes", // Agora esta é a página de Gestão de Turmas
       icon: <BookOpen className="h-5 w-5" />,
       label: "Turmas",
-      onCloseSheet: () => onCloseSheet(), // Close sheet when main link is clicked
+      onCloseSheet: () => onCloseSheet(),
       children: [
-        { to: "/classes/courses", icon: <ListChecks className="h-5 w-5" />, label: "Séries/Anos", onCloseSheet, isSubItem: true },
+        { to: "/classes/courses", icon: <ListChecks className="h-5 w-5" />, label: "Séries/Anos", onCloseSheet, isSubItem: true }, // Sub-item para Séries/Anos
       ],
     },
     { to: "/calendar", icon: <CalendarDays className="h-5 w-5" />, label: "Calendário", onCloseSheet },
@@ -96,7 +96,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isSuperAdmin, displayName, roleDispla
       to: "/finance",
       icon: <DollarSign className="h-5 w-5" />,
       label: "Financeiro",
-      onCloseSheet: () => onCloseSheet(), // Close sheet when main link is clicked
+      onCloseSheet: () => onCloseSheet(),
       children: [
         { to: "/revenues", icon: <TrendingUp className="h-5 w-5" />, label: "Receitas", onCloseSheet, isSubItem: true },
         { to: "/expenses", icon: <TrendingDown className="h-5 w-5" />, label: "Despesas", onCloseSheet, isSubItem: true },
@@ -146,7 +146,6 @@ const Sidebar: React.FC<SidebarProps> = ({ isSuperAdmin, displayName, roleDispla
             <React.Fragment key={item.to}>
               {item.children && item.children.length > 0 ? (
                 <div className="flex items-center justify-between">
-                  {/* Envolve o NavItem em um div para controlar o espaço */}
                   <div className="flex-grow"> 
                     <NavItem
                       to={item.to}
@@ -174,7 +173,6 @@ const Sidebar: React.FC<SidebarProps> = ({ isSuperAdmin, displayName, roleDispla
                 <NavItem {...item} />
               )}
 
-              {/* Renderiza os filhos se o item pai estiver aberto ou se a rota de um filho estiver ativa */}
               {(openParent === item.to || (item.children && item.children.some(child => location.pathname.startsWith(child.to)))) && item.children && (
                 <div className="grid gap-1 pl-4">
                   {item.children.map((child) => (

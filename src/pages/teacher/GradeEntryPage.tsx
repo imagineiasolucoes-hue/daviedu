@@ -16,12 +16,16 @@ import { Loader2, ClipboardList, GraduationCap, BookOpen } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 
 // --- Tipos de Dados ---
+interface CourseNameOnly {
+  name: string;
+}
+
 interface Class {
   id: string;
   name: string;
   school_year: number;
   course_id: string | null;
-  courses: { name: string } | null;
+  courses: CourseNameOnly[] | null; 
 }
 
 interface Student {
@@ -30,10 +34,11 @@ interface Student {
   registration_code: string;
 }
 
-interface TeacherClassAssignment {
+// Interface para o item bruto retornado pela consulta `teacher_classes`
+interface SupabaseTeacherClassRawItem {
   class_id: string;
   period: 'Manhã' | 'Tarde' | 'Noite' | 'Integral';
-  classes: Class | null;
+  classes: Class | null; // Corrigido: Espera um único objeto Class, não um array
 }
 
 interface Subject {
@@ -55,8 +60,8 @@ interface AcademicPeriod {
 const gradeEntrySchema = z.object({
   classId: z.string().uuid("Selecione uma turma."),
   subjectName: z.string().min(1, "Selecione uma matéria."),
-  assessmentType: z.string().optional().nullable(), // Tornando opcional e anulável
-  period: z.string().min(1, "Selecione o período da avaliação."), // Ex: "1º Bimestre"
+  assessmentType: z.string().optional().nullable(), 
+  period: z.string().min(1, "Selecione o período da avaliação."), 
   grades: z.array(z.object({
     studentId: z.string().uuid(),
     gradeValue: z.coerce.number().min(0, "A nota deve ser 0 ou maior.").max(10, "A nota máxima é 10.").optional().nullable(),
@@ -68,7 +73,6 @@ type GradeEntryFormData = z.infer<typeof gradeEntrySchema>;
 // --- Funções de Busca de Dados ---
 const fetchClassesForGradeEntry = async (tenantId: string, employeeId: string | undefined, isTeacher: boolean, isAdmin: boolean): Promise<Class[]> => {
   if (isAdmin) {
-    // Admins veem todas as turmas do tenant
     const { data, error } = await supabase
       .from('classes')
       .select(`
@@ -83,7 +87,6 @@ const fetchClassesForGradeEntry = async (tenantId: string, employeeId: string | 
     if (error) throw new Error(error.message);
     return data as unknown as Class[];
   } else if (isTeacher && employeeId) {
-    // Professores veem apenas as turmas atribuídas a eles
     const { data, error } = await supabase
       .from('teacher_classes')
       .select(`
@@ -100,8 +103,11 @@ const fetchClassesForGradeEntry = async (tenantId: string, employeeId: string | 
       .eq('employee_id', employeeId);
 
     if (error) throw new Error(error.message);
-    // Mapeia para o formato Class[] para consistência
-    return data.map(tc => tc.classes).filter(Boolean) as Class[];
+    
+    const rawTeacherClasses: SupabaseTeacherClassRawItem[] = data as SupabaseTeacherClassRawItem[];
+
+    // Mapeia para o formato Class[] para consistência, extraindo diretamente o objeto 'classes'
+    return rawTeacherClasses.map(tc => tc.classes).filter(Boolean) as Class[];
   }
   return [];
 };
@@ -151,14 +157,14 @@ const GradeEntryPage: React.FC = () => {
   const { profile, isLoading: isProfileLoading, isTeacher, isAdmin } = useProfile();
   const queryClient = useQueryClient();
   const tenantId = profile?.tenant_id;
-  const employeeId = profile?.id; // Usar profile.id como employeeId
+  const employeeId = profile?.id; 
 
   const form = useForm<GradeEntryFormData>({
     resolver: zodResolver(gradeEntrySchema),
     defaultValues: {
       classId: '',
       subjectName: '',
-      assessmentType: null, // Definir como null por padrão
+      assessmentType: null, 
       period: '',
       grades: [],
     },
@@ -166,21 +172,18 @@ const GradeEntryPage: React.FC = () => {
 
   const selectedClassId = form.watch('classId');
 
-  // Fetch classes for the logged-in user (teacher or admin)
   const { data: classesForEntry, isLoading: isLoadingClassesForEntry } = useQuery<Class[], Error>({
     queryKey: ['classesForGradeEntry', tenantId, employeeId, isTeacher, isAdmin],
     queryFn: () => fetchClassesForGradeEntry(tenantId!, employeeId, isTeacher, isAdmin),
     enabled: !!tenantId && (isTeacher || isAdmin),
   });
 
-  // Fetch students for the selected class
   const { data: students, isLoading: isLoadingStudents } = useQuery<Student[], Error>({
     queryKey: ['studentsInClass', selectedClassId, tenantId],
     queryFn: () => fetchStudentsByClass(selectedClassId, tenantId!),
     enabled: !!selectedClassId && !!tenantId,
   });
 
-  // Fetch dynamic lists from database
   const { data: subjects, isLoading: isLoadingSubjects } = useQuery<Subject[], Error>({
     queryKey: ['subjects', tenantId],
     queryFn: () => fetchSubjects(tenantId!),
@@ -199,7 +202,6 @@ const GradeEntryPage: React.FC = () => {
     enabled: !!tenantId,
   });
 
-  // Update form's grades array when students data changes
   useEffect(() => {
     if (students) {
       form.setValue('grades', students.map(s => ({ studentId: s.id, gradeValue: null })));
@@ -209,7 +211,7 @@ const GradeEntryPage: React.FC = () => {
   }, [students, form]);
 
   const onSubmit = async (data: GradeEntryFormData) => {
-    if (!tenantId || !employeeId) { // Usar employeeId que é o profile.id
+    if (!tenantId || !employeeId) { 
       toast.error("Erro", { description: "Dados do usuário ou da escola ausentes." });
       return;
     }
@@ -221,18 +223,18 @@ const GradeEntryPage: React.FC = () => {
     }
 
     const gradesToInsert = data.grades
-      .filter(g => g.gradeValue !== null && g.gradeValue !== undefined) // Apenas notas preenchidas
+      .filter(g => g.gradeValue !== null && g.gradeValue !== undefined) 
       .map(g => ({
         tenant_id: tenantId,
         student_id: g.studentId,
         class_id: data.classId,
-        course_id: selectedClass.course_id, // Pega o course_id da turma
+        course_id: selectedClass.course_id, 
         subject_name: data.subjectName,
         grade_value: g.gradeValue,
-        assessment_type: data.assessmentType || null, // Usar null se não selecionado
+        assessment_type: data.assessmentType || null, 
         period: data.period,
-        teacher_id: employeeId, // Usar employeeId que é o profile.id
-        date_recorded: new Date().toISOString().split('T')[0], // Data de hoje
+        teacher_id: employeeId, 
+        date_recorded: new Date().toISOString().split('T')[0], 
       }));
 
     if (gradesToInsert.length === 0) {
@@ -248,13 +250,13 @@ const GradeEntryPage: React.FC = () => {
       if (error) throw new Error(error.message);
 
       toast.success("Notas lançadas com sucesso!");
-      queryClient.invalidateQueries({ queryKey: ['studentGrades'] }); // Invalida queries de notas
+      queryClient.invalidateQueries({ queryKey: ['studentGrades'] }); 
       form.reset({
-        classId: data.classId, // Mantém a turma selecionada
+        classId: data.classId, 
         subjectName: data.subjectName,
-        assessmentType: null, // Limpa o tipo de avaliação
+        assessmentType: null, 
         period: data.period,
-        grades: students?.map(s => ({ studentId: s.id, gradeValue: null })) || [], // Limpa as notas, mas mantém alunos
+        grades: students?.map(s => ({ studentId: s.id, gradeValue: null })) || [], 
       });
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : "Ocorreu um erro inesperado.";

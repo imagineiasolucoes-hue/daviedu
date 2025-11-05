@@ -11,13 +11,13 @@ import PreEnrollmentInfoPage from "./pages/PreEnrollmentInfoPage";
 import { SessionContextProvider } from "./components/auth/SessionContextProvider";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
 import SuperAdminProtectedRoute from "./components/auth/SuperAdminProtectedRoute";
-import TeacherProtectedRoute from "./components/auth/TeacherProtectedRoute"; // Importar o TeacherProtectedRoute
+import TeacherProtectedRoute from "./components/auth/TeacherProtectedRoute";
 import Dashboard from "./pages/Dashboard";
 import AppLayout from "./components/layout/AppLayout";
 import TenantsPage from "./pages/super-admin/TenantsPage";
 import UsersPage from "./pages/super-admin/UsersPage";
 import StudentsPage from "./pages/StudentsPage";
-import ClassesPage from "./pages/ClassesPage";
+import ClassesPage from "./pages/ClassesPage"; // Importar a nova ClassesPage
 import FinancePage from "./pages/FinancePage";
 import RevenuesPage from "./pages/RevenuesPage";
 import ExpensesPage from "./pages/ExpensesPage";
@@ -25,12 +25,12 @@ import SettingsPage from "./pages/SettingsPage";
 import CalendarPage from "./pages/CalendarPage";
 import DocumentsPage from "./pages/DocumentsPage";
 import TeachersPage from "./pages/TeachersPage";
-import CoursesPage from "./pages/CoursesPage";
+import CoursesPage from "./pages/CoursesPage"; // Importar a nova CoursesPage
 import BackupDashboard from "./pages/BackupDashboard";
 import FAQPage from "./pages/FAQPage";
-import TeacherDashboard from "./pages/teacher/TeacherDashboard"; // Importar TeacherDashboard
-import GradeEntryPage from "./pages/teacher/GradeEntryPage"; // Importar GradeEntryPage
-import ClassDiaryPage from "./pages/teacher/ClassDiaryPage"; // Importar ClassDiaryPage
+import TeacherDashboard from "./pages/teacher/TeacherDashboard";
+import GradeEntryPage from "./pages/teacher/GradeEntryPage";
+import ClassDiaryPage from "./pages/teacher/ClassDiaryPage";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -68,8 +68,8 @@ const App = () => {
                   <Route path="/dashboard" element={<Dashboard />} />
                   <Route path="/students" element={<StudentsPage />} />
                   <Route path="/teachers" element={<TeachersPage />} />
-                  <Route path="/classes" element={<ClassesPage />} />
-                  <Route path="/classes/courses" element={<CoursesPage />} />
+                  <Route path="/classes" element={<ClassesPage />} /> {/* Rota para a nova ClassesPage */}
+                  <Route path="/classes/courses" element={<CoursesPage />} /> {/* Rota para a nova CoursesPage */}
                   <Route path="/calendar" element={<CalendarPage />} />
                   <Route path="/documents" element={<DocumentsPage />} />
                   <Route path="/finance" element={<FinancePage />} />
