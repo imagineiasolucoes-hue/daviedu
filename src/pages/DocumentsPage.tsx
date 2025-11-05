@@ -29,7 +29,7 @@ const fetchDocuments = async (tenantId: string): Promise<SchoolDocument[]> => {
       document_type,
       file_url,
       generated_at,
-      generated_by (first_name, last_name),
+      generated_by,
       related_entity_id,
       metadata,
       description
@@ -39,29 +39,38 @@ const fetchDocuments = async (tenantId: string): Promise<SchoolDocument[]> => {
 
   if (error) throw new Error(error.message);
   
-  // Mapeia os dados brutos para a interface SchoolDocument
-  // Usamos 'any[]' para o dado bruto para evitar conflitos de inferência do Supabase,
-  // e depois mapeamos para o tipo 'SupabaseFetchedDocument' antes de converter para 'SchoolDocument'.
   const rawData: any[] = data || [];
 
-  return rawData.map((doc: any) => {
-    let generatedByProfile: { first_name: string | null; last_name: string | null; } | null = null;
+  // Se houver IDs de usuários geradores, buscamos os nomes dos perfis em lote
+  const generatedByIds = rawData.map(doc => doc.generated_by).filter(Boolean);
+  let profilesMap: Map<string, { first_name: string | null; last_name: string | null; }> = new Map();
 
-    // Supabase's PostgREST usually returns a single object for a one-to-one join.
-    // However, the TypeScript error implies it might be inferred as an array.
-    // We handle both possibilities to ensure type safety.
-    if (Array.isArray(doc.generated_by) && doc.generated_by.length > 0) {
-      generatedByProfile = doc.generated_by[0]; // Take the first element if it's an array
-    } else if (doc.generated_by && typeof doc.generated_by === 'object') {
-      generatedByProfile = doc.generated_by; // If it's a single object
+  if (generatedByIds.length > 0) {
+    const uniqueIds = [...new Set(generatedByIds)];
+    const { data: profilesData, error: profilesError } = await supabase
+      .from('profiles')
+      .select('id, first_name, last_name')
+      .in('id', uniqueIds);
+
+    if (profilesError) {
+      console.error("Erro ao buscar perfis dos geradores:", profilesError);
+      // Continuar mesmo com erro, mas os nomes serão N/A
+    } else {
+      profilesData?.forEach(p => {
+        profilesMap.set(p.id, { first_name: p.first_name, last_name: p.last_name });
+      });
     }
+  }
+
+  return rawData.map((doc: any) => {
+    const generatedByProfile = doc.generated_by ? profilesMap.get(doc.generated_by) || null : null;
 
     return {
       id: doc.id,
       document_type: doc.document_type,
       file_url: doc.file_url,
       generated_at: doc.generated_at,
-      generated_by_profile: generatedByProfile, // Atribui o objeto do perfil diretamente
+      generated_by_profile: generatedByProfile,
       metadata: doc.metadata,
       related_entity_id: doc.related_entity_id,
       description: doc.description,
