@@ -66,24 +66,44 @@ const gradeEntrySchema = z.object({
 type GradeEntryFormData = z.infer<typeof gradeEntrySchema>;
 
 // --- Funções de Busca de Dados ---
-const fetchTeacherAssignedClasses = async (employeeId: string, tenantId: string): Promise<TeacherClassAssignment[]> => {
-  const { data, error } = await supabase
-    .from('teacher_classes')
-    .select(`
-      class_id,
-      period,
-      classes (
+const fetchClassesForGradeEntry = async (tenantId: string, employeeId: string | undefined, isTeacher: boolean, isAdmin: boolean): Promise<Class[]> => {
+  if (isAdmin) {
+    // Admins veem todas as turmas do tenant
+    const { data, error } = await supabase
+      .from('classes')
+      .select(`
         id,
         name,
         school_year,
         course_id,
         courses (name)
-      )
-    `)
-    .eq('employee_id', employeeId);
+      `)
+      .eq('tenant_id', tenantId)
+      .order('name');
+    if (error) throw new Error(error.message);
+    return data as unknown as Class[];
+  } else if (isTeacher && employeeId) {
+    // Professores veem apenas as turmas atribuídas a eles
+    const { data, error } = await supabase
+      .from('teacher_classes')
+      .select(`
+        class_id,
+        period,
+        classes (
+          id,
+          name,
+          school_year,
+          course_id,
+          courses (name)
+        )
+      `)
+      .eq('employee_id', employeeId);
 
-  if (error) throw new Error(error.message);
-  return data as unknown as TeacherClassAssignment[];
+    if (error) throw new Error(error.message);
+    // Mapeia para o formato Class[] para consistência
+    return data.map(tc => tc.classes).filter(Boolean) as Class[];
+  }
+  return [];
 };
 
 const fetchStudentsByClass = async (classId: string, tenantId: string): Promise<Student[]> => {
@@ -131,7 +151,7 @@ const GradeEntryPage: React.FC = () => {
   const { profile, isLoading: isProfileLoading, isTeacher, isAdmin } = useProfile();
   const queryClient = useQueryClient();
   const tenantId = profile?.tenant_id;
-  const teacherId = profile?.id;
+  const employeeId = profile?.id; // Usar profile.id como employeeId
 
   const form = useForm<GradeEntryFormData>({
     resolver: zodResolver(gradeEntrySchema),
@@ -146,11 +166,11 @@ const GradeEntryPage: React.FC = () => {
 
   const selectedClassId = form.watch('classId');
 
-  // Fetch teacher's assigned classes
-  const { data: teacherClasses, isLoading: isLoadingTeacherClasses } = useQuery<TeacherClassAssignment[], Error>({
-    queryKey: ['teacherClasses', teacherId, tenantId],
-    queryFn: () => fetchTeacherAssignedClasses(teacherId!, tenantId!),
-    enabled: !!teacherId && !!tenantId && (isTeacher || isAdmin),
+  // Fetch classes for the logged-in user (teacher or admin)
+  const { data: classesForEntry, isLoading: isLoadingClassesForEntry } = useQuery<Class[], Error>({
+    queryKey: ['classesForGradeEntry', tenantId, employeeId, isTeacher, isAdmin],
+    queryFn: () => fetchClassesForGradeEntry(tenantId!, employeeId, isTeacher, isAdmin),
+    enabled: !!tenantId && (isTeacher || isAdmin),
   });
 
   // Fetch students for the selected class
@@ -189,12 +209,12 @@ const GradeEntryPage: React.FC = () => {
   }, [students, form]);
 
   const onSubmit = async (data: GradeEntryFormData) => {
-    if (!tenantId || !teacherId) {
+    if (!tenantId || !employeeId) { // Usar employeeId que é o profile.id
       toast.error("Erro", { description: "Dados do usuário ou da escola ausentes." });
       return;
     }
 
-    const selectedClass = teacherClasses?.find(tc => tc.class_id === data.classId)?.classes;
+    const selectedClass = classesForEntry?.find(c => c.id === data.classId);
     if (!selectedClass) {
       toast.error("Erro", { description: "Turma selecionada inválida." });
       return;
@@ -211,7 +231,7 @@ const GradeEntryPage: React.FC = () => {
         grade_value: g.gradeValue,
         assessment_type: data.assessmentType || null, // Usar null se não selecionado
         period: data.period,
-        teacher_id: teacherId,
+        teacher_id: employeeId, // Usar employeeId que é o profile.id
         date_recorded: new Date().toISOString().split('T')[0], // Data de hoje
       }));
 
@@ -244,7 +264,7 @@ const GradeEntryPage: React.FC = () => {
     }
   };
 
-  const isLoading = isProfileLoading || isLoadingTeacherClasses || isLoadingStudents || isLoadingSubjects || isLoadingAssessmentTypes || isLoadingAcademicPeriods;
+  const isLoading = isProfileLoading || isLoadingClassesForEntry || isLoadingStudents || isLoadingSubjects || isLoadingAssessmentTypes || isLoadingAcademicPeriods;
 
   if (isLoading) {
     return (
@@ -295,23 +315,23 @@ const GradeEntryPage: React.FC = () => {
                 <Select 
                   onValueChange={(value) => form.setValue('classId', value)} 
                   value={form.watch('classId')}
-                  disabled={isLoadingTeacherClasses}
+                  disabled={isLoadingClassesForEntry}
                 >
                   <SelectTrigger id="classId">
-                    <SelectValue placeholder={isLoadingTeacherClasses ? "Carregando turmas..." : "Selecione a turma"} />
+                    <SelectValue placeholder={isLoadingClassesForEntry ? "Carregando turmas..." : "Selecione a turma"} />
                   </SelectTrigger>
                   <SelectContent>
-                    {teacherClasses?.map(tc => tc.classes && (
-                      <SelectItem key={tc.class_id} value={tc.class_id}>
-                        {tc.classes.name} ({tc.classes.school_year})
+                    {classesForEntry?.map(c => (
+                      <SelectItem key={c.id} value={c.id}>
+                        {c.name} ({c.school_year})
                       </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
                 {form.formState.errors.classId && <p className="text-sm text-destructive">{form.formState.errors.classId.message}</p>}
-                {(!teacherClasses || teacherClasses.length === 0) && !isLoadingTeacherClasses && (
+                {(!classesForEntry || classesForEntry.length === 0) && !isLoadingClassesForEntry && (
                   <p className="text-xs text-muted-foreground mt-1">
-                      Nenhuma turma atribuída a você.
+                      Nenhuma turma atribuída a você ou cadastrada para a escola.
                   </p>
                 )}
               </div>
@@ -395,7 +415,7 @@ const GradeEntryPage: React.FC = () => {
             {/* Tabela de Alunos e Notas */}
             <h3 className="text-lg font-semibold flex items-center gap-2">
               <GraduationCap className="h-5 w-5 text-primary" />
-              Alunos da Turma {selectedClassId ? `(${teacherClasses?.find(tc => tc.class_id === selectedClassId)?.classes?.name})` : ''}
+              Alunos da Turma {selectedClassId ? `(${classesForEntry?.find(c => c.id === selectedClassId)?.name})` : ''}
             </h3>
             {selectedClassId && students && students.length > 0 ? (
               <div className="overflow-x-auto">
