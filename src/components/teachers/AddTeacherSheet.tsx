@@ -23,7 +23,7 @@ const classAssignmentSchema = z.object({
 
 const teacherSchema = z.object({
   full_name: z.string().min(5, "Nome completo é obrigatório."),
-  main_subject: z.string().optional().nullable(), // Pode ser nulo
+  main_subject: z.string().optional().nullable(), // Pode ser nulo, mas agora virá de um select
   base_salary: z.coerce.number().min(0.01, "Salário deve ser um valor positivo."),
   hire_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Data de contratação inválida. Use o formato AAAA-MM-DD."),
   
@@ -48,6 +48,11 @@ interface Class {
   courses: { name: string } | null; // Adicionado o nome do curso
 }
 
+interface Subject { // Interface para matérias
+  id: string;
+  name: string;
+}
+
 interface ClassAssignment extends z.infer<typeof classAssignmentSchema> {
   className: string;
 }
@@ -63,6 +68,16 @@ const fetchClasses = async (tenantId: string): Promise<Class[]> => {
   return data as unknown as Class[];
 };
 
+const fetchSubjects = async (tenantId: string): Promise<Subject[]> => { // Nova função para buscar matérias
+  const { data, error } = await supabase
+    .from('subjects')
+    .select('id, name')
+    .eq('tenant_id', tenantId)
+    .order('name');
+  if (error) throw new Error(error.message);
+  return data;
+};
+
 const AddTeacherSheet: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
   const { profile } = useProfile();
@@ -75,6 +90,12 @@ const AddTeacherSheet: React.FC = () => {
   const { data: allClasses, isLoading: isLoadingClasses } = useQuery<Class[], Error>({
     queryKey: ['classes', tenantId],
     queryFn: () => fetchClasses(tenantId!),
+    enabled: !!tenantId && isOpen,
+  });
+
+  const { data: subjects, isLoading: isLoadingSubjects } = useQuery<Subject[], Error>({ // Nova query para matérias
+    queryKey: ['subjects', tenantId],
+    queryFn: () => fetchSubjects(tenantId!),
     enabled: !!tenantId && isOpen,
   });
 
@@ -170,6 +191,8 @@ const AddTeacherSheet: React.FC = () => {
     }
   };
 
+  const isLoading = isLoadingClasses || isLoadingSubjects; // Inclui o carregamento de matérias
+
   return (
     <Sheet open={isOpen} onOpenChange={setIsOpen}>
       <SheetTrigger asChild>
@@ -197,7 +220,26 @@ const AddTeacherSheet: React.FC = () => {
             </div>
             <div className="space-y-2">
               <Label htmlFor="main_subject">Matéria Principal (Opcional)</Label>
-              <Input id="main_subject" {...form.register("main_subject")} />
+              <Select 
+                onValueChange={(value) => form.setValue('main_subject', value === "none" ? null : value)} 
+                value={form.watch('main_subject') || 'none'}
+                disabled={isLoadingSubjects || (subjects && subjects.length === 0)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder={isLoadingSubjects ? "Carregando matérias..." : "Selecione a matéria principal"} />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">Nenhuma</SelectItem>
+                  {subjects?.map((subject) => (
+                    <SelectItem key={subject.id} value={subject.name}>{subject.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {(!subjects || subjects.length === 0) && !isLoadingSubjects && (
+                <p className="text-xs text-muted-foreground mt-1">
+                    Nenhuma matéria cadastrada. Cadastre uma matéria em "Gestão de Turmas" &gt; "Matérias".
+                </p>
+              )}
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">

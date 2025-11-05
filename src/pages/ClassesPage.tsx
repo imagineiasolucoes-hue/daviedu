@@ -11,6 +11,20 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Badge } from '@/components/ui/badge';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
+import SubjectSheet from '../components/subjects/SubjectSheet'; // Caminho de importação corrigido
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import { toast } from 'sonner';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+
 
 interface Class {
   id: string;
@@ -36,7 +50,9 @@ const fetchClasses = async (tenantId: string): Promise<Class[]> => {
 const ClassesPage: React.FC = () => {
   const { profile, isLoading: isProfileLoading } = useProfile();
   const tenantId = profile?.tenant_id;
+  const queryClient = useQueryClient();
 
+  const [isAddSheetOpen, setIsAddSheetOpen] = useState(false);
   const [isEditSheetOpen, setIsEditSheetOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [selectedClass, setSelectedClass] = useState<Class | null>(null);
@@ -47,6 +63,26 @@ const ClassesPage: React.FC = () => {
     enabled: !!tenantId,
   });
 
+  const deleteMutation = useMutation({
+    mutationFn: async (classId: string) => {
+      if (!tenantId) throw new Error("ID da escola não encontrado.");
+      const { error } = await supabase
+        .from('classes')
+        .delete()
+        .eq('id', classId)
+        .eq('tenant_id', tenantId);
+      if (error) throw new Error(error.message);
+    },
+    onSuccess: () => {
+      toast.success("Série/Ano excluído com sucesso.");
+      queryClient.invalidateQueries({ queryKey: ['classes', tenantId] });
+      setIsDeleteDialogOpen(false);
+    },
+    onError: (err) => {
+      toast.error("Erro ao Excluir Série/Ano", { description: err.message });
+    },
+  });
+
   const handleEdit = (classItem: Class) => {
     setSelectedClass(classItem);
     setIsEditSheetOpen(true);
@@ -55,6 +91,12 @@ const ClassesPage: React.FC = () => {
   const handleDelete = (classItem: Class) => {
     setSelectedClass(classItem);
     setIsDeleteDialogOpen(true);
+  };
+
+  const confirmDelete = () => {
+    if (selectedClass) {
+      deleteMutation.mutate(selectedClass.id);
+    }
   };
 
   if (isProfileLoading || isClassesLoading) {
@@ -69,7 +111,10 @@ const ClassesPage: React.FC = () => {
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h1 className="text-3xl font-bold">Gestão de Turmas</h1>
-        <AddClassSheet />
+        <div className="flex gap-2"> {/* Adicionado um flex container para os botões */}
+          <SubjectSheet /> {/* Botão para gerenciar matérias */}
+          <AddClassSheet />
+        </div>
       </div>
       
       <Card>

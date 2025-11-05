@@ -49,6 +49,11 @@ interface Class {
   courses: { name: string } | null; // Adicionado o nome do curso
 }
 
+interface Subject { // Interface para matérias
+  id: string;
+  name: string;
+}
+
 interface TeacherDetails extends TeacherFormData {
   id: string;
   tenant_id: string;
@@ -105,6 +110,16 @@ const fetchClasses = async (tenantId: string): Promise<Class[]> => {
   return data as unknown as Class[];
 };
 
+const fetchSubjects = async (tenantId: string): Promise<Subject[]> => { // Nova função para buscar matérias
+  const { data, error } = await supabase
+    .from('subjects')
+    .select('id, name')
+    .eq('tenant_id', tenantId)
+    .order('name');
+  if (error) throw new Error(error.message);
+  return data;
+};
+
 const EditTeacherSheet: React.FC<EditTeacherSheetProps> = ({ teacherId, open, onOpenChange }) => {
   const { profile } = useProfile();
   const queryClient = useQueryClient();
@@ -122,6 +137,12 @@ const EditTeacherSheet: React.FC<EditTeacherSheetProps> = ({ teacherId, open, on
   const { data: allClasses, isLoading: isLoadingClasses } = useQuery<Class[], Error>({
     queryKey: ['classes', tenantId],
     queryFn: () => fetchClasses(tenantId!),
+    enabled: !!tenantId && open,
+  });
+
+  const { data: subjects, isLoading: isLoadingSubjects } = useQuery<Subject[], Error>({ // Nova query para matérias
+    queryKey: ['subjects', tenantId],
+    queryFn: () => fetchSubjects(tenantId!),
     enabled: !!tenantId && open,
   });
 
@@ -236,7 +257,7 @@ const EditTeacherSheet: React.FC<EditTeacherSheetProps> = ({ teacherId, open, on
     mutation.mutate(data);
   };
 
-  const isLoading = isLoadingTeacher || isLoadingClasses;
+  const isLoading = isLoadingTeacher || isLoadingClasses || isLoadingSubjects; // Inclui o carregamento de matérias
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
@@ -254,14 +275,33 @@ const EditTeacherSheet: React.FC<EditTeacherSheetProps> = ({ teacherId, open, on
             
             {/* Informações Profissionais */}
             <div className="space-y-4">
-              <h3 className="text-lg font-semibold">Informações Profissionais</h3>
+              <h3 className="font-semibold">Informações Profissionais</h3>
               <div className="space-y-2">
                 <Label htmlFor="full_name">Nome Completo</Label>
                 <Input id="full_name" {...form.register("full_name")} />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="main_subject">Matéria Principal (Opcional)</Label>
-                <Input id="main_subject" {...form.register("main_subject")} />
+                <Select 
+                  onValueChange={(value) => form.setValue('main_subject', value === "none" ? null : value)} 
+                  value={form.watch('main_subject') || 'none'}
+                  disabled={isLoadingSubjects || (subjects && subjects.length === 0)}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder={isLoadingSubjects ? "Carregando matérias..." : "Selecione a matéria principal"} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">Nenhuma</SelectItem>
+                    {subjects?.map((subject) => (
+                      <SelectItem key={subject.id} value={subject.name}>{subject.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {(!subjects || subjects.length === 0) && !isLoadingSubjects && (
+                  <p className="text-xs text-muted-foreground mt-1">
+                      Nenhuma matéria cadastrada. Cadastre uma matéria em "Gestão de Turmas" &gt; "Matérias".
+                  </p>
+                )}
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
