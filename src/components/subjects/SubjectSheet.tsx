@@ -40,6 +40,7 @@ const fetchSubjects = async (tenantId: string): Promise<Subject[]> => {
 };
 
 const SubjectSheet: React.FC = () => {
+  console.log("SubjectSheet is rendering"); // Added console log
   const [isOpen, setIsOpen] = useState(false);
   const { profile } = useProfile();
   const queryClient = useQueryClient();
@@ -106,9 +107,10 @@ const SubjectSheet: React.FC = () => {
   return (
     <Sheet open={isOpen} onOpenChange={setIsOpen}>
       <SheetTrigger asChild>
-        <Button variant="outline" className="text-primary border-primary hover:bg-primary/10">
+        {/* Making the button more prominent for testing visibility */}
+        <Button variant="default" className="bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded-lg shadow-md">
           <BookOpen className="mr-2 h-4 w-4" />
-          Matérias
+          Gerenciar Matérias
         </Button>
       </SheetTrigger>
       <SheetContent className="sm:max-w-lg overflow-y-auto">
