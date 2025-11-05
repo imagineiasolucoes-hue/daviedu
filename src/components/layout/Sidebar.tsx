@@ -87,7 +87,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isSuperAdmin, displayName, roleDispla
       label: "Turmas",
       onCloseSheet: () => toggleParent("/classes"),
       children: [
-        { to: "/classes/courses", icon: <ListChecks className="h-5 w-5" />, label: "Cursos/Séries", onCloseSheet, isSubItem: true },
+        { to: "/classes/courses", icon: <ListChecks className="h-5 w-5" />, label: "Séries/Anos", onCloseSheet, isSubItem: true },
       ],
     },
     { to: "/calendar", icon: <CalendarDays className="h-5 w-5" />, label: "Calendário", onCloseSheet },
@@ -147,7 +147,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isSuperAdmin, displayName, roleDispla
               {item.children && item.children.length > 0 ? (
                 // Renderiza o item pai com um botão de toggle
                 <button
-                  onClick={() => item.onCloseSheet()} // Chama a função de toggle do item
+                  onClick={() => toggleParent(item.to)} // Chama a função de toggle do item
                   className={cn(
                     "flex items-center justify-between w-full gap-3 rounded-lg px-3 py-2 transition-all",
                     isParentActive(item)

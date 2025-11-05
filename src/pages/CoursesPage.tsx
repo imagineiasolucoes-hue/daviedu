@@ -41,13 +41,13 @@ const CoursesPage: React.FC = () => {
   }
 
   if (error) {
-    return <div className="text-destructive">Erro ao carregar Cursos/Séries: {error.message}</div>;
+    return <div className="text-destructive">Erro ao carregar Séries/Anos: {error.message}</div>;
   }
 
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <h1 className="text-3xl font-bold">Gestão de Cursos/Séries</h1>
+        <h1 className="text-3xl font-bold">Gestão de Séries/Anos</h1>
         <AddCourseSheet />
       </div>
       
@@ -55,7 +55,7 @@ const CoursesPage: React.FC = () => {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <BookOpen className="h-5 w-5 text-primary" />
-            Lista de Cursos/Séries ({courses?.length || 0})
+            Lista de Séries/Anos ({courses?.length || 0})
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -84,7 +84,7 @@ const CoursesPage: React.FC = () => {
             </Table>
           </div>
           {courses?.length === 0 && (
-            <p className="text-center py-8 text-muted-foreground">Nenhum curso/série cadastrado.</p>
+            <p className="text-center py-8 text-muted-foreground">Nenhuma série/ano cadastrado.</p>
           )}
         </CardContent>
       </Card>

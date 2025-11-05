@@ -21,7 +21,7 @@ const classSchema = z.object({
     required_error: "O período é obrigatório.",
   }),
   room: z.string().optional().nullable(),
-  course_id: z.string().uuid("Selecione um curso/série.").optional().nullable(),
+  course_id: z.string().uuid("Selecione uma série/ano.").optional().nullable(),
 });
 
 type ClassFormData = z.infer<typeof classSchema>;
@@ -150,13 +150,13 @@ const EditClassSheet: React.FC<EditClassSheetProps> = ({ classId, open, onOpenCh
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="course_id">Curso / Série</Label>
+              <Label htmlFor="course_id">Série / Ano</Label>
               <Select onValueChange={(value) => form.setValue('course_id', value === "none" ? null : value)} value={form.watch('course_id') || 'none'}>
                 <SelectTrigger disabled={isLoadingCourses}>
-                  <SelectValue placeholder={isLoadingCourses ? "Carregando Cursos..." : "Selecione o curso/série"} />
+                  <SelectValue placeholder={isLoadingCourses ? "Carregando Séries/Anos..." : "Selecione a série/ano"} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="none">Nenhum Curso/Série</SelectItem>
+                  <SelectItem value="none">Nenhuma Série/Ano</SelectItem>
                   {courses?.map((c) => (
                     <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
                   ))}
@@ -165,7 +165,7 @@ const EditClassSheet: React.FC<EditClassSheetProps> = ({ classId, open, onOpenCh
               {form.formState.errors.course_id && <p className="text-sm text-destructive">{form.formState.errors.course_id.message}</p>}
               {(!courses || courses.length === 0) && !isLoadingCourses && (
                   <p className="text-xs text-muted-foreground mt-1">
-                      Nenhum curso encontrado. Cadastre um curso primeiro.
+                      Nenhuma série/ano encontrado. Cadastre uma série/ano primeiro.
                   </p>
               )}
             </div>

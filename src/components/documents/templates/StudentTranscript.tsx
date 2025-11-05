@@ -204,7 +204,7 @@ const StudentTranscript: React.FC = () => {
           </div>
           <div className="flex items-center gap-2">
             <School className="h-4 w-4 text-muted-foreground" />
-            <span className="font-semibold">Curso/Série:</span> {student.classes?.courses?.name || 'N/A'}
+            <span className="font-semibold">Série/Ano:</span> {student.classes?.courses?.name || 'N/A'}
           </div>
           <div className="flex items-center gap-2 col-span-2">
             <span className="font-semibold">Matrícula:</span> {student.registration_code}

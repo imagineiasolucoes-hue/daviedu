@@ -15,7 +15,7 @@ import { Loader2, PlusCircle } from 'lucide-react';
 
 // --- Schema de Validação ---
 const courseSchema = z.object({
-  name: z.string().min(3, "O nome do curso/série é obrigatório."),
+  name: z.string().min(3, "O nome da série/ano é obrigatório."),
   description: z.string().optional(),
 });
 
@@ -53,13 +53,13 @@ const AddCourseSheet: React.FC = () => {
 
       if (error) throw new Error(error.message);
 
-      toast.success("Curso/Série cadastrado com sucesso.");
+      toast.success("Série/Ano cadastrado com sucesso.");
       queryClient.invalidateQueries({ queryKey: ['courses', tenantId] });
       form.reset();
       setIsOpen(false);
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : "Ocorreu um erro inesperado.";
-      toast.error("Erro ao Cadastrar Curso/Série", {
+      toast.error("Erro ao Cadastrar Série/Ano", {
         description: errorMessage,
       });
     }
@@ -70,19 +70,19 @@ const AddCourseSheet: React.FC = () => {
       <SheetTrigger asChild>
         <Button>
           <PlusCircle className="mr-2 h-4 w-4" />
-          Novo Curso/Série
+          Nova Série/Ano
         </Button>
       </SheetTrigger>
       <SheetContent className="sm:max-w-lg">
         <SheetHeader>
-          <SheetTitle>Cadastrar Novo Curso/Série</SheetTitle>
+          <SheetTitle>Cadastrar Nova Série/Ano</SheetTitle>
           <SheetDescription>
-            Defina o nome e a descrição do curso ou série (ex: 1º Ano Fundamental, Ensino Médio).
+            Defina o nome e a descrição da série ou ano (ex: 1º Ano Fundamental, Ensino Médio).
           </SheetDescription>
         </SheetHeader>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 py-4">
           <div className="space-y-2">
-            <Label htmlFor="name">Nome do Curso/Série</Label>
+            <Label htmlFor="name">Nome da Série/Ano</Label>
             <Input id="name" {...form.register("name")} />
             {form.formState.errors.name && <p className="text-sm text-destructive">{form.formState.errors.name.message}</p>}
           </div>
@@ -95,7 +95,7 @@ const AddCourseSheet: React.FC = () => {
           <SheetFooter className="pt-4">
             <Button type="submit" disabled={form.formState.isSubmitting}>
               {form.formState.isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Salvar Curso/Série
+              Salvar Série/Ano
             </Button>
           </SheetFooter>
         </form>
