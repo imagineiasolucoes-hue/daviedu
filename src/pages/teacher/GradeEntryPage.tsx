@@ -26,7 +26,7 @@ interface Class {
   name: string;
   school_year: number;
   course_id: string | null;
-  courses: Course[] | null; // CORRIGIDO: Agora é um array de Course ou null
+  courses: Course[] | null; 
 }
 
 interface Student {
@@ -39,7 +39,7 @@ interface Student {
 interface SupabaseTeacherClassRawItem {
   class_id: string;
   period: 'Manhã' | 'Tarde' | 'Noite' | 'Integral';
-  classes: Class[] | null; // CORRIGIDO: Agora é um array de Class ou null
+  classes: Class[] | null; 
 }
 
 interface Subject {
@@ -92,7 +92,7 @@ const fetchClassesForGradeEntry = async (tenantId: string, employeeId: string | 
         name,
         school_year,
         course_id,
-        courses (id, name) // CORRIGIDO: Adicionado 'id' para consistência
+        courses (id, name)
       `)
       .eq('tenant_id', tenantId)
       .order('name');
@@ -118,7 +118,6 @@ const fetchClassesForGradeEntry = async (tenantId: string, employeeId: string | 
     
     const rawTeacherClasses: SupabaseTeacherClassRawItem[] = data as SupabaseTeacherClassRawItem[];
 
-    // Mapeia para o formato Class[] para consistência, usando flatMap para achatar o array de arrays 'classes'
     return rawTeacherClasses.flatMap(tc => tc.classes || []).filter(Boolean) as Class[];
   }
   return [];
@@ -347,32 +346,7 @@ const GradeEntryPage: React.FC = () => {
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
             {/* Seleção de Série/Ano, Turma, Matéria, Tipo e Período */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-              {/* CAMPO: Série/Ano */}
-              <div className="space-y-2">
-                <Label htmlFor="courseId">Série / Ano</Label>
-                <Select 
-                  onValueChange={(value) => form.setValue('courseId', value === "none" ? null : value)} 
-                  value={form.watch('courseId') || 'none'}
-                  disabled={isLoadingCourses || (courses && courses.length === 0)}
-                >
-                  <SelectTrigger id="courseId">
-                    <SelectValue placeholder={isLoadingCourses ? "Carregando séries/anos..." : "Selecione a série/ano"} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="none">Todas as Séries/Anos</SelectItem>
-                    {courses?.map(c => (
-                      <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                {form.formState.errors.courseId && <p className="text-sm text-destructive">{form.formState.errors.courseId.message}</p>}
-                {(!courses || courses.length === 0) && !isLoadingCourses && (
-                  <p className="text-xs text-muted-foreground mt-1">
-                      Nenhuma série/ano cadastrada. Cadastre uma série/ano nas configurações.
-                  </p>
-                )}
-              </div>
-
+              {/* CAMPO: Turma (agora primeiro) */}
               <div className="space-y-2">
                 <Label htmlFor="classId">Turma</Label>
                 <Select 
@@ -395,6 +369,32 @@ const GradeEntryPage: React.FC = () => {
                 {(!classesForEntry || classesForEntry.length === 0) && !isLoadingClassesForEntry && (
                   <p className="text-xs text-muted-foreground mt-1">
                       Nenhuma turma atribuída a você ou cadastrada para a escola.
+                  </p>
+                )}
+              </div>
+
+              {/* CAMPO: Série/Ano (agora segundo) */}
+              <div className="space-y-2">
+                <Label htmlFor="courseId">Série / Ano</Label>
+                <Select 
+                  onValueChange={(value) => form.setValue('courseId', value === "none" ? null : value)} 
+                  value={form.watch('courseId') || 'none'}
+                  disabled={isLoadingCourses || (courses && courses.length === 0)}
+                >
+                  <SelectTrigger id="courseId">
+                    <SelectValue placeholder={isLoadingCourses ? "Carregando séries/anos..." : "Selecione a série/ano"} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">Todas as Séries/Anos</SelectItem>
+                    {courses?.map(c => (
+                      <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {form.formState.errors.courseId && <p className="text-sm text-destructive">{form.formState.errors.courseId.message}</p>}
+                {(!courses || courses.length === 0) && !isLoadingCourses && (
+                  <p className="text-xs text-muted-foreground mt-1">
+                      Nenhuma série/ano cadastrada. Cadastre uma série/ano nas configurações.
                   </p>
                 )}
               </div>
