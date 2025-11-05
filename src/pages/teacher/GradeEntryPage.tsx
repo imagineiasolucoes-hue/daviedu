@@ -55,7 +55,7 @@ interface AcademicPeriod {
 const gradeEntrySchema = z.object({
   classId: z.string().uuid("Selecione uma turma."),
   subjectName: z.string().min(1, "Selecione uma matéria."),
-  assessmentType: z.string().min(1, "Selecione o tipo de avaliação."),
+  assessmentType: z.string().optional().nullable(), // Tornando opcional e anulável
   period: z.string().min(1, "Selecione o período da avaliação."), // Ex: "1º Bimestre"
   grades: z.array(z.object({
     studentId: z.string().uuid(),
@@ -138,7 +138,7 @@ const GradeEntryPage: React.FC = () => {
     defaultValues: {
       classId: '',
       subjectName: '',
-      assessmentType: '',
+      assessmentType: null, // Definir como null por padrão
       period: '',
       grades: [],
     },
@@ -209,7 +209,7 @@ const GradeEntryPage: React.FC = () => {
         course_id: selectedClass.course_id, // Pega o course_id da turma
         subject_name: data.subjectName,
         grade_value: g.gradeValue,
-        assessment_type: data.assessmentType,
+        assessment_type: data.assessmentType || null, // Usar null se não selecionado
         period: data.period,
         teacher_id: teacherId,
         date_recorded: new Date().toISOString().split('T')[0], // Data de hoje
@@ -232,7 +232,7 @@ const GradeEntryPage: React.FC = () => {
       form.reset({
         classId: data.classId, // Mantém a turma selecionada
         subjectName: data.subjectName,
-        assessmentType: data.assessmentType,
+        assessmentType: null, // Limpa o tipo de avaliação
         period: data.period,
         grades: students?.map(s => ({ studentId: s.id, gradeValue: null })) || [], // Limpa as notas, mas mantém alunos
       });
@@ -341,16 +341,17 @@ const GradeEntryPage: React.FC = () => {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="assessmentType">Tipo de Avaliação</Label>
+                <Label htmlFor="assessmentType">Tipo de Avaliação (Opcional)</Label>
                 <Select 
-                  onValueChange={(value) => form.setValue('assessmentType', value)} 
-                  value={form.watch('assessmentType')}
+                  onValueChange={(value) => form.setValue('assessmentType', value === "none" ? null : value)} 
+                  value={form.watch('assessmentType') || 'none'}
                   disabled={!selectedClassId || isLoadingAssessmentTypes}
                 >
                   <SelectTrigger id="assessmentType">
                     <SelectValue placeholder={isLoadingAssessmentTypes ? "Carregando tipos..." : "Selecione o tipo"} />
                   </SelectTrigger>
                   <SelectContent>
+                    <SelectItem value="none">Nenhum</SelectItem>
                     {assessmentTypes?.map(type => (
                       <SelectItem key={type.id} value={type.name}>{type.name}</SelectItem>
                     ))}
@@ -442,7 +443,7 @@ const GradeEntryPage: React.FC = () => {
             <Button 
               type="submit" 
               className="w-full mt-6" 
-              disabled={form.formState.isSubmitting || !selectedClassId || !form.watch('subjectName') || !form.watch('assessmentType') || !form.watch('period')}
+              disabled={form.formState.isSubmitting || !selectedClassId || !form.watch('subjectName') || !form.watch('period')}
             >
               {form.formState.isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Salvar Notas
