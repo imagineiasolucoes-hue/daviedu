@@ -85,7 +85,7 @@ const ClassesPage: React.FC = () => {
               <TableHeader>
                 <TableRow>
                   <TableHead>Turma</TableHead>
-                  <TableHead>Curso/Série</TableHead>
+                  <TableHead>Série/Ano</TableHead>
                   <TableHead>Ano Letivo</TableHead>
                   <TableHead>Período</TableHead>
                   <TableHead>Sala</TableHead>
