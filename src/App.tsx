@@ -11,6 +11,7 @@ import PreEnrollmentInfoPage from "./pages/PreEnrollmentInfoPage";
 import { SessionContextProvider } from "./components/auth/SessionContextProvider";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
 import SuperAdminProtectedRoute from "./components/auth/SuperAdminProtectedRoute";
+import TeacherProtectedRoute from "./components/auth/TeacherProtectedRoute"; // Importar o TeacherProtectedRoute
 import Dashboard from "./pages/Dashboard";
 import AppLayout from "./components/layout/AppLayout";
 import TenantsPage from "./pages/super-admin/TenantsPage";
@@ -27,6 +28,9 @@ import TeachersPage from "./pages/TeachersPage";
 import CoursesPage from "./pages/CoursesPage";
 import BackupDashboard from "./pages/BackupDashboard";
 import FAQPage from "./pages/FAQPage";
+import TeacherDashboard from "./pages/teacher/TeacherDashboard"; // Importar TeacherDashboard
+import GradeEntryPage from "./pages/teacher/GradeEntryPage"; // Importar GradeEntryPage
+import ClassDiaryPage from "./pages/teacher/ClassDiaryPage"; // Importar ClassDiaryPage
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -78,6 +82,13 @@ const App = () => {
                     <Route path="/backup" element={<BackupDashboard />} />
                     <Route path="/super-admin/tenants" element={<TenantsPage />} />
                     <Route path="/super-admin/users" element={<UsersPage />} />
+                  </Route>
+
+                  {/* Teacher Routes */}
+                  <Route element={<TeacherProtectedRoute />}>
+                    <Route path="/teacher/dashboard" element={<TeacherDashboard />} />
+                    <Route path="/teacher/grade-entry" element={<GradeEntryPage />} />
+                    <Route path="/teacher/class-diary" element={<ClassDiaryPage />} />
                   </Route>
                   
                   {/* Add other protected routes here later */}
