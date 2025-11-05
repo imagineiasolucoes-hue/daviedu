@@ -1,11 +1,10 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Home, Users, Settings, LogOut, School, BookOpen, DollarSign, TrendingUp, TrendingDown, CalendarDays, FileText, UserCheck, ListChecks, HardDrive, ShoppingCart, HelpCircle, LayoutDashboard, ClipboardList, GraduationCap } from 'lucide-react';
+import { Home, Users, Settings, LogOut, School, BookOpen, DollarSign, TrendingUp, TrendingDown, CalendarDays, FileText, UserCheck, ListChecks, HardDrive, ShoppingCart, HelpCircle, LayoutDashboard, ClipboardList, GraduationCap, ChevronDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { cn } from '@/lib/utils';
 import { useProfile } from '@/hooks/useProfile';
-import HoverDropdownNavItem from './HoverDropdownNavItem'; // Importando o novo componente
 
 interface NavItemProps {
   to: string;
@@ -13,15 +12,16 @@ interface NavItemProps {
   label: string;
   variant?: 'default' | 'accent';
   onCloseSheet: () => void;
+  isSubItem?: boolean; // Para estilizar sub-itens
 }
 
 interface NavigationItem extends NavItemProps {
-  children?: NavigationItem[]; // Adicionado para aninhamento
+  children?: NavigationItem[];
 }
 
-const NavItem: React.FC<NavItemProps> = ({ to, icon, label, variant = 'default', onCloseSheet }) => {
+const NavItem: React.FC<NavItemProps> = ({ to, icon, label, variant = 'default', onCloseSheet, isSubItem = false }) => {
   const location = useLocation();
-  const isActive = location.pathname === to;
+  const isActive = location.pathname === to || (isSubItem && location.pathname.startsWith(to));
 
   const activeClasses = variant === 'accent'
     ? "bg-accent text-accent-foreground hover:bg-accent/90"
@@ -35,6 +35,7 @@ const NavItem: React.FC<NavItemProps> = ({ to, icon, label, variant = 'default',
       onClick={onCloseSheet}
       className={cn(
         "flex items-center gap-3 rounded-lg px-3 py-2 transition-all",
+        isSubItem && "ml-4", // Indentação para sub-itens
         isActive ? activeClasses : inactiveClasses
       )}
     >
@@ -53,7 +54,19 @@ interface SidebarProps {
 }
 
 const Sidebar: React.FC<SidebarProps> = ({ isSuperAdmin, displayName, roleDisplay, onLogout, onCloseSheet }) => {
+  const location = useLocation();
   const { isTeacher } = useProfile();
+  const [openParent, setOpenParent] = useState<string | null>(null); // Estado para controlar qual item pai está aberto
+
+  // Função para alternar a abertura de um item pai
+  const toggleParent = (path: string) => {
+    setOpenParent(prev => (prev === path ? null : path));
+  };
+
+  // Determina se um item pai deve estar ativo (se sua rota ou qualquer sub-rota estiver ativa)
+  const isParentActive = (item: NavigationItem) => {
+    return location.pathname === item.to || (item.children && item.children.some(child => location.pathname.startsWith(child.to)));
+  };
 
   const adminNavItems: NavigationItem[] = [
     { to: "/dashboard", icon: <Home className="h-5 w-5" />, label: "Dashboard", onCloseSheet },
@@ -62,19 +75,19 @@ const Sidebar: React.FC<SidebarProps> = ({ isSuperAdmin, displayName, roleDispla
       to: "/teachers",
       icon: <UserCheck className="h-5 w-5" />,
       label: "Professores",
-      onCloseSheet,
+      onCloseSheet: () => toggleParent("/teachers"), // Alterna ao clicar
       children: [
-        { to: "/teacher/grade-entry", icon: <GraduationCap className="h-5 w-5" />, label: "Lançar Notas", onCloseSheet },
-        { to: "/teacher/class-diary", icon: <BookOpen className="h-5 w-5" />, label: "Diário de Classe", onCloseSheet },
+        { to: "/teacher/grade-entry", icon: <GraduationCap className="h-5 w-5" />, label: "Lançar Notas", onCloseSheet, isSubItem: true },
+        { to: "/teacher/class-diary", icon: <BookOpen className="h-5 w-5" />, label: "Diário de Classe", onCloseSheet, isSubItem: true },
       ],
     },
     {
       to: "/classes",
       icon: <BookOpen className="h-5 w-5" />,
       label: "Turmas",
-      onCloseSheet,
+      onCloseSheet: () => toggleParent("/classes"),
       children: [
-        { to: "/classes/courses", icon: <ListChecks className="h-5 w-5" />, label: "Cursos/Séries", onCloseSheet },
+        { to: "/classes/courses", icon: <ListChecks className="h-5 w-5" />, label: "Cursos/Séries", onCloseSheet, isSubItem: true },
       ],
     },
     { to: "/calendar", icon: <CalendarDays className="h-5 w-5" />, label: "Calendário", onCloseSheet },
@@ -83,10 +96,10 @@ const Sidebar: React.FC<SidebarProps> = ({ isSuperAdmin, displayName, roleDispla
       to: "/finance",
       icon: <DollarSign className="h-5 w-5" />,
       label: "Financeiro",
-      onCloseSheet,
+      onCloseSheet: () => toggleParent("/finance"),
       children: [
-        { to: "/revenues", icon: <TrendingUp className="h-5 w-5" />, label: "Receitas", onCloseSheet },
-        { to: "/expenses", icon: <TrendingDown className="h-5 w-5" />, label: "Despesas", onCloseSheet },
+        { to: "/revenues", icon: <TrendingUp className="h-5 w-5" />, label: "Receitas", onCloseSheet, isSubItem: true },
+        { to: "/expenses", icon: <TrendingDown className="h-5 w-5" />, label: "Despesas", onCloseSheet, isSubItem: true },
       ],
     },
     { to: "/settings", icon: <Settings className="h-5 w-5" />, label: "Configurações", onCloseSheet },
@@ -129,22 +142,40 @@ const Sidebar: React.FC<SidebarProps> = ({ isSuperAdmin, displayName, roleDispla
 
       <div className="flex-1 overflow-y-auto py-2">
         <nav className="grid items-start gap-1 text-sm font-medium">
-          {navigationItems.map((item) => {
-            if (item.children && item.children.length > 0) {
-              return (
-                <HoverDropdownNavItem
-                  key={item.to}
-                  to={item.to}
-                  icon={item.icon}
-                  label={item.label}
-                  children={item.children}
-                  onCloseSheet={onCloseSheet}
-                />
-              );
-            } else {
-              return <NavItem key={item.to} {...item} onCloseSheet={onCloseSheet} />;
-            }
-          })}
+          {navigationItems.map((item) => (
+            <React.Fragment key={item.to}>
+              {item.children && item.children.length > 0 ? (
+                // Renderiza o item pai com um botão de toggle
+                <button
+                  onClick={() => item.onCloseSheet()} // Chama a função de toggle do item
+                  className={cn(
+                    "flex items-center justify-between w-full gap-3 rounded-lg px-3 py-2 transition-all",
+                    isParentActive(item)
+                      ? "bg-sidebar-primary text-sidebar-primary-foreground hover:bg-sidebar-primary/90"
+                      : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+                  )}
+                >
+                  <div className="flex items-center gap-3">
+                    {item.icon}
+                    {item.label}
+                  </div>
+                  <ChevronDown className={cn("h-4 w-4 transition-transform", openParent === item.to && "rotate-180")} />
+                </button>
+              ) : (
+                // Renderiza um item normal
+                <NavItem {...item} />
+              )}
+
+              {/* Renderiza os filhos se o item pai estiver aberto ou se a rota de um filho estiver ativa */}
+              {(openParent === item.to || (item.children && item.children.some(child => location.pathname.startsWith(child.to)))) && item.children && (
+                <div className="grid gap-1 pl-4">
+                  {item.children.map((child) => (
+                    <NavItem key={child.to} {...child} />
+                  ))}
+                </div>
+              )}
+            </React.Fragment>
+          ))}
         </nav>
       </div>
 
