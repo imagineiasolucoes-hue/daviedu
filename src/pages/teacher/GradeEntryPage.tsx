@@ -321,7 +321,7 @@ const GradeEntryPage: React.FC = () => {
                 <Select 
                   onValueChange={(value) => form.setValue('subjectName', value)} 
                   value={form.watch('subjectName')}
-                  disabled={!selectedClassId || isLoadingSubjects}
+                  disabled={!selectedClassId || isLoadingSubjects || (subjects && subjects.length === 0)}
                 >
                   <SelectTrigger id="subjectName">
                     <SelectValue placeholder={isLoadingSubjects ? "Carregando matérias..." : "Selecione a matéria"} />
@@ -335,7 +335,7 @@ const GradeEntryPage: React.FC = () => {
                 {form.formState.errors.subjectName && <p className="text-sm text-destructive">{form.formState.errors.subjectName.message}</p>}
                 {(!subjects || subjects.length === 0) && !isLoadingSubjects && (
                   <p className="text-xs text-muted-foreground mt-1">
-                      Nenhuma matéria cadastrada.
+                      Nenhuma matéria cadastrada. Cadastre uma matéria nas configurações.
                   </p>
                 )}
               </div>
@@ -345,7 +345,7 @@ const GradeEntryPage: React.FC = () => {
                 <Select 
                   onValueChange={(value) => form.setValue('assessmentType', value === "none" ? null : value)} 
                   value={form.watch('assessmentType') || 'none'}
-                  disabled={!selectedClassId || isLoadingAssessmentTypes}
+                  disabled={!selectedClassId || isLoadingAssessmentTypes || (assessmentTypes && assessmentTypes.length === 0)}
                 >
                   <SelectTrigger id="assessmentType">
                     <SelectValue placeholder={isLoadingAssessmentTypes ? "Carregando tipos..." : "Selecione o tipo"} />
@@ -360,7 +360,7 @@ const GradeEntryPage: React.FC = () => {
                 {form.formState.errors.assessmentType && <p className="text-sm text-destructive">{form.formState.errors.assessmentType.message}</p>}
                 {(!assessmentTypes || assessmentTypes.length === 0) && !isLoadingAssessmentTypes && (
                   <p className="text-xs text-muted-foreground mt-1">
-                      Nenhum tipo de avaliação cadastrado.
+                      Nenhum tipo de avaliação cadastrado. Cadastre um tipo nas configurações.
                   </p>
                 )}
               </div>
@@ -370,7 +370,7 @@ const GradeEntryPage: React.FC = () => {
                 <Select 
                   onValueChange={(value) => form.setValue('period', value)} 
                   value={form.watch('period')}
-                  disabled={!selectedClassId || isLoadingAcademicPeriods}
+                  disabled={!selectedClassId || isLoadingAcademicPeriods || (academicPeriods && academicPeriods.length === 0)}
                 >
                   <SelectTrigger id="period">
                     <SelectValue placeholder={isLoadingAcademicPeriods ? "Carregando períodos..." : "Selecione o período"} />
@@ -384,7 +384,7 @@ const GradeEntryPage: React.FC = () => {
                 {form.formState.errors.period && <p className="text-sm text-destructive">{form.formState.errors.period.message}</p>}
                 {(!academicPeriods || academicPeriods.length === 0) && !isLoadingAcademicPeriods && (
                   <p className="text-xs text-muted-foreground mt-1">
-                      Nenhum período acadêmico cadastrado.
+                      Nenhum período acadêmico cadastrado. Cadastre um período nas configurações.
                   </p>
                 )}
               </div>
