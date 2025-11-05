@@ -36,10 +36,19 @@ interface TeacherClassAssignment {
   classes: Class | null;
 }
 
-interface TeacherProfile {
+interface Subject {
   id: string;
-  full_name: string;
-  teacher_classes: TeacherClassAssignment[];
+  name: string;
+}
+
+interface AssessmentType {
+  id: string;
+  name: string;
+}
+
+interface AcademicPeriod {
+  id: string;
+  name: string;
 }
 
 // --- Schemas de Validação ---
@@ -55,20 +64,6 @@ const gradeEntrySchema = z.object({
 });
 
 type GradeEntryFormData = z.infer<typeof gradeEntrySchema>;
-
-// --- Listas de Opções (Hardcoded por enquanto) ---
-const availableSubjects = [
-  'Português', 'Matemática', 'História', 'Geografia', 'Ciências',
-  'Inglês', 'Artes', 'Educação Física', 'Filosofia', 'Sociologia', 'Química', 'Física', 'Biologia'
-];
-
-const assessmentTypes = [
-  'Prova', 'Trabalho', 'Participação', 'Projeto', 'Recuperação', 'Outro'
-];
-
-const academicPeriods = [
-  '1º Bimestre', '2º Bimestre', '3º Bimestre', '4º Bimestre', 'Final'
-];
 
 // --- Funções de Busca de Dados ---
 const fetchTeacherAssignedClasses = async (employeeId: string, tenantId: string): Promise<TeacherClassAssignment[]> => {
@@ -98,6 +93,36 @@ const fetchStudentsByClass = async (classId: string, tenantId: string): Promise<
     .eq('class_id', classId)
     .eq('tenant_id', tenantId)
     .order('full_name');
+  if (error) throw new Error(error.message);
+  return data;
+};
+
+const fetchSubjects = async (tenantId: string): Promise<Subject[]> => {
+  const { data, error } = await supabase
+    .from('subjects')
+    .select('id, name')
+    .eq('tenant_id', tenantId)
+    .order('name');
+  if (error) throw new Error(error.message);
+  return data;
+};
+
+const fetchAssessmentTypes = async (tenantId: string): Promise<AssessmentType[]> => {
+  const { data, error } = await supabase
+    .from('assessment_types')
+    .select('id, name')
+    .eq('tenant_id', tenantId)
+    .order('name');
+  if (error) throw new Error(error.message);
+  return data;
+};
+
+const fetchAcademicPeriods = async (tenantId: string): Promise<AcademicPeriod[]> => {
+  const { data, error } = await supabase
+    .from('academic_periods')
+    .select('id, name')
+    .eq('tenant_id', tenantId)
+    .order('name');
   if (error) throw new Error(error.message);
   return data;
 };
@@ -133,6 +158,25 @@ const GradeEntryPage: React.FC = () => {
     queryKey: ['studentsInClass', selectedClassId, tenantId],
     queryFn: () => fetchStudentsByClass(selectedClassId, tenantId!),
     enabled: !!selectedClassId && !!tenantId,
+  });
+
+  // Fetch dynamic lists from database
+  const { data: subjects, isLoading: isLoadingSubjects } = useQuery<Subject[], Error>({
+    queryKey: ['subjects', tenantId],
+    queryFn: () => fetchSubjects(tenantId!),
+    enabled: !!tenantId,
+  });
+
+  const { data: assessmentTypes, isLoading: isLoadingAssessmentTypes } = useQuery<AssessmentType[], Error>({
+    queryKey: ['assessmentTypes', tenantId],
+    queryFn: () => fetchAssessmentTypes(tenantId!),
+    enabled: !!tenantId,
+  });
+
+  const { data: academicPeriods, isLoading: isLoadingAcademicPeriods } = useQuery<AcademicPeriod[], Error>({
+    queryKey: ['academicPeriods', tenantId],
+    queryFn: () => fetchAcademicPeriods(tenantId!),
+    enabled: !!tenantId,
   });
 
   // Update form's grades array when students data changes
@@ -200,7 +244,7 @@ const GradeEntryPage: React.FC = () => {
     }
   };
 
-  const isLoading = isProfileLoading || isLoadingTeacherClasses || isLoadingStudents;
+  const isLoading = isProfileLoading || isLoadingTeacherClasses || isLoadingStudents || isLoadingSubjects || isLoadingAssessmentTypes || isLoadingAcademicPeriods;
 
   if (isLoading) {
     return (
@@ -265,6 +309,11 @@ const GradeEntryPage: React.FC = () => {
                   </SelectContent>
                 </Select>
                 {form.formState.errors.classId && <p className="text-sm text-destructive">{form.formState.errors.classId.message}</p>}
+                {(!teacherClasses || teacherClasses.length === 0) && !isLoadingTeacherClasses && (
+                  <p className="text-xs text-muted-foreground mt-1">
+                      Nenhuma turma atribuída a você.
+                  </p>
+                )}
               </div>
 
               <div className="space-y-2">
@@ -272,18 +321,23 @@ const GradeEntryPage: React.FC = () => {
                 <Select 
                   onValueChange={(value) => form.setValue('subjectName', value)} 
                   value={form.watch('subjectName')}
-                  disabled={!selectedClassId}
+                  disabled={!selectedClassId || isLoadingSubjects}
                 >
                   <SelectTrigger id="subjectName">
-                    <SelectValue placeholder="Selecione a matéria" />
+                    <SelectValue placeholder={isLoadingSubjects ? "Carregando matérias..." : "Selecione a matéria"} />
                   </SelectTrigger>
                   <SelectContent>
-                    {availableSubjects.map(subject => (
-                      <SelectItem key={subject} value={subject}>{subject}</SelectItem>
+                    {subjects?.map(subject => (
+                      <SelectItem key={subject.id} value={subject.name}>{subject.name}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
                 {form.formState.errors.subjectName && <p className="text-sm text-destructive">{form.formState.errors.subjectName.message}</p>}
+                {(!subjects || subjects.length === 0) && !isLoadingSubjects && (
+                  <p className="text-xs text-muted-foreground mt-1">
+                      Nenhuma matéria cadastrada.
+                  </p>
+                )}
               </div>
 
               <div className="space-y-2">
@@ -291,18 +345,23 @@ const GradeEntryPage: React.FC = () => {
                 <Select 
                   onValueChange={(value) => form.setValue('assessmentType', value)} 
                   value={form.watch('assessmentType')}
-                  disabled={!selectedClassId}
+                  disabled={!selectedClassId || isLoadingAssessmentTypes}
                 >
                   <SelectTrigger id="assessmentType">
-                    <SelectValue placeholder="Selecione o tipo" />
+                    <SelectValue placeholder={isLoadingAssessmentTypes ? "Carregando tipos..." : "Selecione o tipo"} />
                   </SelectTrigger>
                   <SelectContent>
-                    {assessmentTypes.map(type => (
-                      <SelectItem key={type} value={type}>{type}</SelectItem>
+                    {assessmentTypes?.map(type => (
+                      <SelectItem key={type.id} value={type.name}>{type.name}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
                 {form.formState.errors.assessmentType && <p className="text-sm text-destructive">{form.formState.errors.assessmentType.message}</p>}
+                {(!assessmentTypes || assessmentTypes.length === 0) && !isLoadingAssessmentTypes && (
+                  <p className="text-xs text-muted-foreground mt-1">
+                      Nenhum tipo de avaliação cadastrado.
+                  </p>
+                )}
               </div>
 
               <div className="space-y-2">
@@ -310,18 +369,23 @@ const GradeEntryPage: React.FC = () => {
                 <Select 
                   onValueChange={(value) => form.setValue('period', value)} 
                   value={form.watch('period')}
-                  disabled={!selectedClassId}
+                  disabled={!selectedClassId || isLoadingAcademicPeriods}
                 >
                   <SelectTrigger id="period">
-                    <SelectValue placeholder="Selecione o período" />
+                    <SelectValue placeholder={isLoadingAcademicPeriods ? "Carregando períodos..." : "Selecione o período"} />
                   </SelectTrigger>
                   <SelectContent>
-                    {academicPeriods.map(period => (
-                      <SelectItem key={period} value={period}>{period}</SelectItem>
+                    {academicPeriods?.map(period => (
+                      <SelectItem key={period.id} value={period.name}>{period.name}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
                 {form.formState.errors.period && <p className="text-sm text-destructive">{form.formState.errors.period.message}</p>}
+                {(!academicPeriods || academicPeriods.length === 0) && !isLoadingAcademicPeriods && (
+                  <p className="text-xs text-muted-foreground mt-1">
+                      Nenhum período acadêmico cadastrado.
+                  </p>
+                )}
               </div>
             </div>
 
