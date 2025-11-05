@@ -83,7 +83,6 @@ const fetchClassesForGradeEntry = async (tenantId: string, employeeId: string | 
     if (error) throw new Error(error.message);
     return data as unknown as Class[];
   } else if (isTeacher && employeeId) {
-    // Professores veem apenas as turmas atribuídas a eles
     const { data, error } = await supabase
       .from('teacher_classes')
       .select(`
@@ -100,8 +99,12 @@ const fetchClassesForGradeEntry = async (tenantId: string, employeeId: string | 
       .eq('employee_id', employeeId);
 
     if (error) throw new Error(error.message);
+    
+    // Explicitamente tipar o resultado da consulta antes de mapear
+    const typedData: TeacherClassAssignment[] = data as TeacherClassAssignment[];
+
     // Mapeia para o formato Class[] para consistência
-    return data.map(tc => tc.classes).filter(Boolean) as Class[];
+    return typedData.map(tc => tc.classes).filter(Boolean) as Class[];
   }
   return [];
 };
