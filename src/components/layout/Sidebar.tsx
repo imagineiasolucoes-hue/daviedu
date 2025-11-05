@@ -10,15 +10,16 @@ interface NavItemProps {
   icon: React.ReactNode;
   label: string;
   variant?: 'default' | 'accent'; // Adicionado a propriedade variant
+  onCloseSheet: () => void; // Nova prop para fechar a sheet
 }
 
 // Definindo o tipo para os itens de navegação, incluindo isSubItem
-interface NavigationItem extends NavItemProps {
+interface NavigationItem extends Omit<NavItemProps, 'onCloseSheet'> { // Omitindo onCloseSheet aqui, será adicionado no map
   isSubItem?: boolean;
   parentPath?: string; // Adicionado para vincular sub-itens ao pai
 }
 
-const NavItem: React.FC<NavItemProps> = ({ to, icon, label, variant = 'default' }) => {
+const NavItem: React.FC<NavItemProps> = ({ to, icon, label, variant = 'default', onCloseSheet }) => {
   const location = useLocation();
   // Verifica se a rota atual é exatamente a rota do item ou se é uma sub-rota (para manter o pai ativo)
   const isActive = location.pathname === to || (to === '/classes' && location.pathname.startsWith('/classes/'));
@@ -32,6 +33,7 @@ const NavItem: React.FC<NavItemProps> = ({ to, icon, label, variant = 'default' 
   return (
     <Link
       to={to}
+      onClick={onCloseSheet} // Chama onCloseSheet ao clicar
       className={cn(
         "flex items-center gap-3 rounded-lg px-3 py-2 transition-all",
         isActive ? activeClasses : inactiveClasses
@@ -48,9 +50,10 @@ interface SidebarProps {
   displayName: string;
   roleDisplay: string;
   onLogout: () => void;
+  onCloseSheet: () => void; // Nova prop para fechar a sheet
 }
 
-const Sidebar: React.FC<SidebarProps> = ({ isSuperAdmin, displayName, roleDisplay, onLogout }) => {
+const Sidebar: React.FC<SidebarProps> = ({ isSuperAdmin, displayName, roleDisplay, onLogout, onCloseSheet }) => {
   const location = useLocation();
   const isClassesActive = location.pathname.startsWith('/classes');
 
@@ -97,7 +100,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isSuperAdmin, displayName, roleDispla
           {navigationItems.map((item) => {
             // Renderiza o item principal
             if (!item.isSubItem) {
-              return <NavItem key={item.to} {...item} />;
+              return <NavItem key={item.to} {...item} onCloseSheet={onCloseSheet} />;
             }
             
             // Renderiza o sub-item se o item pai estiver ativo (Turmas)
@@ -106,6 +109,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isSuperAdmin, displayName, roleDispla
                     <Link
                         key={item.to}
                         to={item.to}
+                        onClick={onCloseSheet} // Chama onCloseSheet ao clicar
                         className={cn(
                             "flex items-center gap-3 rounded-lg px-3 py-2 transition-all ml-4",
                             location.pathname === item.to
@@ -131,7 +135,10 @@ const Sidebar: React.FC<SidebarProps> = ({ isSuperAdmin, displayName, roleDispla
         <Button 
           variant="ghost" 
           className="w-full justify-start mt-2 text-destructive hover:bg-destructive/10 hover:text-destructive"
-          onClick={onLogout}
+          onClick={() => {
+            onLogout();
+            onCloseSheet(); // Fecha a sheet também ao deslogar
+          }}
         >
           <LogOut className="mr-2 h-4 w-4" />
           Sair

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Outlet } from 'react-router-dom';
 import { Menu, LogOut, Home, Users, Settings, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -15,6 +15,7 @@ import { useBackupMonitoring } from '@/hooks/useBackupMonitoring';
 const AppLayout: React.FC = () => {
   const { user } = useAuth();
   const { profile, isLoading, isSuperAdmin } = useProfile();
+  const [isSheetOpen, setIsSheetOpen] = useState(false); // Estado para controlar a abertura da Sheet
 
   // Ativa o monitoramento de backup para gerar alertas proativos
   useBackupMonitoring();
@@ -38,14 +39,20 @@ const AppLayout: React.FC = () => {
     <div className="flex min-h-screen flex-col bg-background lg:flex-row">
       {/* Desktop Sidebar */}
       <div className="hidden lg:block w-64 flex-shrink-0">
-        <Sidebar isSuperAdmin={isSuperAdmin} displayName={displayName} roleDisplay={roleDisplay} onLogout={handleLogout} />
+        <Sidebar 
+          isSuperAdmin={isSuperAdmin} 
+          displayName={displayName} 
+          roleDisplay={roleDisplay} 
+          onLogout={handleLogout} 
+          onCloseSheet={() => {}} // Não faz nada no desktop, mas mantém a prop
+        />
       </div>
 
       {/* Main Content Area */}
       <div className="flex flex-col flex-grow">
         {/* Header for Mobile/Tablet */}
         <header className="sticky top-0 z-30 flex h-14 items-center gap-4 border-b bg-background px-4 sm:static sm:h-auto sm:border-0 sm:bg-transparent lg:hidden print-hidden">
-          <Sheet>
+          <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}> {/* Controla a Sheet com o estado */}
             <SheetTrigger asChild>
               <Button size="icon" variant="outline">
                 <Menu className="h-5 w-5" />
@@ -58,7 +65,13 @@ const AppLayout: React.FC = () => {
                 <SheetTitle>Menu de Navegação</SheetTitle>
                 <SheetDescription>Navegue pelas seções do aplicativo.</SheetDescription>
               </SheetHeader>
-              <Sidebar isSuperAdmin={isSuperAdmin} displayName={displayName} roleDisplay={roleDisplay} onLogout={handleLogout} />
+              <Sidebar 
+                isSuperAdmin={isSuperAdmin} 
+                displayName={displayName} 
+                roleDisplay={roleDisplay} 
+                onLogout={handleLogout} 
+                onCloseSheet={() => setIsSheetOpen(false)} // Fecha a Sheet ao clicar em um item
+              />
             </SheetContent>
           </Sheet>
           <h1 className="text-xl font-semibold">Davi EDU</h1>
