@@ -16,7 +16,8 @@ import { Loader2, ClipboardList, GraduationCap, BookOpen } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 
 // --- Tipos de Dados ---
-interface CourseNameOnly {
+interface Course {
+  id: string;
   name: string;
 }
 
@@ -25,7 +26,7 @@ interface Class {
   name: string;
   school_year: number;
   course_id: string | null;
-  courses: CourseNameOnly[] | null; 
+  courses: Course[] | null; // CORRIGIDO: Agora é um array de Course ou null
 }
 
 interface Student {
@@ -38,7 +39,7 @@ interface Student {
 interface SupabaseTeacherClassRawItem {
   class_id: string;
   period: 'Manhã' | 'Tarde' | 'Noite' | 'Integral';
-  classes: Class[] | null; // CORRIGIDO: Espera um array de Class, não um único objeto Class
+  classes: Class[] | null; // CORRIGIDO: Agora é um array de Class ou null
 }
 
 interface Subject {
@@ -58,6 +59,7 @@ interface AcademicPeriod {
 
 // --- Schemas de Validação ---
 const gradeEntrySchema = z.object({
+  courseId: z.string().uuid("Selecione uma série/ano.").optional().nullable(),
   classId: z.string().uuid("Selecione uma turma."),
   subjectName: z.string().min(1, "Selecione uma matéria."),
   assessmentType: z.string().optional().nullable(), 
@@ -71,6 +73,16 @@ const gradeEntrySchema = z.object({
 type GradeEntryFormData = z.infer<typeof gradeEntrySchema>;
 
 // --- Funções de Busca de Dados ---
+const fetchCourses = async (tenantId: string): Promise<Course[]> => {
+  const { data, error } = await supabase
+    .from('courses')
+    .select('id, name')
+    .eq('tenant_id', tenantId)
+    .order('name');
+  if (error) throw new Error(error.message);
+  return data;
+};
+
 const fetchClassesForGradeEntry = async (tenantId: string, employeeId: string | undefined, isTeacher: boolean, isAdmin: boolean): Promise<Class[]> => {
   if (isAdmin) {
     const { data, error } = await supabase
@@ -80,7 +92,7 @@ const fetchClassesForGradeEntry = async (tenantId: string, employeeId: string | 
         name,
         school_year,
         course_id,
-        courses (name)
+        courses (id, name) // CORRIGIDO: Adicionado 'id' para consistência
       `)
       .eq('tenant_id', tenantId)
       .order('name');
@@ -97,7 +109,7 @@ const fetchClassesForGradeEntry = async (tenantId: string, employeeId: string | 
           name,
           school_year,
           course_id,
-          courses (name)
+          courses (id, name)
         )
       `)
       .eq('employee_id', employeeId);
@@ -106,8 +118,8 @@ const fetchClassesForGradeEntry = async (tenantId: string, employeeId: string | 
     
     const rawTeacherClasses: SupabaseTeacherClassRawItem[] = data as SupabaseTeacherClassRawItem[];
 
-    // Mapeia para o formato Class[] para consistência, extraindo o primeiro item do array 'classes'
-    return rawTeacherClasses.map(tc => tc.classes?.[0]).filter(Boolean) as Class[];
+    // Mapeia para o formato Class[] para consistência, usando flatMap para achatar o array de arrays 'classes'
+    return rawTeacherClasses.flatMap(tc => tc.classes || []).filter(Boolean) as Class[];
   }
   return [];
 };
@@ -162,6 +174,7 @@ const GradeEntryPage: React.FC = () => {
   const form = useForm<GradeEntryFormData>({
     resolver: zodResolver(gradeEntrySchema),
     defaultValues: {
+      courseId: null,
       classId: '',
       subjectName: '',
       assessmentType: null, 
@@ -170,13 +183,34 @@ const GradeEntryPage: React.FC = () => {
     },
   });
 
+  const selectedCourseId = form.watch('courseId');
   const selectedClassId = form.watch('classId');
 
-  const { data: classesForEntry, isLoading: isLoadingClassesForEntry } = useQuery<Class[], Error>({
+  const { data: courses, isLoading: isLoadingCourses } = useQuery<Course[], Error>({
+    queryKey: ['coursesForGradeEntry', tenantId],
+    queryFn: () => fetchCourses(tenantId!),
+    enabled: !!tenantId,
+  });
+
+  const { data: allClassesForEntry, isLoading: isLoadingClassesForEntry } = useQuery<Class[], Error>({
     queryKey: ['classesForGradeEntry', tenantId, employeeId, isTeacher, isAdmin],
     queryFn: () => fetchClassesForGradeEntry(tenantId!, employeeId, isTeacher, isAdmin),
     enabled: !!tenantId && (isTeacher || isAdmin),
   });
+
+  // Filtra as turmas com base no curso selecionado
+  const classesForEntry = useMemo(() => {
+    if (!allClassesForEntry) return [];
+    if (!selectedCourseId) return allClassesForEntry;
+    return allClassesForEntry.filter(c => c.course_id === selectedCourseId);
+  }, [allClassesForEntry, selectedCourseId]);
+
+  useEffect(() => {
+    // Resetar classId se o curso mudar
+    if (selectedCourseId) {
+      form.setValue('classId', '');
+    }
+  }, [selectedCourseId, form]);
 
   const { data: students, isLoading: isLoadingStudents } = useQuery<Student[], Error>({
     queryKey: ['studentsInClass', selectedClassId, tenantId],
@@ -252,6 +286,7 @@ const GradeEntryPage: React.FC = () => {
       toast.success("Notas lançadas com sucesso!");
       queryClient.invalidateQueries({ queryKey: ['studentGrades'] }); 
       form.reset({
+        courseId: data.courseId,
         classId: data.classId, 
         subjectName: data.subjectName,
         assessmentType: null, 
@@ -266,7 +301,7 @@ const GradeEntryPage: React.FC = () => {
     }
   };
 
-  const isLoading = isProfileLoading || isLoadingClassesForEntry || isLoadingStudents || isLoadingSubjects || isLoadingAssessmentTypes || isLoadingAcademicPeriods;
+  const isLoading = isProfileLoading || isLoadingCourses || isLoadingClassesForEntry || isLoadingStudents || isLoadingSubjects || isLoadingAssessmentTypes || isLoadingAcademicPeriods;
 
   if (isLoading) {
     return (
@@ -310,14 +345,40 @@ const GradeEntryPage: React.FC = () => {
         </CardHeader>
         <CardContent>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-            {/* Seleção de Turma, Matéria, Tipo e Período */}
+            {/* Seleção de Série/Ano, Turma, Matéria, Tipo e Período */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              {/* CAMPO: Série/Ano */}
+              <div className="space-y-2">
+                <Label htmlFor="courseId">Série / Ano</Label>
+                <Select 
+                  onValueChange={(value) => form.setValue('courseId', value === "none" ? null : value)} 
+                  value={form.watch('courseId') || 'none'}
+                  disabled={isLoadingCourses || (courses && courses.length === 0)}
+                >
+                  <SelectTrigger id="courseId">
+                    <SelectValue placeholder={isLoadingCourses ? "Carregando séries/anos..." : "Selecione a série/ano"} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">Todas as Séries/Anos</SelectItem>
+                    {courses?.map(c => (
+                      <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {form.formState.errors.courseId && <p className="text-sm text-destructive">{form.formState.errors.courseId.message}</p>}
+                {(!courses || courses.length === 0) && !isLoadingCourses && (
+                  <p className="text-xs text-muted-foreground mt-1">
+                      Nenhuma série/ano cadastrada. Cadastre uma série/ano nas configurações.
+                  </p>
+                )}
+              </div>
+
               <div className="space-y-2">
                 <Label htmlFor="classId">Turma</Label>
                 <Select 
                   onValueChange={(value) => form.setValue('classId', value)} 
                   value={form.watch('classId')}
-                  disabled={isLoadingClassesForEntry}
+                  disabled={isLoadingClassesForEntry || classesForEntry.length === 0}
                 >
                   <SelectTrigger id="classId">
                     <SelectValue placeholder={isLoadingClassesForEntry ? "Carregando turmas..." : "Selecione a turma"} />
