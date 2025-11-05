@@ -38,7 +38,7 @@ interface Student {
 interface SupabaseTeacherClassRawItem {
   class_id: string;
   period: 'Manhã' | 'Tarde' | 'Noite' | 'Integral';
-  classes: Class | null; // Corrigido: Espera um único objeto Class, não um array
+  classes: Class[] | null; // CORRIGIDO: Espera um array de Class, não um único objeto Class
 }
 
 interface Subject {
@@ -106,8 +106,8 @@ const fetchClassesForGradeEntry = async (tenantId: string, employeeId: string | 
     
     const rawTeacherClasses: SupabaseTeacherClassRawItem[] = data as SupabaseTeacherClassRawItem[];
 
-    // Mapeia para o formato Class[] para consistência, extraindo diretamente o objeto 'classes'
-    return rawTeacherClasses.map(tc => tc.classes).filter(Boolean) as Class[];
+    // Mapeia para o formato Class[] para consistência, extraindo o primeiro item do array 'classes'
+    return rawTeacherClasses.map(tc => tc.classes?.[0]).filter(Boolean) as Class[];
   }
   return [];
 };
