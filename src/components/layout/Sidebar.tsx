@@ -4,37 +4,35 @@ import { Home, Users, Settings, LogOut, School, BookOpen, DollarSign, TrendingUp
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { cn } from '@/lib/utils';
-import { useProfile } from '@/hooks/useProfile'; // Importar useProfile
+import { useProfile } from '@/hooks/useProfile';
+import HoverDropdownNavItem from './HoverDropdownNavItem'; // Importando o novo componente
 
 interface NavItemProps {
   to: string;
   icon: React.ReactNode;
   label: string;
-  variant?: 'default' | 'accent'; // Adicionado a propriedade variant
-  onCloseSheet: () => void; // Nova prop para fechar a sheet
+  variant?: 'default' | 'accent';
+  onCloseSheet: () => void;
 }
 
-// Definindo o tipo para os itens de navegação, incluindo isSubItem
-interface NavigationItem extends Omit<NavItemProps, 'onCloseSheet'> { // Omitindo onCloseSheet aqui, será adicionado no map
-  isSubItem?: boolean;
-  parentPath?: string; // Adicionado para vincular sub-itens ao pai
+interface NavigationItem extends NavItemProps {
+  children?: NavigationItem[]; // Adicionado para aninhamento
 }
 
 const NavItem: React.FC<NavItemProps> = ({ to, icon, label, variant = 'default', onCloseSheet }) => {
   const location = useLocation();
-  // Verifica se a rota atual é exatamente a rota do item ou se é uma sub-rota (para manter o pai ativo)
-  const isActive = location.pathname === to || (to === '/classes' && location.pathname.startsWith('/classes/')) || (to === '/teachers' && location.pathname.startsWith('/teacher/'));
+  const isActive = location.pathname === to;
 
   const activeClasses = variant === 'accent'
-    ? "bg-accent text-accent-foreground hover:bg-accent/90" // Estilo laranja para destaque
-    : "bg-sidebar-primary text-sidebar-primary-foreground hover:bg-sidebar-primary/90"; // Estilo padrão azul
+    ? "bg-accent text-accent-foreground hover:bg-accent/90"
+    : "bg-sidebar-primary text-sidebar-primary-foreground hover:bg-sidebar-primary/90";
 
   const inactiveClasses = "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground";
 
   return (
     <Link
       to={to}
-      onClick={onCloseSheet} // Chama onCloseSheet ao clicar
+      onClick={onCloseSheet}
       className={cn(
         "flex items-center gap-3 rounded-lg px-3 py-2 transition-all",
         isActive ? activeClasses : inactiveClasses
@@ -51,48 +49,63 @@ interface SidebarProps {
   displayName: string;
   roleDisplay: string;
   onLogout: () => void;
-  onCloseSheet: () => void; // Nova prop para fechar a sheet
+  onCloseSheet: () => void;
 }
 
 const Sidebar: React.FC<SidebarProps> = ({ isSuperAdmin, displayName, roleDisplay, onLogout, onCloseSheet }) => {
-  const location = useLocation();
-  const { isTeacher, isAdmin } = useProfile(); // Usar o hook useProfile para verificar se é professor e admin
+  const { isTeacher } = useProfile();
 
   const adminNavItems: NavigationItem[] = [
-    { to: "/dashboard", icon: <Home className="h-5 w-5" />, label: "Dashboard" },
-    // Secretaria
-    { to: "/students", icon: <Users className="h-5 w-5" />, label: "Alunos" },
-    { to: "/teachers", icon: <UserCheck className="h-5 w-5" />, label: "Professores" },
-    // Sub-itens de Professores
-    { to: "/teacher/grade-entry", icon: <GraduationCap className="h-5 w-5 ml-4" />, label: "Lançar Notas", isSubItem: true, parentPath: '/teachers' },
-    { to: "/teacher/class-diary", icon: <BookOpen className="h-5 w-5 ml-4" />, label: "Diário de Classe", isSubItem: true, parentPath: '/teachers' },
-    { to: "/classes", icon: <BookOpen className="h-5 w-5" />, label: "Turmas" },
-    // Sub-item de Turmas
-    { to: "/classes/courses", icon: <ListChecks className="h-5 w-5 ml-4" />, label: "Cursos/Séries", isSubItem: true, parentPath: '/classes' },
-    { to: "/calendar", icon: <CalendarDays className="h-5 w-5" />, label: "Calendário" },
-    { to: "/documents", icon: <FileText className="h-5 w-5" />, label: "Documentos" },
-    // Financeiro
-    { to: "/finance", icon: <DollarSign className="h-5 w-5" />, label: "Financeiro" },
-    { to: "/revenues", icon: <TrendingUp className="h-5 w-5 ml-4" />, label: "Receitas", isSubItem: true, parentPath: '/finance' },
-    { to: "/expenses", icon: <TrendingDown className="h-5 w-5 ml-4" />, label: "Despesas", isSubItem: true, parentPath: '/finance' },
-    // Geral
-    { to: "/settings", icon: <Settings className="h-5 w-5" />, label: "Configurações" },
-    { to: "/faq", icon: <HelpCircle className="h-5 w-5" />, label: "Ajuda (FAQ)", variant: 'accent' }, // Destaque laranja para FAQ
+    { to: "/dashboard", icon: <Home className="h-5 w-5" />, label: "Dashboard", onCloseSheet },
+    { to: "/students", icon: <Users className="h-5 w-5" />, label: "Alunos", onCloseSheet },
+    {
+      to: "/teachers",
+      icon: <UserCheck className="h-5 w-5" />,
+      label: "Professores",
+      onCloseSheet,
+      children: [
+        { to: "/teacher/grade-entry", icon: <GraduationCap className="h-5 w-5" />, label: "Lançar Notas", onCloseSheet },
+        { to: "/teacher/class-diary", icon: <BookOpen className="h-5 w-5" />, label: "Diário de Classe", onCloseSheet },
+      ],
+    },
+    {
+      to: "/classes",
+      icon: <BookOpen className="h-5 w-5" />,
+      label: "Turmas",
+      onCloseSheet,
+      children: [
+        { to: "/classes/courses", icon: <ListChecks className="h-5 w-5" />, label: "Cursos/Séries", onCloseSheet },
+      ],
+    },
+    { to: "/calendar", icon: <CalendarDays className="h-5 w-5" />, label: "Calendário", onCloseSheet },
+    { to: "/documents", icon: <FileText className="h-5 w-5" />, label: "Documentos", onCloseSheet },
+    {
+      to: "/finance",
+      icon: <DollarSign className="h-5 w-5" />,
+      label: "Financeiro",
+      onCloseSheet,
+      children: [
+        { to: "/revenues", icon: <TrendingUp className="h-5 w-5" />, label: "Receitas", onCloseSheet },
+        { to: "/expenses", icon: <TrendingDown className="h-5 w-5" />, label: "Despesas", onCloseSheet },
+      ],
+    },
+    { to: "/settings", icon: <Settings className="h-5 w-5" />, label: "Configurações", onCloseSheet },
+    { to: "/faq", icon: <HelpCircle className="h-5 w-5" />, label: "Ajuda (FAQ)", variant: 'accent', onCloseSheet },
   ];
 
   const superAdminNavItems: NavigationItem[] = [
-    { to: "/dashboard", icon: <LayoutDashboard className="h-5 w-5" />, label: "Visão Geral" }, // Novo item de dashboard para Super Admin
-    { to: "/super-admin/tenants", icon: <School className="h-5 w-5" />, label: "Gestão de Escolas" },
-    { to: "/super-admin/users", icon: <Users className="h-5 w-5" />, label: "Gestão de Usuários" },
-    { to: "/backup", icon: <HardDrive className="h-5 w-5" />, label: "Backup Global" },
+    { to: "/dashboard", icon: <LayoutDashboard className="h-5 w-5" />, label: "Visão Geral", onCloseSheet },
+    { to: "/super-admin/tenants", icon: <School className="h-5 w-5" />, label: "Gestão de Escolas", onCloseSheet },
+    { to: "/super-admin/users", icon: <Users className="h-5 w-5" />, label: "Gestão de Usuários", onCloseSheet },
+    { to: "/backup", icon: <HardDrive className="h-5 w-5" />, label: "Backup Global", onCloseSheet },
   ];
 
   const teacherNavItems: NavigationItem[] = [
-    { to: "/teacher/dashboard", icon: <LayoutDashboard className="h-5 w-5" />, label: "Meu Painel" },
-    { to: "/teacher/grade-entry", icon: <GraduationCap className="h-5 w-5" />, label: "Lançar Notas" },
-    { to: "/teacher/class-diary", icon: <BookOpen className="h-5 w-5" />, label: "Diário de Classe" },
-    { to: "/settings", icon: <Settings className="h-5 w-5" />, label: "Configurações" },
-    { to: "/faq", icon: <HelpCircle className="h-5 w-5" />, label: "Ajuda (FAQ)", variant: 'accent' },
+    { to: "/teacher/dashboard", icon: <LayoutDashboard className="h-5 w-5" />, label: "Meu Painel", onCloseSheet },
+    { to: "/teacher/grade-entry", icon: <GraduationCap className="h-5 w-5" />, label: "Lançar Notas", onCloseSheet },
+    { to: "/teacher/class-diary", icon: <BookOpen className="h-5 w-5" />, label: "Diário de Classe", onCloseSheet },
+    { to: "/settings", icon: <Settings className="h-5 w-5" />, label: "Configurações", onCloseSheet },
+    { to: "/faq", icon: <HelpCircle className="h-5 w-5" />, label: "Ajuda (FAQ)", variant: 'accent', onCloseSheet },
   ];
 
   let navigationItems: NavigationItem[];
@@ -100,7 +113,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isSuperAdmin, displayName, roleDispla
     navigationItems = superAdminNavItems;
   } else if (isTeacher) {
     navigationItems = teacherNavItems;
-  } else { // Inclui isAdmin aqui, que agora terá os links do professor
+  } else {
     navigationItems = adminNavItems;
   }
 
@@ -117,32 +130,20 @@ const Sidebar: React.FC<SidebarProps> = ({ isSuperAdmin, displayName, roleDispla
       <div className="flex-1 overflow-y-auto py-2">
         <nav className="grid items-start gap-1 text-sm font-medium">
           {navigationItems.map((item) => {
-            // Renderiza o item principal
-            if (!item.isSubItem) {
+            if (item.children && item.children.length > 0) {
+              return (
+                <HoverDropdownNavItem
+                  key={item.to}
+                  to={item.to}
+                  icon={item.icon}
+                  label={item.label}
+                  children={item.children}
+                  onCloseSheet={onCloseSheet}
+                />
+              );
+            } else {
               return <NavItem key={item.to} {...item} onCloseSheet={onCloseSheet} />;
             }
-            
-            // Renderiza o sub-item se o item pai estiver ativo (Turmas, Financeiro ou Professores)
-            // E se o usuário não for professor (professores têm seu próprio menu simplificado)
-            if (!isTeacher && item.isSubItem && item.parentPath && location.pathname.startsWith(item.parentPath)) {
-                return (
-                    <Link
-                        key={item.to}
-                        to={item.to}
-                        onClick={onCloseSheet} // Chama onCloseSheet ao clicar
-                        className={cn(
-                            "flex items-center gap-3 rounded-lg px-3 py-2 transition-all ml-4",
-                            location.pathname === item.to
-                                ? "bg-sidebar-primary text-sidebar-primary-foreground hover:bg-sidebar-primary/90"
-                                : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
-                        )}
-                    >
-                        {item.icon}
-                        {item.label}
-                    </Link>
-                );
-            }
-            return null;
           })}
         </nav>
       </div>
@@ -157,7 +158,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isSuperAdmin, displayName, roleDispla
           className="w-full justify-start mt-2 text-destructive hover:bg-destructive/10 hover:text-destructive"
           onClick={() => {
             onLogout();
-            onCloseSheet(); // Fecha a sheet também ao deslogar
+            onCloseSheet();
           }}
         >
           <LogOut className="mr-2 h-4 w-4" />
