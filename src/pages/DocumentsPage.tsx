@@ -22,6 +22,8 @@ import { SchoolDocument, SupabaseFetchedDocument } from '@/types/documents'; // 
 
 // Função para buscar documentos
 const fetchDocuments = async (tenantId: string): Promise<SchoolDocument[]> => {
+  // NOTA: O filtro .eq('tenant_id', tenantId) foi removido.
+  // Confiamos na política RLS: (tenant_id = get_current_user_tenant_id())
   const { data, error } = await supabase
     .from('documents')
     .select(`
@@ -34,7 +36,6 @@ const fetchDocuments = async (tenantId: string): Promise<SchoolDocument[]> => {
       metadata,
       description
     `)
-    .eq('tenant_id', tenantId)
     .order('generated_at', { ascending: false });
 
   if (error) throw new Error(error.message);
