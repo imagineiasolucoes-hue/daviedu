@@ -1,4 +1,4 @@
-import React, { useRef } from 'react';
+import React, { useRef, useMemo } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -22,7 +22,7 @@ interface StudentDetails {
     id: string;
     name: string; 
     school_year: number; 
-    class_courses: { // Agora aninhado diretamente sob 'classes'
+    class_courses: {
       courses: { name: string } | null;
     }[];
   } | null;
@@ -49,8 +49,17 @@ interface Grade {
   subject_name: string;
   grade_value: number;
   assessment_type: string;
-  period: string;
+  period: string; // Assumindo que 'period' corresponde a '1ª Unidade', '2ª Unidade', etc.
   date_recorded: string;
+}
+
+interface ProcessedSubjectGrade {
+  subject_name: string;
+  unit_grades: { [periodName: string]: number | null }; // Ex: { "1ª Unidade": 8.5, "2ª Unidade": 7.0 }
+  total_units_grade: number | null; // Soma das médias das unidades
+  final_average: number | null; // Média das unidades
+  absences: number | null; // Placeholder para faltas
+  result: 'Aprovado' | 'Reprovado' | 'Recuperação' | 'N/A';
 }
 
 // --- Funções de Busca ---
@@ -76,7 +85,6 @@ const fetchStudentData = async (studentId: string): Promise<StudentDetails> => {
     .single();
   if (error) throw new Error(error.message);
   
-  // A estrutura de dados agora corresponde diretamente à interface StudentDetails
   return data as unknown as StudentDetails;
 };
 
@@ -133,6 +141,72 @@ const ReportCard: React.FC = () => {
   const isLoading = isLoadingStudent || isLoadingTenant || isLoadingGrades;
   const error = studentError || tenantError || gradesError;
 
+  // Processar as notas para o formato do boletim
+  const processedGrades = useMemo(() => {
+    if (!grades || grades.length === 0) return [];
+
+    const subjectsMap = new Map<string, ProcessedSubjectGrade>();
+    const allPeriods = new Set<string>(); // Para coletar todos os períodos existentes
+
+    grades.forEach(grade => {
+      if (!subjectsMap.has(grade.subject_name)) {
+        subjectsMap.set(grade.subject_name, {
+          subject_name: grade.subject_name,
+          unit_grades: {},
+          total_units_grade: null,
+          final_average: null,
+          absences: 0, // Placeholder
+          result: 'N/A',
+        });
+      }
+      const subject = subjectsMap.get(grade.subject_name)!;
+
+      // Agrupar notas por período e calcular a média para cada período
+      if (!subject.unit_grades[grade.period]) {
+        subject.unit_grades[grade.period] = 0; // Inicializa para a soma
+      }
+      // Para simplificar, vamos considerar a última nota lançada para o assessment_type dentro do período
+      // Em um cenário real, você calcularia a média de todas as notas de um período/unidade
+      subject.unit_grades[grade.period] = grade.grade_value; 
+      allPeriods.add(grade.period);
+    });
+
+    // Converter para array e calcular totais e médias
+    const result: ProcessedSubjectGrade[] = Array.from(subjectsMap.values()).map(subject => {
+      const validUnitGrades = Object.values(subject.unit_grades).filter(g => g !== null) as number[];
+      
+      if (validUnitGrades.length > 0) {
+        subject.total_units_grade = validUnitGrades.reduce((sum, g) => sum + g, 0);
+        subject.final_average = subject.total_units_grade / validUnitGrades.length;
+        
+        if (subject.final_average >= 7) { // Exemplo de regra de aprovação
+          subject.result = 'Aprovado';
+        } else if (subject.final_average >= 5) { // Exemplo de regra de recuperação
+          subject.result = 'Recuperação';
+        } else {
+          subject.result = 'Reprovado';
+        }
+      } else {
+        subject.result = 'N/A';
+      }
+      return subject;
+    });
+
+    return result;
+  }, [grades]);
+
+  // Ordenar os períodos para o cabeçalho da tabela (ex: 1ª Unidade, 2ª Unidade)
+  const sortedPeriods = useMemo(() => {
+    const periods = Array.from(new Set(grades?.map(g => g.period) || []));
+    // Tenta ordenar numericamente se os nomes dos períodos forem "1ª Unidade", "2º Bimestre", etc.
+    return periods.sort((a, b) => {
+      const numA = parseInt(a.match(/\d+/)?.[0] || '0');
+      const numB = parseInt(b.match(/\d+/)?.[0] || '0');
+      return numA - numB;
+    });
+  }, [grades]);
+
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -158,18 +232,6 @@ const ReportCard: React.FC = () => {
   if (!student || !tenant) {
     return <div className="text-destructive p-8">Aluno ou escola não encontrados.</div>;
   }
-
-  // Agrupar notas por período e disciplina para exibição
-  const groupedGrades = grades?.reduce((acc, grade) => {
-    if (!acc[grade.period]) {
-      acc[grade.period] = {};
-    }
-    if (!acc[grade.period][grade.subject_name]) {
-      acc[grade.period][grade.subject_name] = [];
-    }
-    acc[grade.period][grade.subject_name].push(grade);
-    return acc;
-  }, {} as Record<string, Record<string, Grade[]>>);
 
   // Acessando os nomes dos cursos diretamente da estrutura aninhada
   const courseNames = student.classes?.class_courses
@@ -208,7 +270,7 @@ const ReportCard: React.FC = () => {
           <img src={tenant.config.logo_url} alt="Logo da Escola" className="h-16 mx-auto mb-3" />
         )}
         <h1 className="text-2xl font-bold text-primary">{tenant.name}</h1>
-        <p className="text-sm text-muted-foreground">Boletim Escolar</p>
+        <p className="text-sm text-muted-foreground">BOLETIM ESCOLAR</p>
         
         {/* Detalhes da Escola */}
         <div className="mt-4 text-xs text-muted-foreground space-y-1">
@@ -252,45 +314,68 @@ const ReportCard: React.FC = () => {
         </CardContent>
       </Card>
 
-      {/* Seção de Notas e Histórico */}
+      {/* Seção de Notas */}
       <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
         <ClipboardList className="h-5 w-5 text-primary" />
-        Notas por Período
+        Notas por Matéria
       </h2>
       
-      {grades && grades.length > 0 ? (
-        Object.entries(groupedGrades || {}).map(([period, subjects]) => (
-          <div key={period} className="mb-8 break-inside-avoid">
-            <h3 className="text-lg font-semibold mb-3 p-2 bg-muted rounded-md">{period}</h3>
-            
-            {Object.entries(subjects).map(([subjectName, subjectGrades]) => (
-              <div key={subjectName} className="mb-4 border p-3 rounded-md">
-                <h4 className="font-medium text-primary mb-2">{subjectName}</h4>
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Avaliação</TableHead>
-                      <TableHead className="text-right">Nota</TableHead>
-                      <TableHead>Data</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {subjectGrades.map((grade, index) => (
-                      <TableRow key={index}>
-                        <TableCell>{grade.assessment_type}</TableCell>
-                        <TableCell className="text-right font-bold">{grade.grade_value.toFixed(1)}</TableCell>
-                        <TableCell>{format(new Date(grade.date_recorded), 'dd/MM/yyyy')}</TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
-            ))}
-          </div>
-        ))
+      {processedGrades && processedGrades.length > 0 ? (
+        <div className="overflow-x-auto">
+          <Table className="w-full">
+            <TableHeader>
+              <TableRow>
+                <TableHead className="min-w-[150px]">Disciplina</TableHead>
+                {sortedPeriods.map(period => (
+                  <TableHead key={period} className="text-center min-w-[80px]">{period}</TableHead>
+                ))}
+                <TableHead className="text-center min-w-[80px]">Total</TableHead>
+                <TableHead className="text-center min-w-[100px]">Média Final</TableHead>
+                <TableHead className="text-center min-w-[80px]">Faltas</TableHead>
+                <TableHead className="text-center min-w-[100px]">Resultado</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {processedGrades.map((subject) => (
+                <TableRow key={subject.subject_name}>
+                  <TableCell className="font-medium">{subject.subject_name}</TableCell>
+                  {sortedPeriods.map(period => (
+                    <TableCell key={`${subject.subject_name}-${period}`} className="text-center">
+                      {subject.unit_grades[period] !== null ? subject.unit_grades[period]?.toFixed(1) : 'N/A'}
+                    </TableCell>
+                  ))}
+                  <TableCell className="text-center font-bold">
+                    {subject.total_units_grade !== null ? subject.total_units_grade.toFixed(1) : 'N/A'}
+                  </TableCell>
+                  <TableCell className="text-center font-bold">
+                    {subject.final_average !== null ? subject.final_average.toFixed(1) : 'N/A'}
+                  </TableCell>
+                  <TableCell className="text-center">
+                    {subject.absences !== null ? subject.absences : 'N/A'}
+                  </TableCell>
+                  <TableCell className="text-center">
+                    {subject.result === 'Aprovado' && <span className="text-green-600 font-semibold">Aprovado</span>}
+                    {subject.result === 'Reprovado' && <span className="text-red-600 font-semibold">Reprovado</span>}
+                    {subject.result === 'Recuperação' && <span className="text-yellow-600 font-semibold">Recup.</span>}
+                    {subject.result === 'N/A' && 'N/A'}
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
       ) : (
         <p className="text-center py-8 text-muted-foreground">Nenhuma nota registrada para este aluno ainda.</p>
       )}
+
+      <div className="mt-8 p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-md text-sm text-blue-800 dark:text-blue-200 print-hidden">
+        <p className="font-semibold">Atenção:</p>
+        <ul className="list-disc list-inside ml-2">
+          <li>As colunas de "Unidade" são preenchidas com a última nota registrada para o período correspondente. Para um cálculo de média mais preciso por unidade, seria necessário um sistema de pesos ou múltiplas avaliações por período.</li>
+          <li>A coluna "Faltas" é um placeholder. A funcionalidade de registro de faltas não está implementada no sistema atual e exigiria uma extensão no banco de dados.</li>
+          <li>A regra de "Resultado" é um exemplo (Média Final &gt;= 7: Aprovado; &gt;= 5: Recuperação; &lt; 5: Reprovado).</li>
+        </ul>
+      </div>
 
       {/* Rodapé do Documento (para impressão) */}
       <div className="mt-12 pt-4 border-t text-center text-xs text-muted-foreground print:mt-4">
