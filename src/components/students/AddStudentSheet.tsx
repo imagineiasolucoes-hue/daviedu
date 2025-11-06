@@ -55,18 +55,28 @@ interface Class {
   id: string;
   name: string;
   school_year: number;
-  // class_courses: { courses: { name: string } | null }[]; // Não precisamos disso aqui, apenas para exibição
+  // Adicionando a relação para buscar o nome do curso
+  class_courses: {
+    courses: { name: string } | null;
+  }[];
 }
 
 // --- Funções de Busca de Dados ---
 const fetchClasses = async (tenantId: string): Promise<Class[]> => {
   const { data, error } = await supabase
     .from('classes')
-    .select('id, name, school_year')
+    .select(`
+      id, 
+      name, 
+      school_year,
+      class_courses (
+        courses (name)
+      )
+    `)
     .eq('tenant_id', tenantId)
     .order('name');
   if (error) throw new Error(error.message);
-  return data as Class[];
+  return data as unknown as Class[];
 };
 
 const AddStudentSheet: React.FC = () => {
@@ -263,9 +273,17 @@ const AddStudentSheet: React.FC = () => {
                     <SelectValue placeholder={isLoadingClasses ? "Carregando Turmas..." : "Selecione a turma"} />
                   </SelectTrigger>
                   <SelectContent>
-                    {allClasses?.map((c) => (
-                      <SelectItem key={c.id} value={c.id}>{c.name} ({c.school_year})</SelectItem>
-                    ))}
+                    {allClasses?.map((c) => {
+                      // Extrai o nome do primeiro curso associado para exibição
+                      const courseName = c.class_courses?.[0]?.courses?.name;
+                      const display = courseName 
+                        ? `${c.name} (${c.school_year}) - ${courseName}`
+                        : `${c.name} (${c.school_year})`;
+                      
+                      return (
+                        <SelectItem key={c.id} value={c.id}>{display}</SelectItem>
+                      );
+                    })}
                   </SelectContent>
                   
                 </Select>
@@ -302,6 +320,7 @@ const AddStudentSheet: React.FC = () => {
                 <div className="space-y-2">
                   <Label htmlFor="rg">RG</Label>
                   <Input id="rg" {...form.register("rg")} />
+                
                 </div>
               </div>
             </div>
