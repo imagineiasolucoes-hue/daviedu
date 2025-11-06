@@ -33,6 +33,7 @@ interface EditStudentSheetProps {
 interface Class {
   id: string;
   name: string;
+  school_year: number;
 }
 
 const fetchStudentDetails = async (studentId: string) => {
@@ -48,11 +49,11 @@ const fetchStudentDetails = async (studentId: string) => {
 const fetchClasses = async (tenantId: string): Promise<Class[]> => {
   const { data, error } = await supabase
     .from('classes')
-    .select('id, name')
+    .select('id, name, school_year')
     .eq('tenant_id', tenantId)
     .order('name');
   if (error) throw new Error(error.message);
-  return data;
+  return data as Class[];
 };
 
 const EditStudentSheet: React.FC<EditStudentSheetProps> = ({ studentId, open, onOpenChange }) => {
@@ -167,7 +168,7 @@ const EditStudentSheet: React.FC<EditStudentSheetProps> = ({ studentId, open, on
                   {/* Opção para desvincular a turma */}
                   <SelectItem value="none">Nenhuma Turma (Desvincular)</SelectItem>
                   {classes?.map((c) => (
-                    <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                    <SelectItem key={c.id} value={c.id}>{c.name} ({c.school_year})</SelectItem>
                   ))}
                 </SelectContent>
               </Select>

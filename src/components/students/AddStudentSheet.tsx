@@ -22,7 +22,6 @@ const studentSchema = z.object({
   birth_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Data de nascimento inválida. Use o formato AAAA-MM-DD."),
   
   // Campos de relacionamento
-  course_id: z.string().uuid("Selecione um curso/série.").optional().nullable(),
   class_id: z.string().uuid("Selecione uma turma.").optional().nullable(),
   
   // Contato e Documentos do Aluno
@@ -51,33 +50,18 @@ const studentSchema = z.object({
 
 type StudentFormData = z.infer<typeof studentSchema>;
 
-interface Course {
-  id: string;
-  name: string;
-}
-
 interface Class {
   id: string;
   name: string;
-  course_id: string | null;
   school_year: number;
+  // class_courses: { courses: { name: string } | null }[]; // Não precisamos disso aqui, apenas para exibição
 }
 
 // --- Funções de Busca de Dados ---
-const fetchCourses = async (tenantId: string): Promise<Course[]> => {
-  const { data, error } = await supabase
-    .from('courses')
-    .select('id, name')
-    .eq('tenant_id', tenantId)
-    .order('name');
-  if (error) throw new Error(error.message);
-  return data;
-};
-
 const fetchClasses = async (tenantId: string): Promise<Class[]> => {
   const { data, error } = await supabase
     .from('classes')
-    .select('id, name, course_id, school_year')
+    .select('id, name, school_year')
     .eq('tenant_id', tenantId)
     .order('name');
   if (error) throw new Error(error.message);
@@ -89,12 +73,6 @@ const AddStudentSheet: React.FC = () => {
   const { profile } = useProfile();
   const queryClient = useQueryClient();
   const tenantId = profile?.tenant_id;
-
-  const { data: courses, isLoading: isLoadingCourses } = useQuery<Course[], Error>({
-    queryKey: ['courses', tenantId],
-    queryFn: () => fetchCourses(tenantId!),
-    enabled: !!tenantId && isOpen,
-  });
 
   const { data: allClasses, isLoading: isLoadingClasses } = useQuery<Class[], Error>({
     queryKey: ['classes', tenantId],
@@ -109,7 +87,6 @@ const AddStudentSheet: React.FC = () => {
       birth_date: "",
       phone: null,
       email: null,
-      course_id: null,
       class_id: null,
       gender: null,
       nationality: null,
@@ -132,29 +109,13 @@ const AddStudentSheet: React.FC = () => {
     },
   });
 
-  const selectedCourseId = form.watch('course_id');
   const selectedClassId = form.watch('class_id');
-
-  // Filtra as turmas com base no curso selecionado
-  const filteredClasses = useMemo(() => {
-    if (!allClasses) return [];
-    if (!selectedCourseId) return allClasses;
-    
-    return allClasses.filter(c => c.course_id === selectedCourseId);
-  }, [allClasses, selectedCourseId]);
 
   // Encontra o ano letivo da turma selecionada
   const selectedClass = useMemo(() => {
     if (!allClasses || !selectedClassId) return null;
     return allClasses.find(c => c.id === selectedClassId);
   }, [allClasses, selectedClassId]);
-
-  // Resetar class_id se o curso mudar
-  React.useEffect(() => {
-    if (selectedCourseId) {
-      form.setValue('class_id', null);
-    }
-  }, [selectedCourseId, form]);
 
 
   const onSubmit = async (data: StudentFormData) => {
@@ -171,7 +132,6 @@ const AddStudentSheet: React.FC = () => {
     // Separar dados do aluno e do responsável
     const { 
         guardian_full_name, guardian_relationship, guardian_phone, guardian_email, guardian_cpf,
-        course_id, // Não é persistido na tabela students
         ...studentData 
     } = data;
 
@@ -230,7 +190,7 @@ const AddStudentSheet: React.FC = () => {
     }
   };
 
-  const isLoading = isLoadingCourses || isLoadingClasses;
+  const isLoading = isLoadingClasses;
 
   return (
     <Sheet open={isOpen} onOpenChange={setIsOpen}>
@@ -290,50 +250,29 @@ const AddStudentSheet: React.FC = () => {
                 </div>
               </div>
 
-              {/* CAMPO: Curso/Série */}
-              <div className="space-y-2">
-                <Label htmlFor="course_id">Curso / Série</Label>
-                <Select 
-                  onValueChange={(value) => form.setValue('course_id', value === "none" ? null : value)} 
-                  value={form.watch('course_id') || 'none'}
-                  disabled={isLoadingCourses}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder={isLoadingCourses ? "Carregando Cursos..." : "Selecione o curso/série"} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="none">Nenhum Curso/Série</SelectItem>
-                    {courses?.map((c) => (
-                      <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                {form.formState.errors.course_id && <p className="text-sm text-destructive">{form.formState.errors.course_id.message}</p>}
-              </div>
-
-              {/* CAMPO: Turma (filtrado) */}
+              {/* CAMPO: Turma (agora sem filtro de curso) */}
               <div className="space-y-2">
                 <Label htmlFor="class_id">Turma</Label>
                 <Select 
                   onValueChange={(value) => form.setValue('class_id', value === "none" ? null : value)} 
                   value={form.watch('class_id') || 'none'}
-                  disabled={isLoadingClasses || !selectedCourseId}
+                  disabled={isLoadingClasses}
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder={!selectedCourseId ? "Selecione um curso primeiro" : (isLoadingClasses ? "Carregando Turmas..." : "Selecione uma turma")} />
+                    <SelectValue placeholder={isLoadingClasses ? "Carregando Turmas..." : "Selecione uma turma"} />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="none">Nenhuma Turma</SelectItem>
-                    {filteredClasses.map((c) => (
+                    {allClasses?.map((c) => (
                       <SelectItem key={c.id} value={c.id}>{c.name} ({c.school_year})</SelectItem>
                     ))}
                   </SelectContent>
                   
                 </Select>
                 {form.formState.errors.class_id && <p className="text-sm text-destructive">{form.formState.errors.class_id.message}</p>}
-                {selectedCourseId && filteredClasses.length === 0 && (
+                {(!allClasses || allClasses.length === 0) && !isLoadingClasses && (
                   <p className="text-xs text-muted-foreground mt-1">
-                      Nenhuma turma encontrada para o curso selecionado.
+                      Nenhuma turma encontrada.
                   </p>
                 )}
               </div>
