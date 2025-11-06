@@ -5,7 +5,7 @@ import { useAuth } from "@/components/auth/SessionContextProvider";
 export type UserRole = 'super_admin' | 'admin' | 'secretary' | 'teacher' | 'student';
 
 export interface Profile {
-  id: string;
+  id: string; // auth.users.id
   tenant_id: string | null;
   first_name: string | null;
   last_name: string | null;
@@ -13,35 +13,58 @@ export interface Profile {
   role: UserRole;
   updated_at: string | null;
   phone: string | null;
+  email: string | null; // Adicionado para buscar employee_id
+  employee_id?: string | null; // NOVO: ID do funcionário, se o perfil for de um professor
 }
 
 const fetchProfile = async (userId: string): Promise<Profile | null> => {
   // 1. Tenta buscar o perfil existente
-  const { data, error } = await supabase
+  const { data: profileData, error: profileError } = await supabase
     .from('profiles')
     .select('*')
     .eq('id', userId)
     .maybeSingle();
 
-  if (error) {
-    console.error("Supabase fetchProfile error:", error);
-    throw new Error(error.message);
+  if (profileError) {
+    console.error("Supabase fetchProfile error:", profileError);
+    throw new Error(profileError.message);
   }
   
-  // 2. Se o perfil não for encontrado, retorna null.
-  // Para Super Admins, o perfil deve ser criado manualmente no DB.
-  // Para usuários normais, o perfil é criado via trigger (signup) ou Edge Function (register).
-  if (!data) {
+  if (!profileData) {
     console.warn(`Profile missing for user ${userId}. Returning null.`);
     return null;
   }
 
-  // 3. Garante que o campo role está presente (embora o schema garanta um default)
-  if (!data.role) {
-      data.role = 'student' as UserRole;
+  // 2. Garante que o campo role está presente (embora o schema garanta um default)
+  if (!profileData.role) {
+      profileData.role = 'student' as UserRole;
   }
 
-  return data as Profile;
+  const profile: Profile = profileData as Profile;
+
+  // 3. Se o perfil for de um professor, busca o employee_id correspondente
+  if (profile.role === 'teacher' && profile.tenant_id && profile.email) {
+    const { data: employeeData, error: employeeError } = await supabase
+      .from('employees')
+      .select('id')
+      .eq('tenant_id', profile.tenant_id)
+      .eq('email', profile.email)
+      .eq('is_teacher', true)
+      .maybeSingle();
+
+    if (employeeError) {
+      console.error("Supabase fetchEmployeeId error for teacher:", employeeError);
+      // Não impede o carregamento do perfil, mas loga o erro
+    }
+
+    if (employeeData) {
+      profile.employee_id = employeeData.id;
+    } else {
+      console.warn(`Employee ID not found for teacher profile ${profile.id} with email ${profile.email}.`);
+    }
+  }
+
+  return profile;
 };
 
 export const useProfile = () => {

@@ -169,7 +169,7 @@ const GradeEntryPage: React.FC = () => {
   const { profile, isLoading: isProfileLoading, isTeacher, isAdmin } = useProfile();
   const queryClient = useQueryClient();
   const tenantId = profile?.tenant_id;
-  const employeeId = profile?.id; 
+  const teacherEmployeeId = profile?.employee_id; // Usar o employee_id do perfil
 
   const form = useForm<GradeEntryFormData>({
     resolver: zodResolver(gradeEntrySchema),
@@ -187,8 +187,8 @@ const GradeEntryPage: React.FC = () => {
   const selectedCourseId = form.watch('courseId');
 
   const { data: allClassesForEntry, isLoading: isLoadingClassesForEntry } = useQuery<Class[], Error>({
-    queryKey: ['classesForGradeEntry', tenantId, employeeId, isTeacher, isAdmin],
-    queryFn: () => fetchClassesForGradeEntry(tenantId!, employeeId, isTeacher, isAdmin),
+    queryKey: ['classesForGradeEntry', tenantId, teacherEmployeeId, isTeacher, isAdmin],
+    queryFn: () => fetchClassesForGradeEntry(tenantId!, teacherEmployeeId, isTeacher, isAdmin),
     enabled: !!tenantId && (isTeacher || isAdmin),
   });
 
@@ -250,8 +250,8 @@ const GradeEntryPage: React.FC = () => {
   }, [students, form]);
 
   const onSubmit = async (data: GradeEntryFormData) => {
-    if (!tenantId || !employeeId) { 
-      toast.error("Erro", { description: "Dados do usuário ou da escola ausentes." });
+    if (!tenantId || !teacherEmployeeId) { // Usar teacherEmployeeId
+      toast.error("Erro", { description: "Dados do usuário ou da escola ausentes. Certifique-se de que seu perfil de professor está completo." });
       return;
     }
 
@@ -277,7 +277,7 @@ const GradeEntryPage: React.FC = () => {
         grade_value: g.gradeValue,
         assessment_type: data.assessmentType || null, 
         period: data.period,
-        teacher_id: employeeId, 
+        teacher_id: teacherEmployeeId, // Usar o employee_id do perfil
         date_recorded: new Date().toISOString().split('T')[0], 
       }));
 
