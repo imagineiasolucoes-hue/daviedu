@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useForm, FormProvider } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -16,25 +16,43 @@ import { Separator } from '@/components/ui/separator';
 import { Loader2, PlusCircle } from 'lucide-react';
 import GuardianForm, { guardianSchema, GuardianFormData } from './GuardianForm'; // Importando o novo componente e schema
 
+// --- Tipos de Dados Auxiliares ---
+interface Course {
+  id: string;
+  name: string;
+}
+
+interface Class {
+  id: string;
+  name: string;
+  school_year: number;
+  // Incluindo a relação N:M para saber quais cursos estão nesta turma
+  class_courses: {
+    course_id: string;
+  }[];
+}
+
 // --- Schema de Validação ---
 const studentSchema = z.object({
   full_name: z.string().min(5, "Nome completo é obrigatório."),
   birth_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Data de nascimento inválida. Use o formato AAAA-MM-DD."),
   
-  // Campos de relacionamento
-  // TORNANDO OBRIGATÓRIO: class_id deve ser um UUID válido e não pode ser 'none'
+  // NOVO CAMPO OBRIGATÓRIO: Série/Ano (Course)
+  course_id: z.string().uuid("Selecione a Série/Ano."),
+  
+  // Turma: Agora a turma deve ser compatível com o curso selecionado
   class_id: z.string().uuid("Selecione uma turma."),
   
   // Contato e Documentos do Aluno
-  phone: z.string().optional().nullable(), // Pode ser nulo
-  email: z.string().email("Email inválido.").optional().or(z.literal('')).nullable(), // Pode ser nulo ou string vazia
-  cpf: z.string().optional().nullable(), // Pode ser nulo
-  rg: z.string().optional().nullable(), // Pode ser nulo
+  phone: z.string().optional().nullable(), 
+  email: z.string().email("Email inválido.").optional().or(z.literal('')).nullable(), 
+  cpf: z.string().optional().nullable(), 
+  rg: z.string().optional().nullable(), 
   
   // Dados Pessoais do Aluno
   gender: z.enum(['Masculino', 'Feminino', 'Outro']).optional().nullable(),
   nationality: z.string().optional().nullable(),
-  naturality: z.string().optional().nullable(), // Naturalidade (Cidade de nascimento)
+  naturality: z.string().optional().nullable(), 
 
   // Endereço
   zip_code: z.string().optional().nullable(),
@@ -47,25 +65,37 @@ const studentSchema = z.object({
   // Informações Adicionais do Aluno
   special_needs: z.string().optional().nullable(),
   medication_use: z.string().optional().nullable(),
-}).merge(guardianSchema); // Mesclando com o schema do responsável
+}).merge(guardianSchema); 
 
 type StudentFormData = z.infer<typeof studentSchema>;
 
-interface Class {
-  id: string;
-  name: string;
-  school_year: number;
-}
 
 // --- Funções de Busca de Dados ---
-const fetchClasses = async (tenantId: string): Promise<Class[]> => {
+const fetchCourses = async (tenantId: string): Promise<Course[]> => {
   const { data, error } = await supabase
-    .from('classes')
-    .select('id, name, school_year')
+    .from('courses')
+    .select('id, name')
     .eq('tenant_id', tenantId)
     .order('name');
   if (error) throw new Error(error.message);
-  return data as Class[];
+  return data;
+};
+
+const fetchClasses = async (tenantId: string): Promise<Class[]> => {
+  const { data, error } = await supabase
+    .from('classes')
+    .select(`
+      id, 
+      name, 
+      school_year,
+      class_courses (
+        course_id
+      )
+    `)
+    .eq('tenant_id', tenantId)
+    .order('name');
+  if (error) throw new Error(error.message);
+  return data as unknown as Class[];
 };
 
 const AddStudentSheet: React.FC = () => {
@@ -73,6 +103,12 @@ const AddStudentSheet: React.FC = () => {
   const { profile } = useProfile();
   const queryClient = useQueryClient();
   const tenantId = profile?.tenant_id;
+
+  const { data: allCourses, isLoading: isLoadingCourses } = useQuery<Course[], Error>({
+    queryKey: ['courses', tenantId],
+    queryFn: () => fetchCourses(tenantId!),
+    enabled: !!tenantId && isOpen,
+  });
 
   const { data: allClasses, isLoading: isLoadingClasses } = useQuery<Class[], Error>({
     queryKey: ['classes', tenantId],
@@ -87,7 +123,8 @@ const AddStudentSheet: React.FC = () => {
       birth_date: "",
       phone: null,
       email: null,
-      class_id: undefined, // Usar undefined para forçar a validação do Zod
+      class_id: undefined, 
+      course_id: undefined, // Novo campo
       gender: null,
       nationality: null,
       naturality: null,
@@ -110,12 +147,33 @@ const AddStudentSheet: React.FC = () => {
   });
 
   const selectedClassId = form.watch('class_id');
+  const selectedCourseId = form.watch('course_id');
 
-  // Encontra o ano letivo da turma selecionada
+  // Filtra as turmas disponíveis com base no curso selecionado
+  const filteredClasses = useMemo(() => {
+    if (!allClasses || !selectedCourseId) return [];
+    
+    return allClasses.filter(c => 
+      c.class_courses.some(cc => cc.course_id === selectedCourseId)
+    );
+  }, [allClasses, selectedCourseId]);
+
+  // Encontra o ano letivo da turma selecionada (necessário para a Edge Function)
   const selectedClass = useMemo(() => {
     if (!allClasses || !selectedClassId) return null;
     return allClasses.find(c => c.id === selectedClassId);
   }, [allClasses, selectedClassId]);
+
+  // Efeito para resetar a turma se o curso mudar
+  useEffect(() => {
+    if (selectedCourseId) {
+      // Verifica se a turma atual é compatível com o novo curso
+      const isCurrentClassCompatible = filteredClasses.some(c => c.id === selectedClassId);
+      if (!isCurrentClassCompatible) {
+        form.setValue('class_id', undefined, { shouldValidate: true });
+      }
+    }
+  }, [selectedCourseId, form, filteredClasses, selectedClassId]);
 
 
   const onSubmit = async (data: StudentFormData) => {
@@ -132,6 +190,7 @@ const AddStudentSheet: React.FC = () => {
     // Separar dados do aluno e do responsável
     const { 
         guardian_full_name, guardian_relationship, guardian_phone, guardian_email, guardian_cpf,
+        course_id, // Removendo course_id do studentData, pois ele não é uma coluna direta na tabela students
         ...studentData 
     } = data;
 
@@ -171,7 +230,9 @@ const AddStudentSheet: React.FC = () => {
     };
 
     try {
-      // Usaremos uma nova Edge Function para lidar com a transação de criação de aluno e responsável
+      // A Edge Function 'create-student-and-guardian' não precisa do course_id,
+      // pois a matrícula é feita na tabela 'students' que referencia 'classes'.
+      // O course_id é usado apenas para filtrar a lista de turmas no frontend.
       const { error } = await supabase.functions.invoke('create-student-and-guardian', {
         body: JSON.stringify(payload),
       });
@@ -190,7 +251,7 @@ const AddStudentSheet: React.FC = () => {
     }
   };
 
-  const isLoading = isLoadingClasses;
+  const isLoading = isLoadingClasses || isLoadingCourses;
 
   return (
     <Sheet open={isOpen} onOpenChange={setIsOpen}>
@@ -250,28 +311,53 @@ const AddStudentSheet: React.FC = () => {
                 </div>
               </div>
 
-              {/* CAMPO: Turma (agora obrigatório) */}
+              {/* CAMPO: Série/Ano (Course) */}
               <div className="space-y-2">
-                <Label htmlFor="class_id">Turma (Série/Ano)</Label>
+                <Label htmlFor="course_id">Série / Ano</Label>
                 <Select 
-                  onValueChange={(value) => form.setValue('class_id', value)} // Não permite 'none'
-                  value={form.watch('class_id') || ''} // Usa '' para forçar a seleção inicial
-                  disabled={isLoadingClasses}
+                  onValueChange={(value) => form.setValue('course_id', value)}
+                  value={form.watch('course_id') || ''}
+                  disabled={isLoadingCourses || (allCourses && allCourses.length === 0)}
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder={isLoadingClasses ? "Carregando Turmas..." : "Selecione a turma"} />
+                    <SelectValue placeholder={isLoadingCourses ? "Carregando Séries/Anos..." : "Selecione a Série/Ano"} />
                   </SelectTrigger>
                   <SelectContent>
-                    {allClasses?.map((c) => (
+                    {allCourses?.map((c) => (
+                      <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {form.formState.errors.course_id && <p className="text-sm text-destructive">{form.formState.errors.course_id.message}</p>}
+                {(!allCourses || allCourses.length === 0) && !isLoadingCourses && (
+                  <p className="text-xs text-muted-foreground mt-1">
+                      Nenhuma Série/Ano encontrada.
+                  </p>
+                )}
+              </div>
+
+              {/* CAMPO: Turma (agora filtrado pelo Course) */}
+              <div className="space-y-2">
+                <Label htmlFor="class_id">Turma</Label>
+                <Select 
+                  onValueChange={(value) => form.setValue('class_id', value)}
+                  value={form.watch('class_id') || ''}
+                  disabled={!selectedCourseId || isLoadingClasses || filteredClasses.length === 0}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder={!selectedCourseId ? "Selecione a Série/Ano primeiro" : (isLoadingClasses ? "Carregando Turmas..." : "Selecione a turma")} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {filteredClasses.map((c) => (
                       <SelectItem key={c.id} value={c.id}>{c.name} ({c.school_year})</SelectItem>
                     ))}
                   </SelectContent>
                   
                 </Select>
                 {form.formState.errors.class_id && <p className="text-sm text-destructive">{form.formState.errors.class_id.message}</p>}
-                {(!allClasses || allClasses.length === 0) && !isLoadingClasses && (
+                {selectedCourseId && filteredClasses.length === 0 && (
                   <p className="text-xs text-muted-foreground mt-1">
-                      Nenhuma turma encontrada.
+                      Nenhuma turma compatível com a Série/Ano selecionada.
                   </p>
                 )}
               </div>
@@ -362,7 +448,15 @@ const AddStudentSheet: React.FC = () => {
             </div>
 
             <SheetFooter className="pt-4">
-              <Button type="submit" disabled={form.formState.isSubmitting || isLoading || !selectedClassId}>
+              <Button 
+                type="submit" 
+                disabled={
+                  form.formState.isSubmitting || 
+                  isLoading || 
+                  !form.watch('course_id') || 
+                  !form.watch('class_id')
+                }
+              >
                 {form.formState.isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 Salvar Aluno
               </Button>
