@@ -22,7 +22,8 @@ const studentSchema = z.object({
   birth_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Data de nascimento inválida. Use o formato AAAA-MM-DD."),
   
   // Campos de relacionamento
-  class_id: z.string().uuid("Selecione uma turma.").optional().nullable(),
+  // TORNANDO OBRIGATÓRIO: class_id deve ser um UUID válido e não pode ser 'none'
+  class_id: z.string().uuid("Selecione uma turma."),
   
   // Contato e Documentos do Aluno
   phone: z.string().optional().nullable(), // Pode ser nulo
@@ -87,7 +88,7 @@ const AddStudentSheet: React.FC = () => {
       birth_date: "",
       phone: null,
       email: null,
-      class_id: null,
+      class_id: undefined, // Usar undefined para forçar a validação do Zod
       gender: null,
       nationality: null,
       naturality: null,
@@ -145,7 +146,7 @@ const AddStudentSheet: React.FC = () => {
 
     const studentPayload = {
         ...studentData,
-        class_id: studentData.class_id || null,
+        class_id: studentData.class_id, // Agora é obrigatório e não pode ser null/undefined
         gender: studentData.gender || null,
         email: studentData.email || null,
         phone: studentData.phone || null,
@@ -250,19 +251,18 @@ const AddStudentSheet: React.FC = () => {
                 </div>
               </div>
 
-              {/* CAMPO: Turma (agora sem filtro de curso) */}
+              {/* CAMPO: Turma (agora obrigatório) */}
               <div className="space-y-2">
-                <Label htmlFor="class_id">Turma</Label>
+                <Label htmlFor="class_id">Turma (Série/Ano)</Label>
                 <Select 
-                  onValueChange={(value) => form.setValue('class_id', value === "none" ? null : value)} 
-                  value={form.watch('class_id') || 'none'}
+                  onValueChange={(value) => form.setValue('class_id', value)} // Não permite 'none'
+                  value={form.watch('class_id') || ''} // Usa '' para forçar a seleção inicial
                   disabled={isLoadingClasses}
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder={isLoadingClasses ? "Carregando Turmas..." : "Selecione uma turma"} />
+                    <SelectValue placeholder={isLoadingClasses ? "Carregando Turmas..." : "Selecione a turma"} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="none">Nenhuma Turma</SelectItem>
                     {allClasses?.map((c) => (
                       <SelectItem key={c.id} value={c.id}>{c.name} ({c.school_year})</SelectItem>
                     ))}
