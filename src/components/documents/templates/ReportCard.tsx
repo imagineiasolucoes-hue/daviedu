@@ -29,6 +29,14 @@ interface StudentDetails {
 }
 
 interface TenantConfig {
+  cnpj: string | null;
+  phone: string | null;
+  address_street: string | null;
+  address_number: string | null;
+  address_neighborhood: string | null;
+  address_city: string | null;
+  address_state: string | null;
+  address_zip_code: string | null;
   logo_url: string | null;
 }
 
@@ -169,6 +177,16 @@ const ReportCard: React.FC = () => {
     .filter(Boolean)
     .join(', ');
 
+  const schoolConfig = tenant.config;
+  const fullAddress = [
+    schoolConfig?.address_street,
+    schoolConfig?.address_number ? `, ${schoolConfig.address_number}` : '',
+    schoolConfig?.address_neighborhood ? ` - ${schoolConfig.address_neighborhood}` : '',
+    schoolConfig?.address_city,
+    schoolConfig?.address_state,
+    schoolConfig?.address_zip_code ? ` - CEP: ${schoolConfig.address_zip_code}` : '',
+  ].filter(Boolean).join('');
+
   return (
     <div className="max-w-4xl mx-auto bg-white p-6 shadow-lg print:shadow-none print:p-0" ref={printRef}>
       
@@ -191,6 +209,13 @@ const ReportCard: React.FC = () => {
         )}
         <h1 className="text-2xl font-bold text-primary">{tenant.name}</h1>
         <p className="text-sm text-muted-foreground">Boletim Escolar</p>
+        
+        {/* Detalhes da Escola */}
+        <div className="mt-4 text-xs text-muted-foreground space-y-1">
+          {schoolConfig?.cnpj && <p>CNPJ: {schoolConfig.cnpj}</p>}
+          {schoolConfig?.phone && <p>Telefone: {schoolConfig.phone}</p>}
+          {fullAddress && <p>Endereço: {fullAddress}</p>}
+        </div>
       </div>
 
       {/* Dados do Aluno */}
