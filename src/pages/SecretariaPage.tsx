@@ -2,7 +2,7 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Users, BookOpen, UserPlus, CalendarDays, FileText, FolderKanban, UserCheck, LayoutDashboard, ClipboardList } from 'lucide-react';
+import { Users, BookOpen, UserPlus, CalendarDays, FileText, FolderKanban, UserCheck, LayoutDashboard, ClipboardList, GraduationCap } from 'lucide-react'; // Adicionado GraduationCap
 import DocumentGenerationPanel from '@/components/documents/DocumentGenerationPanel'; // Importar o painel de geração de documentos
 
 const secretaryActions = [
@@ -35,6 +35,12 @@ const secretaryActions = [
     icon: BookOpen,
     to: '/classes/courses',
     description: 'Definir cursos e séries.',
+  },
+  {
+    label: 'Lançar Notas', // NOVO ITEM
+    icon: GraduationCap, // NOVO ÍCONE
+    to: '/teacher/grade-entry', // Rota para lançamento de notas
+    description: 'Registrar avaliações e notas dos alunos.',
   },
   {
     label: 'Calendário',

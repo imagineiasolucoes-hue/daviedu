@@ -81,6 +81,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isSuperAdmin, displayName, roleDispla
         { to: "/classes", icon: <BookOpen className="h-5 w-5" />, label: "Turmas", onCloseSheet, isSubItem: true },
         { to: "/classes/courses", icon: <ListChecks className="h-5 w-5" />, label: "Séries/Anos", onCloseSheet, isSubItem: true },
         { to: "/classes/subjects", icon: <BookMarked className="h-5 w-5" />, label: "Matérias", onCloseSheet, isSubItem: true },
+        { to: "/teacher/grade-entry", icon: <GraduationCap className="h-5 w-5" />, label: "Lançar Notas", onCloseSheet, isSubItem: true }, // Adicionado aqui
         { to: "/calendar", icon: <CalendarDays className="h-5 w-5" />, label: "Calendário", onCloseSheet, isSubItem: true },
         { to: "/documents", icon: <FileText className="h-5 w-5" />, label: "Documentos", onCloseSheet, isSubItem: true },
       ],
