@@ -1,16 +1,19 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useProfile } from '@/hooks/useProfile';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Loader2, MoreHorizontal, Pencil, Trash2, User } from 'lucide-react';
+import { Loader2, MoreHorizontal, Pencil, Trash2, User, Search, Filter, XCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import AddStudentSheet from '@/components/students/AddStudentSheet';
 import EditStudentSheet from '@/components/students/EditStudentSheet';
 import DeleteStudentDialog from '@/components/students/DeleteStudentDialog';
+import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Label } from '@/components/ui/label';
 
 interface Student {
   id: string;
@@ -21,15 +24,54 @@ interface Student {
   classes: { name: string } | null;
 }
 
-const fetchStudents = async (tenantId: string): Promise<Student[]> => {
-  const { data, error } = await supabase
+interface Class {
+  id: string;
+  name: string;
+  school_year: number;
+}
+
+interface StudentFilters {
+  name: string;
+  registrationCode: string;
+  status: string;
+  classId: string;
+}
+
+const fetchStudents = async (tenantId: string, filters: StudentFilters): Promise<Student[]> => {
+  let query = supabase
     .from('students')
     .select(`id, full_name, registration_code, status, phone, classes (name)`)
-    .eq('tenant_id', tenantId)
-    .order('full_name', { ascending: true });
+    .eq('tenant_id', tenantId);
+
+  if (filters.name) {
+    query = query.ilike('full_name', `%${filters.name}%`);
+  }
+  if (filters.registrationCode) {
+    query = query.ilike('registration_code', `%${filters.registrationCode}%`);
+  }
+  if (filters.status && filters.status !== 'all') {
+    query = query.eq('status', filters.status);
+  }
+  if (filters.classId && filters.classId !== 'all') {
+    query = query.eq('class_id', filters.classId);
+  }
+
+  query = query.order('full_name', { ascending: true });
+
+  const { data, error } = await query;
 
   if (error) throw new Error(error.message);
   return data as unknown as Student[];
+};
+
+const fetchClasses = async (tenantId: string): Promise<Class[]> => {
+  const { data, error } = await supabase
+    .from('classes')
+    .select('id, name, school_year')
+    .eq('tenant_id', tenantId)
+    .order('name');
+  if (error) throw new Error(error.message);
+  return data as Class[];
 };
 
 const StudentsPage: React.FC = () => {
@@ -40,11 +82,41 @@ const StudentsPage: React.FC = () => {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
 
-  const { data: students, isLoading: isStudentsLoading, error } = useQuery<Student[], Error>({
-    queryKey: ['students', tenantId],
-    queryFn: () => fetchStudents(tenantId!),
+  const [filters, setFilters] = useState<StudentFilters>({
+    name: '',
+    registrationCode: '',
+    status: 'all',
+    classId: 'all',
+  });
+
+  const { data: classes, isLoading: isLoadingClasses, error: classesError } = useQuery<Class[], Error>({
+    queryKey: ['classes', tenantId],
+    queryFn: () => fetchClasses(tenantId!),
     enabled: !!tenantId,
   });
+
+  const { data: students, isLoading: isStudentsLoading, error } = useQuery<Student[], Error>({
+    queryKey: ['students', tenantId, filters],
+    queryFn: () => fetchStudents(tenantId!, filters),
+    enabled: !!tenantId,
+  });
+
+  const handleFilterChange = (key: keyof StudentFilters, value: string) => {
+    setFilters(prev => ({ ...prev, [key]: value }));
+  };
+
+  const handleClearFilters = () => {
+    setFilters({
+      name: '',
+      registrationCode: '',
+      status: 'all',
+      classId: 'all',
+    });
+  };
+
+  const hasActiveFilters = useMemo(() => {
+    return filters.name !== '' || filters.registrationCode !== '' || filters.status !== 'all' || filters.classId !== 'all';
+  }, [filters]);
 
   const handleEdit = (student: Student) => {
     setSelectedStudent(student);
@@ -56,12 +128,16 @@ const StudentsPage: React.FC = () => {
     setIsDeleteDialogOpen(true);
   };
 
-  if (isProfileLoading || isStudentsLoading) {
+  if (isProfileLoading || isStudentsLoading || isLoadingClasses) {
     return <div className="flex justify-center items-center h-64"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>;
   }
 
   if (error) {
     return <div className="text-destructive">Erro ao carregar alunos: {error.message}</div>;
+  }
+
+  if (classesError) {
+    return <div className="text-destructive">Erro ao carregar turmas para filtro: {classesError.message}</div>;
   }
 
   const getStatusBadge = (status: string) => {
@@ -82,6 +158,85 @@ const StudentsPage: React.FC = () => {
       
       <Card>
         <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Filter className="h-5 w-5 text-primary" />
+            Filtros de Busca
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="filterName">Nome do Aluno</Label>
+              <Input
+                id="filterName"
+                placeholder="Buscar por nome..."
+                value={filters.name}
+                onChange={(e) => handleFilterChange('name', e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="filterRegistrationCode">Matrícula</Label>
+              <Input
+                id="filterRegistrationCode"
+                placeholder="Buscar por matrícula..."
+                value={filters.registrationCode}
+                onChange={(e) => handleFilterChange('registrationCode', e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="filterStatus">Status</Label>
+              <Select
+                value={filters.status}
+                onValueChange={(value) => handleFilterChange('status', value)}
+              >
+                <SelectTrigger id="filterStatus">
+                  <SelectValue placeholder="Todos os Status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos os Status</SelectItem>
+                  <SelectItem value="active">Ativo</SelectItem>
+                  <SelectItem value="pre-enrolled">Pré-Matriculado</SelectItem>
+                  <SelectItem value="inactive">Inativo</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="filterClass">Turma</Label>
+              <Select
+                value={filters.classId}
+                onValueChange={(value) => handleFilterChange('classId', value)}
+                disabled={isLoadingClasses || (classes && classes.length === 0)}
+              >
+                <SelectTrigger id="filterClass">
+                  <SelectValue placeholder="Todas as Turmas" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todas as Turmas</SelectItem>
+                  {classes?.map((c) => (
+                    <SelectItem key={c.id} value={c.id}>{c.name} ({c.school_year})</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {(!classes || classes.length === 0) && !isLoadingClasses && (
+                <p className="text-xs text-muted-foreground mt-1">
+                    Nenhuma turma cadastrada.
+                </p>
+              )}
+            </div>
+          </div>
+          {hasActiveFilters && (
+            <div className="flex justify-end mt-4">
+              <Button variant="outline" onClick={handleClearFilters}>
+                <XCircle className="mr-2 h-4 w-4" />
+                Limpar Filtros
+              </Button>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
           <CardTitle>Lista de Alunos ({students?.length || 0})</CardTitle>
         </CardHeader>
         <CardContent>
@@ -89,7 +244,7 @@ const StudentsPage: React.FC = () => {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>ID</TableHead> {/* Nova Coluna */}
+                  <TableHead>ID</TableHead>
                   <TableHead>Nome Completo</TableHead>
                   <TableHead>Matrícula</TableHead>
                   <TableHead>Telefone</TableHead>
@@ -101,7 +256,7 @@ const StudentsPage: React.FC = () => {
               <TableBody>
                 {students?.map((student) => (
                   <TableRow key={student.id}>
-                    <TableCell className="text-xs text-muted-foreground font-mono max-w-[100px] truncate">{student.id}</TableCell> {/* Exibindo o ID */}
+                    <TableCell className="text-xs text-muted-foreground font-mono max-w-[100px] truncate">{student.id}</TableCell>
                     <TableCell className="font-medium">{student.full_name}</TableCell>
                     <TableCell>{student.registration_code}</TableCell>
                     <TableCell>{student.phone || 'N/A'}</TableCell>
@@ -130,7 +285,7 @@ const StudentsPage: React.FC = () => {
             </Table>
           </div>
           {students?.length === 0 && (
-            <p className="text-center py-8 text-muted-foreground">Nenhum aluno cadastrado.</p>
+            <p className="text-center py-8 text-muted-foreground">Nenhum aluno cadastrado ou encontrado com os filtros aplicados.</p>
           )}
         </CardContent>
       </Card>
