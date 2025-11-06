@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -11,7 +11,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Loader2, PlusCircle } from 'lucide-react';
+import { Loader2, PlusCircle, X } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
 
 // --- Schema de Validação ---
 const classSchema = z.object({
@@ -21,7 +22,8 @@ const classSchema = z.object({
     required_error: "O período é obrigatório.",
   }),
   room: z.string().optional().nullable(),
-  course_id: z.string().uuid("Selecione uma série/ano.").optional().nullable(),
+  // course_ids agora é um array de UUIDs
+  course_ids: z.array(z.string().uuid()).min(1, "Selecione pelo menos uma Série/Ano."),
 });
 
 type ClassFormData = z.infer<typeof classSchema>;
@@ -47,6 +49,7 @@ const AddClassSheet: React.FC = () => {
   const { profile } = useProfile();
   const queryClient = useQueryClient();
   const tenantId = profile?.tenant_id;
+  const [selectedCourseToAdd, setSelectedCourseToAdd] = useState<string>('');
 
   const { data: courses, isLoading: isLoadingCourses } = useQuery<Course[], Error>({
     queryKey: ['courses', tenantId],
@@ -61,9 +64,32 @@ const AddClassSheet: React.FC = () => {
       school_year: new Date().getFullYear(), // Ano atual como padrão
       period: undefined, // Sem valor padrão para forçar seleção
       room: null,
-      course_id: null,
+      course_ids: [], // Inicializa como array vazio
     },
   });
+
+  const selectedCourseIds = form.watch('course_ids');
+
+  const availableCourses = useMemo(() => {
+    if (!courses) return [];
+    return courses.filter(c => !selectedCourseIds.includes(c.id));
+  }, [courses, selectedCourseIds]);
+
+  const selectedCoursesDetails = useMemo(() => {
+    if (!courses) return [];
+    return courses.filter(c => selectedCourseIds.includes(c.id));
+  }, [courses, selectedCourseIds]);
+
+  const handleAddCourse = () => {
+    if (selectedCourseToAdd && !selectedCourseIds.includes(selectedCourseToAdd)) {
+      form.setValue('course_ids', [...selectedCourseIds, selectedCourseToAdd], { shouldValidate: true });
+      setSelectedCourseToAdd('');
+    }
+  };
+
+  const handleRemoveCourse = (courseId: string) => {
+    form.setValue('course_ids', selectedCourseIds.filter(id => id !== courseId), { shouldValidate: true });
+  };
 
   const onSubmit = async (data: ClassFormData) => {
     if (!tenantId) {
@@ -76,12 +102,12 @@ const AddClassSheet: React.FC = () => {
         ...data,
         tenant_id: tenantId,
         room: data.room || null,
-        course_id: data.course_id || null,
+        course_ids: data.course_ids, // Enviando o array de IDs
       };
 
-      const { error } = await supabase
-        .from('classes')
-        .insert(classData);
+      const { error } = await supabase.functions.invoke('create-class', {
+        body: JSON.stringify(classData),
+      });
 
       if (error) throw new Error(error.message);
 
@@ -92,7 +118,7 @@ const AddClassSheet: React.FC = () => {
         school_year: new Date().getFullYear(),
         period: undefined,
         room: null,
-        course_id: null,
+        course_ids: [],
       });
       setIsOpen(false);
     } catch (error) {
@@ -125,20 +151,45 @@ const AddClassSheet: React.FC = () => {
             {form.formState.errors.name && <p className="text-sm text-destructive">{form.formState.errors.name.message}</p>}
           </div>
 
+          {/* Seleção Múltipla de Séries/Anos */}
           <div className="space-y-2">
-            <Label htmlFor="course_id">Série / Ano</Label>
-            <Select onValueChange={(value) => form.setValue('course_id', value === "none" ? null : value)} value={form.watch('course_id') || 'none'}>
-              <SelectTrigger disabled={isLoadingCourses}>
-                <SelectValue placeholder={isLoadingCourses ? "Carregando Séries/Anos..." : "Selecione a série/ano"} />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="none">Nenhuma Série/Ano</SelectItem>
-                {courses?.map((c) => (
-                  <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            {form.formState.errors.course_id && <p className="text-sm text-destructive">{form.formState.errors.course_id.message}</p>}
+            <Label htmlFor="course_ids">Séries / Anos</Label>
+            <div className="flex gap-2">
+              <Select 
+                onValueChange={setSelectedCourseToAdd} 
+                value={selectedCourseToAdd}
+                disabled={isLoadingCourses || availableCourses.length === 0}
+              >
+                <SelectTrigger className="flex-grow">
+                  <SelectValue placeholder={isLoadingCourses ? "Carregando Séries/Anos..." : "Adicionar Série/Ano"} />
+                </SelectTrigger>
+                <SelectContent>
+                  {availableCourses.map((c) => (
+                    <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Button type="button" onClick={handleAddCourse} disabled={!selectedCourseToAdd}>
+                Adicionar
+              </Button>
+            </div>
+            
+            {/* Exibição dos Cursos Selecionados */}
+            <div className="flex flex-wrap gap-2 mt-2 min-h-[30px]">
+              {selectedCoursesDetails.map(c => (
+                <Badge key={c.id} variant="secondary" className="flex items-center gap-1 pr-1">
+                  {c.name}
+                  <button 
+                    type="button" 
+                    onClick={() => handleRemoveCourse(c.id)}
+                    className="ml-1 p-0.5 rounded-full hover:bg-destructive/20 transition-colors"
+                  >
+                    <X className="h-3 w-3 text-destructive" />
+                  </button>
+                </Badge>
+              ))}
+            </div>
+            {form.formState.errors.course_ids && <p className="text-sm text-destructive">{form.formState.errors.course_ids.message}</p>}
             {(!courses || courses.length === 0) && !isLoadingCourses && (
                 <p className="text-xs text-muted-foreground mt-1">
                     Nenhuma série/ano encontrado. Cadastre uma série/ano primeiro.

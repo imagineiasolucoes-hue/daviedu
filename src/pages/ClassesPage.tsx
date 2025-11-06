@@ -11,7 +11,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Badge } from '@/components/ui/badge';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
-import SubjectSheet from '../components/subjects/SubjectSheet'; // Caminho de importação corrigido
+import SubjectSheet from '../components/subjects/SubjectSheet';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -32,13 +32,25 @@ interface Class {
   school_year: number;
   period: string;
   room: string | null;
-  courses: { name: string } | null;
+  // Alterado para buscar a relação muitos-para-muitos
+  class_courses: {
+    courses: { name: string } | null;
+  }[];
 }
 
 const fetchClasses = async (tenantId: string): Promise<Class[]> => {
   const { data, error } = await supabase
     .from('classes')
-    .select(`id, name, school_year, period, room, courses (name)`)
+    .select(`
+      id, 
+      name, 
+      school_year, 
+      period, 
+      room, 
+      class_courses (
+        courses (name)
+      )
+    `)
     .eq('tenant_id', tenantId)
     .order('school_year', { ascending: false })
     .order('name', { ascending: true });
@@ -66,20 +78,19 @@ const ClassesPage: React.FC = () => {
   const deleteMutation = useMutation({
     mutationFn: async (classId: string) => {
       if (!tenantId) throw new Error("ID da escola não encontrado.");
-      const { error } = await supabase
-        .from('classes')
-        .delete()
-        .eq('id', classId)
-        .eq('tenant_id', tenantId);
+      // Usando a Edge Function delete-class que já lida com desvinculação de alunos/professores
+      const { error } = await supabase.functions.invoke('delete-class', {
+        body: JSON.stringify({ class_id: classId, tenant_id: tenantId }),
+      });
       if (error) throw new Error(error.message);
     },
     onSuccess: () => {
-      toast.success("Série/Ano excluído com sucesso.");
+      toast.success("Turma excluída com sucesso.");
       queryClient.invalidateQueries({ queryKey: ['classes', tenantId] });
       setIsDeleteDialogOpen(false);
     },
     onError: (err) => {
-      toast.error("Erro ao Excluir Série/Ano", { description: err.message });
+      toast.error("Erro ao Excluir Turma", { description: err.message });
     },
   });
 
@@ -111,8 +122,8 @@ const ClassesPage: React.FC = () => {
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h1 className="text-3xl font-bold">Gestão de Turmas</h1>
-        <div className="flex gap-2"> {/* Adicionado um flex container para os botões */}
-          <SubjectSheet /> {/* Botão para gerenciar matérias */}
+        <div className="flex gap-2">
+          <SubjectSheet />
           <AddClassSheet />
         </div>
       </div>
@@ -141,7 +152,18 @@ const ClassesPage: React.FC = () => {
                 {classes?.map((classItem) => (
                   <TableRow key={classItem.id}>
                     <TableCell className="font-medium">{classItem.name}</TableCell>
-                    <TableCell>{classItem.courses?.name || 'N/A'}</TableCell>
+                    <TableCell>
+                      <div className="flex flex-wrap gap-1">
+                        {classItem.class_courses.map((cc, index) => (
+                          cc.courses?.name ? (
+                            <Badge key={index} variant="outline" className="text-xs">
+                              {cc.courses.name}
+                            </Badge>
+                          ) : null
+                        ))}
+                        {classItem.class_courses.length === 0 && 'N/A'}
+                      </div>
+                    </TableCell>
                     <TableCell>{classItem.school_year}</TableCell>
                     <TableCell>
                       <Badge variant="secondary">{classItem.period}</Badge>

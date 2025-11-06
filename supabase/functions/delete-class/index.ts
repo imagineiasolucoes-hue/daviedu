@@ -31,7 +31,18 @@ serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
     );
 
-    // Antes de deletar a turma, precisamos remover as associações em teacher_classes
+    // 1. Remover associações na tabela class_courses
+    const { error: deleteClassCoursesError } = await supabaseAdmin
+      .from("class_courses")
+      .delete()
+      .eq("class_id", class_id);
+
+    if (deleteClassCoursesError) {
+      console.error("Supabase Delete Class Courses Error:", deleteClassCoursesError);
+      throw new Error(`Erro ao deletar associações de cursos com a turma: ${deleteClassCoursesError.message}`);
+    }
+
+    // 2. Remover associações em teacher_classes
     const { error: deleteTeacherClassesError } = await supabaseAdmin
       .from("teacher_classes")
       .delete()
@@ -42,7 +53,7 @@ serve(async (req) => {
       throw new Error(`Erro ao deletar associações de professores com a turma: ${deleteTeacherClassesError.message}`);
     }
 
-    // Também precisamos desvincular alunos desta turma (setar class_id para null)
+    // 3. Desvincular alunos desta turma (setar class_id para null)
     const { error: updateStudentsError } = await supabaseAdmin
       .from("students")
       .update({ class_id: null })
@@ -54,6 +65,7 @@ serve(async (req) => {
       throw new Error(`Erro ao desvincular alunos da turma: ${updateStudentsError.message}`);
     }
 
+    // 4. Deletar a Turma
     const { error } = await supabaseAdmin
       .from("classes")
       .delete()

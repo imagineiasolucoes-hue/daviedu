@@ -10,6 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { useProfile } from '@/hooks/useProfile';
+import { Badge } from '@/components/ui/badge'; // Adicionado Badge
 
 // --- Tipos de Dados ---
 interface StudentDetails {
@@ -18,12 +19,16 @@ interface StudentDetails {
   registration_code: string;
   birth_date: string;
   tenant_id: string;
-  // Corrigido: classes é um objeto único ou nulo, e inclui o curso aninhado
   classes: { 
+    id: string; // Adicionado ID da classe para buscar cursos
     name: string; 
     school_year: number; 
-    courses: { name: string } | null 
+    // courses removido daqui
   } | null;
+  // Nova relação para buscar cursos da turma
+  classes_class_courses: {
+    courses: { name: string } | null;
+  }[];
 }
 
 interface TenantConfig {
@@ -54,15 +59,39 @@ const fetchStudentData = async (studentId: string): Promise<StudentDetails> => {
       birth_date, 
       tenant_id, 
       classes (
+        id,
         name, 
-        school_year,
-        courses (name)
+        school_year
+      ),
+      classes!inner(
+        class_courses (
+          courses (name)
+        )
       )
     `)
     .eq('id', studentId)
     .single();
   if (error) throw new Error(error.message);
-  return data as unknown as StudentDetails;
+  
+  // A consulta retorna 'classes' e 'classes!inner(class_courses)' como campos separados.
+  // Renomeamos o segundo campo para 'classes_class_courses' para facilitar o acesso.
+  const studentData = data as unknown as {
+    id: string;
+    full_name: string;
+    registration_code: string;
+    birth_date: string;
+    tenant_id: string;
+    classes: { id: string; name: string; school_year: number; } | null;
+    classes_class_courses: { class_courses: { courses: { name: string } | null }[] }[];
+  };
+
+  // Flatten the class_courses structure
+  const flattenedCourses = studentData.classes_class_courses.flatMap(item => item.class_courses);
+
+  return {
+    ...studentData,
+    classes_class_courses: flattenedCourses,
+  } as StudentDetails;
 };
 
 const fetchTenantDetails = async (tenantId: string): Promise<TenantDetails> => {
@@ -156,6 +185,10 @@ const StudentTranscript: React.FC = () => {
     return acc;
   }, {} as Record<string, Record<string, Grade[]>>);
 
+  const courseNames = student.classes_class_courses
+    .map(cc => cc.courses?.name)
+    .filter(Boolean)
+    .join(', ');
 
   return (
     <div className="max-w-4xl mx-auto bg-white p-6 shadow-lg print:shadow-none print:p-0" ref={printRef}>
@@ -204,7 +237,10 @@ const StudentTranscript: React.FC = () => {
           </div>
           <div className="flex items-center gap-2">
             <School className="h-4 w-4 text-muted-foreground" />
-            <span className="font-semibold">Série/Ano:</span> {student.classes?.courses?.name || 'N/A'}
+            <span className="font-semibold">Série/Ano:</span> 
+            <div className="flex flex-wrap gap-1">
+              {courseNames || 'N/A'}
+            </div>
           </div>
           <div className="flex items-center gap-2 col-span-2">
             <span className="font-semibold">Matrícula:</span> {student.registration_code}
