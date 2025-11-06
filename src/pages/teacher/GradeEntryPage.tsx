@@ -62,7 +62,7 @@ interface AcademicPeriod {
 
 // --- Schemas de Validação ---
 const gradeEntrySchema = z.object({
-  courseId: z.string().uuid("Selecione uma série/ano."), // Agora é obrigatório se a turma tiver cursos
+  courseId: z.string().uuid("Selecione uma série/ano.").optional().nullable(), // Agora é obrigatório se a turma tiver cursos
   classId: z.string().uuid("Selecione uma turma."),
   subjectName: z.string().min(1, "Selecione uma matéria."),
   assessmentType: z.string().optional().nullable(), 
@@ -440,7 +440,7 @@ const GradeEntryPage: React.FC = () => {
                 <Select 
                   onValueChange={(value) => form.setValue('period', value)} 
                   value={form.watch('period')}
-                  disabled={!selectedClassId || isLoadingAcademicPeriods || (academicPeriods && academicPeriods.length === 0)}
+                  disabled={isLoadingAcademicPeriods || (academicPeriods && academicPeriods.length === 0)}
                 >
                   <SelectTrigger id="period">
                     <SelectValue placeholder={isLoadingAcademicPeriods ? "Carregando períodos..." : "Selecione o período"} />
