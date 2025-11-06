@@ -12,12 +12,13 @@ import { Badge } from '@/components/ui/badge';
 import { format, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import useAllTenantsBackupStatus from '@/hooks/useAllTenantsBackupStatus';
-import { useBackupNotifications } from '@/hooks/useBackupNotifications';
+// import { useBackupNotifications } from '@/hooks/useBackupNotifications'; // Removido
+import { toast } from 'sonner'; // Adicionado toast para feedback simples
 
 const BackupDashboard: React.FC = () => {
   const { profile, isLoading: isProfileLoading, isSuperAdmin, isSchoolUser } = useProfile();
   const { tenantsSummary, overallTenantsStatus, isLoading: isLoadingAllTenantsBackup, startBackupAllTenants } = useAllTenantsBackupStatus();
-  const { showSuccessFeedback, showEmergencyAlert, showProgressNotification, dismissNotification } = useBackupNotifications();
+  // const { showSuccessFeedback, showEmergencyAlert, showProgressNotification, dismissNotification } = useBackupNotifications(); // Removido
   const [backupAllTenantsProgressId, setBackupAllTenantsProgressId] = React.useState<string | null>(null);
 
   // Mock data e handlers para o QuickBackupPanel (tenant-specific)
@@ -30,34 +31,33 @@ const BackupDashboard: React.FC = () => {
   const handleQuickBackupTenant = async () => {
     console.log("Executando backup completo do tenant atual...");
     await new Promise(resolve => setTimeout(resolve, 3000)); // Simula API call
+    toast.success("Backup rápido do tenant concluído!");
   };
 
   const handleSelectiveBackupTenant = async (type: 'database' | 'files' | 'code') => {
     console.log(`Executando backup seletivo do tenant atual: ${type}...`);
     await new Promise(resolve => setTimeout(resolve, 1500)); // Simula API call
+    toast.success(`Backup seletivo de ${type} do tenant concluído!`);
   };
 
   const handleEmergencyRestoreTenant = async () => {
     console.log("Executando restauração de emergência do tenant atual...");
     await new Promise(resolve => setTimeout(resolve, 3000)); // Simula API call
+    toast.success("Restauração de emergência do tenant concluída!");
   };
 
   const handleBackupAllTenants = async () => {
-    const id = showProgressNotification('Backup de Todos os Tenants em Andamento', 'Iniciando backup para todas as escolas...');
-    setBackupAllTenantsProgressId(id);
+    // const id = showProgressNotification('Backup de Todos os Tenants em Andamento', 'Iniciando backup para todas as escolas...'); // Removido
+    // setBackupAllTenantsProgressId(id); // Removido
     try {
       await startBackupAllTenants();
-      showSuccessFeedback('Backup de Todos os Tenants Concluído!', 'O backup para todas as escolas foi realizado com sucesso.');
+      toast.success('Backup de Todos os Tenants Concluído!', { description: 'O backup para todas as escolas foi realizado com sucesso.' });
     } catch (error) {
-      showEmergencyAlert({
-        title: 'Falha no Backup de Todos os Tenants',
-        message: (error as Error).message || 'Não foi possível completar o backup para todas as escolas.',
-        actions: [
-          { label: 'Tentar Novamente', onClick: handleBackupAllTenants },
-        ],
+      toast.error('Falha no Backup de Todos os Tenants', {
+        description: (error as Error).message || 'Não foi possível completar o backup para todas as escolas.',
       });
     } finally {
-      if (backupAllTenantsProgressId) dismissNotification(backupAllTenantsProgressId);
+      // if (backupAllTenantsProgressId) dismissNotification(backupAllTenantsProgressId); // Removido
       setBackupAllTenantsProgressId(null);
     }
   };

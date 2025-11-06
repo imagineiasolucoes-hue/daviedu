@@ -9,7 +9,7 @@ import useBackupStatus, { BackupStatus } from '@/hooks/useBackupStatus';
 import { format, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
-import { useBackupNotifications } from '@/hooks/useBackupNotifications'; // Importando o hook
+// import { useBackupNotifications } from '@/hooks/useBackupNotifications'; // Removido
 
 const getStatusDetails = (status: BackupStatus) => {
   switch (status) {
@@ -43,7 +43,7 @@ const BackupStatusWidget: React.FC = () => {
     isBackingUp, 
     startBackup 
   } = useBackupStatus();
-  const { showSuccessFeedback, showProgressNotification, dismissNotification } = useBackupNotifications();
+  // const { showSuccessFeedback, showProgressNotification, dismissNotification } = useBackupNotifications(); // Removido
   const [progressNotificationId, setProgressNotificationId] = useState<string | null>(null);
 
   const { label, color, icon: StatusIcon } = getStatusDetails(currentStatus);
@@ -57,17 +57,17 @@ const BackupStatusWidget: React.FC = () => {
     : 'N/A';
 
   const handleManualBackup = async () => {
-    const id = showProgressNotification('Backup em Andamento', 'Realizando backup manual...');
-    setProgressNotificationId(id);
+    // const id = showProgressNotification('Backup em Andamento', 'Realizando backup manual...'); // Removido
+    // setProgressNotificationId(id); // Removido
     try {
       await startBackup();
-      showSuccessFeedback('Backup Concluído!', 'O backup manual foi realizado com sucesso.');
+      // showSuccessFeedback('Backup Concluído!', 'O backup manual foi realizado com sucesso.'); // Removido
     } catch (error) {
       // Erros do startBackup são tratados pelo useBackupMonitoring ou pelo QuickBackupPanel
       // Este widget apenas mostra o progresso e sucesso do backup manual
       console.error("Erro ao iniciar backup manual:", error);
     } finally {
-      if (progressNotificationId) dismissNotification(progressNotificationId);
+      // if (progressNotificationId) dismissNotification(progressNotificationId); // Removido
       setProgressNotificationId(null);
     }
   };

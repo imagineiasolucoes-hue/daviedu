@@ -6,8 +6,9 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Zap, Database, Code, Settings, AlertTriangle, Loader2, ChevronDown, RefreshCcw } from 'lucide-react';
-import { useBackupNotifications } from '@/hooks/useBackupNotifications';
+// import { useBackupNotifications } from '@/hooks/useBackupNotifications'; // Removido
 import useGlobalBackupStatus from '@/hooks/useGlobalBackupStatus';
+import { toast } from 'sonner'; // Adicionado toast para feedback simples
 
 type GlobalSelectiveBackupType = 'code' | 'schema' | 'config';
 
@@ -19,72 +20,60 @@ const GlobalQuickBackupPanel: React.FC = () => {
     startGlobalConfigBackup,
     startFullGlobalBackup,
   } = useGlobalBackupStatus();
-  const { showSuccessFeedback, showEmergencyAlert, showProgressNotification, dismissNotification } = useBackupNotifications();
+  // const { showSuccessFeedback, showEmergencyAlert, showProgressNotification, dismissNotification } = useBackupNotifications(); // Removido
   const [progressNotificationId, setProgressNotificationId] = useState<string | null>(null);
   const [isRestoreConfirmOpen, setIsRestoreConfirmOpen] = useState(false); // Para restauração global
 
   const handleFullGlobalBackup = async () => {
-    const id = showProgressNotification('Backup Global em Andamento', 'Realizando backup completo do sistema SaaS...');
-    setProgressNotificationId(id);
+    // const id = showProgressNotification('Backup Global em Andamento', 'Realizando backup completo do sistema SaaS...'); // Removido
+    // setProgressNotificationId(id); // Removido
     try {
       await startFullGlobalBackup();
-      showSuccessFeedback('Backup Global Concluído!', 'O backup completo do sistema SaaS foi realizado com sucesso.');
+      toast.success('Backup Global Concluído!', { description: 'O backup completo do sistema SaaS foi realizado com sucesso.' });
     } catch (error) {
-      showEmergencyAlert({
-        title: 'Falha no Backup Global Completo',
-        message: (error as Error).message || 'Não foi possível completar o backup global completo.',
-        actions: [
-          { label: 'Tentar Novamente', onClick: handleFullGlobalBackup },
-        ],
+      toast.error('Falha no Backup Global Completo', {
+        description: (error as Error).message || 'Não foi possível completar o backup global completo.',
       });
     } finally {
-      if (progressNotificationId) dismissNotification(progressNotificationId);
+      // if (progressNotificationId) dismissNotification(progressNotificationId); // Removido
       setProgressNotificationId(null);
     }
   };
 
   const handleGlobalSelectiveBackup = async (type: GlobalSelectiveBackupType) => {
-    const id = showProgressNotification('Backup Seletivo Global em Andamento', `Realizando backup seletivo global de ${type}...`);
-    setProgressNotificationId(id);
+    // const id = showProgressNotification('Backup Seletivo Global em Andamento', `Realizando backup seletivo global de ${type}...`); // Removido
+    // setProgressNotificationId(id); // Removido
     try {
       switch (type) {
         case 'code': await startGlobalCodeBackup(); break;
         case 'schema': await startGlobalSchemaBackup(); break;
         case 'config': await startGlobalConfigBackup(); break;
       }
-      showSuccessFeedback('Backup Seletivo Global Concluído!', `O backup global de ${type} foi realizado com sucesso.`);
+      toast.success('Backup Seletivo Global Concluído!', { description: `O backup global de ${type} foi realizado com sucesso.` });
     } catch (error) {
-      showEmergencyAlert({
-        title: `Falha no Backup Seletivo Global (${type})`,
-        message: (error as Error).message || `Não foi possível completar o backup seletivo global de ${type}.`,
-        actions: [
-          { label: 'Tentar Novamente', onClick: () => handleGlobalSelectiveBackup(type) },
-        ],
+      toast.error(`Falha no Backup Seletivo Global (${type})`, {
+        description: (error as Error).message || `Não foi possível completar o backup seletivo global de ${type}.`,
       });
     } finally {
-      if (progressNotificationId) dismissNotification(progressNotificationId);
+      // if (progressNotificationId) dismissNotification(progressNotificationId); // Removido
       setProgressNotificationId(null);
     }
   };
 
   const handleGlobalEmergencyRestore = async () => {
     // Simulação de restauração global
-    const id = showProgressNotification('Restauração Global em Andamento', 'Restaurando o sistema SaaS para o último backup estável...');
-    setProgressNotificationId(id);
+    // const id = showProgressNotification('Restauração Global em Andamento', 'Restaurando o sistema SaaS para o último backup estável...'); // Removido
+    // setProgressNotificationId(id); // Removido
     try {
       await new Promise(resolve => setTimeout(resolve, 7000)); // Simula API call de restauração global
-      showSuccessFeedback('Restauração Global Concluída!', 'O sistema SaaS foi restaurado com sucesso.');
+      toast.success('Restauração Global Concluída!', { description: 'O sistema SaaS foi restaurado com sucesso.' });
     } catch (error) {
-      showEmergencyAlert({
-        title: 'Falha na Restauração Global',
-        message: (error as Error).message || 'Não foi possível restaurar o sistema SaaS.',
-        actions: [
-          { label: 'Tentar Novamente', onClick: handleGlobalEmergencyRestore },
-        ],
+      toast.error('Falha na Restauração Global', {
+        description: (error as Error).message || 'Não foi possível restaurar o sistema SaaS.',
       });
     } finally {
       setIsRestoreConfirmOpen(false);
-      if (progressNotificationId) dismissNotification(progressNotificationId);
+      // if (progressNotificationId) dismissNotification(progressNotificationId); // Removido
       setProgressNotificationId(null);
     }
   };

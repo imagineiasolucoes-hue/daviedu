@@ -7,7 +7,8 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Zap, Database, Folder, Code, HardDrive, AlertTriangle, Loader2, ChevronDown, RefreshCcw, Cloud } from 'lucide-react'; // Adicionado Cloud
-import { useBackupNotifications } from '@/hooks/useBackupNotifications'; // Importando o hook
+// import { useBackupNotifications } from '@/hooks/useBackupNotifications'; // Removido
+import { toast } from 'sonner'; // Adicionado toast para feedback simples
 
 type SelectiveBackupType = 'database' | 'files' | 'code';
 
@@ -38,72 +39,60 @@ const QuickBackupPanel: React.FC<QuickBackupPanelProps> = ({
   const [isSelectiveBackupLoading, setIsSelectiveBackupLoading] = useState(false);
   const [isRestoreLoading, setIsRestoreLoading] = useState(false);
   const [isRestoreConfirmOpen, setIsRestoreConfirmOpen] = useState(false);
-  const { showSuccessFeedback, showEmergencyAlert, showProgressNotification, dismissNotification } = useBackupNotifications();
+  // const { showSuccessFeedback, showEmergencyAlert, showProgressNotification, dismissNotification } = useBackupNotifications(); // Removido
   const [progressNotificationId, setProgressNotificationId] = useState<string | null>(null);
 
   const handleQuickBackup = async () => {
     setIsQuickBackupLoading(true);
-    const id = showProgressNotification('Backup em Andamento', 'Realizando backup completo de todos os dados...');
-    setProgressNotificationId(id);
+    // const id = showProgressNotification('Backup em Andamento', 'Realizando backup completo de todos os dados...'); // Removido
+    // setProgressNotificationId(id); // Removido
     try {
       await onQuickBackup();
-      showSuccessFeedback('Backup Concluído!', 'O backup completo foi realizado com sucesso.');
+      toast.success('Backup Concluído!', { description: 'O backup completo foi realizado com sucesso.' });
     } catch (error) {
-      showEmergencyAlert({
-        title: 'Falha no Backup Completo',
-        message: (error as Error).message || 'Não foi possível completar o backup completo.',
-        actions: [
-          { label: 'Tentar Novamente', onClick: handleQuickBackup },
-        ],
+      toast.error('Falha no Backup Completo', {
+        description: (error as Error).message || 'Não foi possível completar o backup completo.',
       });
     } finally {
       setIsQuickBackupLoading(false);
-      if (progressNotificationId) dismissNotification(progressNotificationId);
+      // if (progressNotificationId) dismissNotification(progressNotificationId); // Removido
       setProgressNotificationId(null);
     }
   };
 
   const handleSelectiveBackup = async (type: SelectiveBackupType) => {
     setIsSelectiveBackupLoading(true);
-    const id = showProgressNotification('Backup Seletivo em Andamento', `Realizando backup seletivo de ${type}...`);
-    setProgressNotificationId(id);
+    // const id = showProgressNotification('Backup Seletivo em Andamento', `Realizando backup seletivo de ${type}...`); // Removido
+    // setProgressNotificationId(id); // Removido
     try {
       await onSelectiveBackup(type);
-      showSuccessFeedback('Backup Seletivo Concluído!', `O backup dos dados de ${type} foi realizado com sucesso.`);
+      toast.success('Backup Seletivo Concluído!', { description: `O backup dos dados de ${type} foi realizado com sucesso.` });
     } catch (error) {
-      showEmergencyAlert({
-        title: `Falha no Backup Seletivo (${type})`,
-        message: (error as Error).message || `Não foi possível completar o backup seletivo de ${type}.`,
-        actions: [
-          { label: 'Tentar Novamente', onClick: () => handleSelectiveBackup(type) },
-        ],
+      toast.error(`Falha no Backup Seletivo (${type})`, {
+        description: (error as Error).message || `Não foi possível completar o backup seletivo de ${type}.`,
       });
     } finally {
       setIsSelectiveBackupLoading(false);
-      if (progressNotificationId) dismissNotification(progressNotificationId);
+      // if (progressNotificationId) dismissNotification(progressNotificationId); // Removido
       setProgressNotificationId(null);
     }
   };
 
   const handleEmergencyRestore = async () => {
     setIsRestoreLoading(true);
-    const id = showProgressNotification('Restauração em Andamento', 'Restaurando o sistema para o último backup estável...');
-    setProgressNotificationId(id);
+    // const id = showProgressNotification('Restauração em Andamento', 'Restaurando o sistema para o último backup estável...'); // Removido
+    // setProgressNotificationId(id); // Removido
     try {
       await onEmergencyRestore();
-      showSuccessFeedback('Restauração Concluída!', 'O último backup estável foi restaurado com sucesso.');
+      toast.success('Restauração Concluída!', { description: 'O último backup estável foi restaurado com sucesso.' });
     } catch (error) {
-      showEmergencyAlert({
-        title: 'Falha na Restauração',
-        message: (error as Error).message || 'Não foi possível restaurar o sistema.',
-        actions: [
-          { label: 'Tentar Novamente', onClick: handleEmergencyRestore },
-        ],
+      toast.error('Falha na Restauração', {
+        description: (error as Error).message || 'Não foi possível restaurar o sistema.',
       });
     } finally {
       setIsRestoreLoading(false);
       setIsRestoreConfirmOpen(false);
-      if (progressNotificationId) dismissNotification(progressNotificationId);
+      // if (progressNotificationId) dismissNotification(progressNotificationId); // Removido
       setProgressNotificationId(null);
     }
   };
@@ -130,7 +119,7 @@ const QuickBackupPanel: React.FC<QuickBackupPanelProps> = ({
               <Button
                 onClick={onBackupAllTenants}
                 disabled={!!progressNotificationId}
-                className="w-full bg-blue-600 hover:bg-blue-700"
+                className="w-full bg-blue-600 hover:bg-blue-700 text-white"
               >
                 {!!progressNotificationId ? (
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />

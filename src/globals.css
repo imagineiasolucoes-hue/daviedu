@@ -101,6 +101,7 @@
 }
 
 /* Custom Scrollbar for BackupAlerts */
+/* Removido
 .custom-scrollbar::-webkit-scrollbar {
   width: 8px;
 }
@@ -118,3 +119,4 @@
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
   background: hsl(var(--primary));
 }
+*/
