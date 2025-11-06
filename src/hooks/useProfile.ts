@@ -42,24 +42,25 @@ const fetchProfile = async (userId: string): Promise<Profile | null> => {
 
   const profile: Profile = profileData as Profile;
 
-  // 3. Se o perfil for de um professor, busca o employee_id correspondente usando o novo user_id
-  if (profile.role === 'teacher' && profile.tenant_id) {
+  // 3. Se o perfil for de um professor OU um admin que também é professor, busca o employee_id correspondente
+  // O employee_id é necessário para lançar notas, pois a tabela 'grades' referencia 'employees(id)'.
+  if ((profile.role === 'teacher' || profile.role === 'admin') && profile.tenant_id) {
     const { data: employeeData, error: employeeError } = await supabase
       .from('employees')
       .select('id')
       .eq('tenant_id', profile.tenant_id)
       .eq('user_id', profile.id) // Usando o profile.id (que é o auth.uid())
-      .eq('is_teacher', true)
+      .eq('is_teacher', true) // Apenas se for um funcionário que é professor
       .maybeSingle();
 
     if (employeeError) {
-      console.error("Supabase fetchEmployeeId error for teacher:", employeeError);
+      console.error("Supabase fetchEmployeeId error for teacher/admin:", employeeError);
     }
 
     if (employeeData) {
       profile.employee_id = employeeData.id;
     } else {
-      console.warn(`Employee ID not found for teacher profile ${profile.id} linked via user_id.`);
+      console.warn(`Employee ID not found for teacher/admin profile ${profile.id} linked via user_id.`);
     }
   }
 
