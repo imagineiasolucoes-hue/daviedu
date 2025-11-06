@@ -18,14 +18,15 @@ interface StudentDetails {
   registration_code: string;
   birth_date: string;
   tenant_id: string;
-  class_id: string | null; // Adicionado class_id
-  course_id: string | null; // Adicionado course_id
+  class_id: string | null;
+  course_id: string | null;
+  created_at: string; // Adicionado created_at para a data de matrícula
   classes: { 
     id: string;
     name: string; 
     school_year: number; 
   } | null;
-  courses: { name: string } | null; // Adicionado para buscar o nome do curso diretamente
+  courses: { name: string } | null;
 }
 
 interface TenantConfig {
@@ -49,16 +50,16 @@ interface Grade {
   subject_name: string;
   grade_value: number;
   assessment_type: string;
-  period: string; // Assumindo que 'period' corresponde a '1ª Unidade', '2ª Unidade', etc.
+  period: string;
   date_recorded: string;
 }
 
 interface ProcessedSubjectGrade {
   subject_name: string;
-  unit_grades: { [periodName: string]: number | null }; // Ex: { "1ª Unidade": 8.5, "2ª Unidade": 7.0 }
-  total_units_grade: number | null; // Soma das médias das unidades
-  final_average: number | null; // Média das unidades
-  absences: number | null; // Placeholder para faltas
+  unit_grades: { [periodName: string]: number | null };
+  total_units_grade: number | null;
+  final_average: number | null;
+  absences: number | null;
   result: 'Aprovado' | 'Reprovado' | 'Recuperação' | 'N/A';
 }
 
@@ -74,6 +75,7 @@ const fetchStudentData = async (studentId: string): Promise<StudentDetails> => {
       tenant_id, 
       class_id,
       course_id,
+      created_at, -- Buscando a data de criação (matrícula)
       classes (
         id,
         name, 
@@ -308,8 +310,12 @@ const ReportCard: React.FC = () => {
               {studentCourseName}
             </div>
           </div>
+          <div className="flex items-center gap-2">
+            <Calendar className="h-4 w-4 text-muted-foreground" />
+            <span className="font-semibold">Matrícula:</span> {format(new Date(student.created_at), 'dd/MM/yyyy', { locale: ptBR })}
+          </div>
           <div className="flex items-center gap-2 col-span-2">
-            <span className="font-semibold">Matrícula:</span> {student.registration_code}
+            <span className="font-semibold">Código de Matrícula:</span> {student.registration_code}
           </div>
         </CardContent>
       </Card>
