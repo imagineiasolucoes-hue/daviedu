@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Home, Users, Settings, LogOut, School, BookOpen, DollarSign, TrendingUp, TrendingDown, CalendarDays, FileText, UserCheck, ListChecks, HardDrive, ShoppingCart, HelpCircle, LayoutDashboard, ClipboardList, GraduationCap, ChevronDown } from 'lucide-react';
+import { Home, Users, Settings, LogOut, School, BookOpen, DollarSign, TrendingUp, TrendingDown, CalendarDays, FileText, UserCheck, ListChecks, HardDrive, ShoppingCart, HelpCircle, LayoutDashboard, ClipboardList, GraduationCap, ChevronDown, BookMarked } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { cn } from '@/lib/utils';
@@ -82,12 +82,13 @@ const Sidebar: React.FC<SidebarProps> = ({ isSuperAdmin, displayName, roleDispla
       ],
     },
     {
-      to: "/classes", // Agora esta é a página de Gestão de Turmas
+      to: "/classes", // Página principal de Turmas
       icon: <BookOpen className="h-5 w-5" />,
       label: "Turmas",
       onCloseSheet: () => onCloseSheet(),
       children: [
-        { to: "/classes/courses", icon: <ListChecks className="h-5 w-5" />, label: "Séries/Anos", onCloseSheet, isSubItem: true }, // Sub-item para Séries/Anos
+        { to: "/classes/courses", icon: <ListChecks className="h-5 w-5" />, label: "Séries/Anos", onCloseSheet, isSubItem: true },
+        { to: "/classes/subjects", icon: <BookMarked className="h-5 w-5" />, label: "Matérias", onCloseSheet, isSubItem: true }, // NOVO SUB-ITEM
       ],
     },
     { to: "/calendar", icon: <CalendarDays className="h-5 w-5" />, label: "Calendário", onCloseSheet },
@@ -129,6 +130,15 @@ const Sidebar: React.FC<SidebarProps> = ({ isSuperAdmin, displayName, roleDispla
   } else {
     navigationItems = adminNavItems;
   }
+
+  // Determina se o item pai deve estar aberto por padrão se uma sub-rota estiver ativa
+  useEffect(() => {
+    const activeParent = navigationItems.find(item => isParentActive(item) && item.children);
+    if (activeParent && openParent !== activeParent.to) {
+      setOpenParent(activeParent.to);
+    }
+  }, [location.pathname, navigationItems]);
+
 
   return (
     <div className="flex h-full max-h-screen flex-col gap-2 bg-sidebar p-4 border-r border-sidebar-border">

@@ -17,7 +17,7 @@ import AppLayout from "./components/layout/AppLayout";
 import TenantsPage from "./pages/super-admin/TenantsPage";
 import UsersPage from "./pages/super-admin/UsersPage";
 import StudentsPage from "./pages/StudentsPage";
-import ClassesPage from "./pages/ClassesPage"; // Importar a nova ClassesPage
+import ClassesPage from "./pages/ClassesPage"; 
 import FinancePage from "./pages/FinancePage";
 import RevenuesPage from "./pages/RevenuesPage";
 import ExpensesPage from "./pages/ExpensesPage";
@@ -25,7 +25,8 @@ import SettingsPage from "./pages/SettingsPage";
 import CalendarPage from "./pages/CalendarPage";
 import DocumentsPage from "./pages/DocumentsPage";
 import TeachersPage from "./pages/TeachersPage";
-import CoursesPage from "./pages/CoursesPage"; // Importar a nova CoursesPage
+import CoursesPage from "./pages/CoursesPage"; 
+import SubjectsPage from "./pages/SubjectsPage"; // NOVO IMPORT
 import BackupDashboard from "./pages/BackupDashboard";
 import FAQPage from "./pages/FAQPage";
 import TeacherDashboard from "./pages/teacher/TeacherDashboard";
@@ -68,8 +69,9 @@ const App = () => {
                   <Route path="/dashboard" element={<Dashboard />} />
                   <Route path="/students" element={<StudentsPage />} />
                   <Route path="/teachers" element={<TeachersPage />} />
-                  <Route path="/classes" element={<ClassesPage />} /> {/* Rota para a nova ClassesPage */}
-                  <Route path="/classes/courses" element={<CoursesPage />} /> {/* Rota para a nova CoursesPage */}
+                  <Route path="/classes" element={<ClassesPage />} /> 
+                  <Route path="/classes/courses" element={<CoursesPage />} /> 
+                  <Route path="/classes/subjects" element={<SubjectsPage />} /> {/* NOVA ROTA */}
                   <Route path="/calendar" element={<CalendarPage />} />
                   <Route path="/documents" element={<DocumentsPage />} />
                   <Route path="/finance" element={<FinancePage />} />
