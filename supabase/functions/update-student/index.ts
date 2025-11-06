@@ -20,7 +20,7 @@ serve(async (req) => {
   }
 
   try {
-    const { student_id, tenant_id, ...updateData } = await req.json();
+    const { student_id, tenant_id, course_id, ...updateData } = await req.json(); // Adicionado course_id
 
     if (!student_id || !tenant_id) {
       throw new Error("ID do aluno e da escola são obrigatórios.");
@@ -33,7 +33,7 @@ serve(async (req) => {
 
     const { data, error } = await supabaseAdmin
       .from("students")
-      .update(updateData)
+      .update({ ...updateData, course_id: course_id || null }) // Atualizando o course_id
       .eq("id", student_id)
       .eq("tenant_id", tenant_id) // Security check
       .select("id")

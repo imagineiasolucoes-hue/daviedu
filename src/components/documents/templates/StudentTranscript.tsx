@@ -19,14 +19,14 @@ interface StudentDetails {
   registration_code: string;
   birth_date: string;
   tenant_id: string;
+  class_id: string | null; // Adicionado class_id
+  course_id: string | null; // Adicionado course_id
   classes: { 
     id: string; // Adicionado ID da classe para buscar cursos
     name: string; 
     school_year: number; 
-    class_courses: { // Agora aninhado diretamente sob 'classes'
-      courses: { name: string } | null;
-    }[];
   } | null;
+  courses: { name: string } | null; // Adicionado para buscar o nome do curso diretamente
 }
 
 interface TenantConfig {
@@ -64,14 +64,14 @@ const fetchStudentData = async (studentId: string): Promise<StudentDetails> => {
       registration_code, 
       birth_date, 
       tenant_id, 
+      class_id,
+      course_id,
       classes (
         id,
         name, 
-        school_year,
-        class_courses (
-          courses (name)
-        )
-      )
+        school_year
+      ),
+      courses (name)
     `)
     .eq('id', studentId)
     .single();
@@ -172,11 +172,8 @@ const StudentTranscript: React.FC = () => {
     return acc;
   }, {} as Record<string, Record<string, Grade[]>>);
 
-  // Acessando os nomes dos cursos diretamente da estrutura aninhada
-  const courseNames = student.classes?.class_courses
-    .map(cc => cc.courses?.name)
-    .filter(Boolean)
-    .join(', ');
+  // Acessando o nome do curso diretamente da relação 'courses' do aluno
+  const studentCourseName = student.courses?.name || 'N/A';
 
   const schoolConfig = tenant.config;
   const fullAddress = [
@@ -244,7 +241,7 @@ const StudentTranscript: React.FC = () => {
             <School className="h-4 w-4 text-muted-foreground" />
             <span className="font-semibold">Série/Ano:</span> 
             <div className="flex flex-wrap gap-1">
-              {courseNames || 'N/A'}
+              {studentCourseName}
             </div>
           </div>
           <div className="flex items-center gap-2 col-span-2">

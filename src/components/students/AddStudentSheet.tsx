@@ -191,7 +191,7 @@ const AddStudentSheet: React.FC = () => {
     // Separar dados do aluno e do responsável
     const { 
         guardian_full_name, guardian_relationship, guardian_phone, guardian_email, guardian_cpf,
-        course_id, // Removendo course_id do studentData, pois ele não é uma coluna direta na tabela students
+        // course_id, // Removendo course_id do studentData, pois ele não é uma coluna direta na tabela students
         ...studentData 
     } = data;
 
@@ -206,6 +206,7 @@ const AddStudentSheet: React.FC = () => {
     const studentPayload = {
         ...studentData,
         class_id: studentData.class_id, 
+        course_id: data.course_id, // Incluindo o course_id no payload do aluno
         gender: studentData.gender || null,
         email: studentData.email || null,
         phone: studentData.phone || null,

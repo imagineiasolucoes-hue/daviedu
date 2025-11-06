@@ -61,8 +61,8 @@ serve(async (req) => {
     if (!tenant_id || !school_year || !studentInfo || !guardianInfo) {
       throw new Error("Dados incompletos para aluno, escola ou responsável.");
     }
-    if (!studentInfo.full_name || !studentInfo.birth_date) {
-      throw new Error("Campos obrigatórios do aluno ausentes: nome e data de nascimento.");
+    if (!studentInfo.full_name || !studentInfo.birth_date || !studentInfo.class_id || !studentInfo.course_id) { // Adicionado course_id na validação
+      throw new Error("Campos obrigatórios do aluno ausentes: nome, data de nascimento, turma e série/ano.");
     }
     if (!guardianInfo.guardian_full_name || !guardianInfo.guardian_relationship) {
       throw new Error("Campos obrigatórios do responsável ausentes: nome e parentesco.");
@@ -82,6 +82,7 @@ serve(async (req) => {
       tenant_id: tenant_id,
       registration_code: registration_code,
       status: "active",
+      course_id: studentInfo.course_id, // Inserindo o course_id
     };
 
     const { data: studentResult, error: studentInsertError } = await supabaseAdmin

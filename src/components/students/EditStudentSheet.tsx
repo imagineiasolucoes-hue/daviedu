@@ -19,6 +19,7 @@ const studentSchema = z.object({
   phone: z.string().optional().nullable(),
   email: z.string().email("Email inválido.").optional().or(z.literal('')).nullable(),
   class_id: z.string().uuid("Selecione uma turma.").optional().nullable(),
+  course_id: z.string().uuid("Selecione uma série/ano.").optional().nullable(), // Adicionado course_id
   status: z.enum(['active', 'pre-enrolled', 'inactive']),
 });
 
@@ -34,6 +35,11 @@ interface Class {
   id: string;
   name: string;
   school_year: number;
+}
+
+interface Course { // Adicionado interface para Course
+  id: string;
+  name: string;
 }
 
 const fetchStudentDetails = async (studentId: string) => {
@@ -56,6 +62,16 @@ const fetchClasses = async (tenantId: string): Promise<Class[]> => {
   return data as Class[];
 };
 
+const fetchCourses = async (tenantId: string): Promise<Course[]> => { // Adicionado fetchCourses
+  const { data, error } = await supabase
+    .from('courses')
+    .select('id, name')
+    .eq('tenant_id', tenantId)
+    .order('name');
+  if (error) throw new Error(error.message);
+  return data;
+};
+
 const EditStudentSheet: React.FC<EditStudentSheetProps> = ({ studentId, open, onOpenChange }) => {
   const { profile } = useProfile();
   const queryClient = useQueryClient();
@@ -73,6 +89,12 @@ const EditStudentSheet: React.FC<EditStudentSheetProps> = ({ studentId, open, on
     enabled: !!tenantId && open,
   });
 
+  const { data: courses, isLoading: isLoadingCourses } = useQuery<Course[], Error>({ // Adicionado query para courses
+    queryKey: ['courses', tenantId],
+    queryFn: () => fetchCourses(tenantId!),
+    enabled: !!tenantId && open,
+  });
+
   const form = useForm<StudentFormData>({
     resolver: zodResolver(studentSchema),
   });
@@ -85,6 +107,7 @@ const EditStudentSheet: React.FC<EditStudentSheetProps> = ({ studentId, open, on
         phone: student.phone || null,
         email: student.email || null,
         class_id: student.class_id || null,
+        course_id: student.course_id || null, // Resetando o course_id
         status: student.status,
       });
     }
@@ -98,6 +121,7 @@ const EditStudentSheet: React.FC<EditStudentSheetProps> = ({ studentId, open, on
           student_id: studentId, 
           tenant_id: tenantId,
           class_id: data.class_id || null,
+          course_id: data.course_id || null, // Enviando o course_id
           email: data.email || null,
           phone: data.phone || null,
         }),
@@ -119,7 +143,7 @@ const EditStudentSheet: React.FC<EditStudentSheetProps> = ({ studentId, open, on
     mutation.mutate(data);
   };
 
-  const isLoading = isLoadingStudent || isLoadingClasses;
+  const isLoading = isLoadingStudent || isLoadingClasses || isLoadingCourses; // Incluído isLoadingCourses
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
@@ -169,6 +193,27 @@ const EditStudentSheet: React.FC<EditStudentSheetProps> = ({ studentId, open, on
                   <SelectItem value="none">Nenhuma Turma (Desvincular)</SelectItem>
                   {classes?.map((c) => (
                     <SelectItem key={c.id} value={c.id}>{c.name} ({c.school_year})</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Campo de Série/Ano (Course ID) */}
+            <div className="space-y-2">
+              <Label htmlFor="course_id">Série / Ano</Label>
+              <Select 
+                onValueChange={(value) => form.setValue('course_id', value === 'none' ? null : value)} 
+                value={form.watch('course_id') || 'none'}
+                disabled={isLoadingCourses}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder={isLoadingCourses ? "Carregando Séries/Anos..." : "Selecione a série/ano"} />
+                </SelectTrigger>
+                <SelectContent>
+                  {/* Opção para desvincular a série/ano */}
+                  <SelectItem value="none">Nenhuma Série/Ano (Desvincular)</SelectItem>
+                  {courses?.map((c) => (
+                    <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
