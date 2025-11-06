@@ -23,12 +23,10 @@ interface StudentDetails {
     id: string; // Adicionado ID da classe para buscar cursos
     name: string; 
     school_year: number; 
-    // courses removido daqui
+    class_courses: { // Agora aninhado diretamente sob 'classes'
+      courses: { name: string } | null;
+    }[];
   } | null;
-  // Nova relação para buscar cursos da turma
-  classes_class_courses: {
-    courses: { name: string } | null;
-  }[];
 }
 
 interface TenantConfig {
@@ -61,9 +59,7 @@ const fetchStudentData = async (studentId: string): Promise<StudentDetails> => {
       classes (
         id,
         name, 
-        school_year
-      ),
-      classes!inner(
+        school_year,
         class_courses (
           courses (name)
         )
@@ -73,25 +69,8 @@ const fetchStudentData = async (studentId: string): Promise<StudentDetails> => {
     .single();
   if (error) throw new Error(error.message);
   
-  // A consulta retorna 'classes' e 'classes!inner(class_courses)' como campos separados.
-  // Renomeamos o segundo campo para 'classes_class_courses' para facilitar o acesso.
-  const studentData = data as unknown as {
-    id: string;
-    full_name: string;
-    registration_code: string;
-    birth_date: string;
-    tenant_id: string;
-    classes: { id: string; name: string; school_year: number; } | null;
-    classes_class_courses: { class_courses: { courses: { name: string } | null }[] }[];
-  };
-
-  // Flatten the class_courses structure
-  const flattenedCourses = studentData.classes_class_courses.flatMap(item => item.class_courses);
-
-  return {
-    ...studentData,
-    classes_class_courses: flattenedCourses,
-  } as StudentDetails;
+  // A estrutura de dados agora corresponde diretamente à interface StudentDetails
+  return data as unknown as StudentDetails;
 };
 
 const fetchTenantDetails = async (tenantId: string): Promise<TenantDetails> => {
@@ -185,7 +164,8 @@ const StudentTranscript: React.FC = () => {
     return acc;
   }, {} as Record<string, Record<string, Grade[]>>);
 
-  const courseNames = student.classes_class_courses
+  // Acessando os nomes dos cursos diretamente da estrutura aninhada
+  const courseNames = student.classes?.class_courses
     .map(cc => cc.courses?.name)
     .filter(Boolean)
     .join(', ');
