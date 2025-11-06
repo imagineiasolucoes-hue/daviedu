@@ -307,6 +307,7 @@ const GradeEntryPage: React.FC = () => {
       });
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : "Ocorreu um erro inesperado.";
+      console.error("Error submitting grades:", error); // Adicionando console.error para depuração
       toast.error("Erro ao Lançar Notas", {
         description: errorMessage,
       });
