@@ -11,7 +11,6 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Badge } from '@/components/ui/badge';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
-import SubjectSheet from '../components/subjects/SubjectSheet';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -123,7 +122,7 @@ const ClassesPage: React.FC = () => {
       <div className="flex justify-between items-center">
         <h1 className="text-3xl font-bold">Gestão de Turmas</h1>
         <div className="flex gap-2">
-          <SubjectSheet />
+          {/* SubjectSheet removido daqui, agora acessível via menu lateral em /classes/subjects */}
           <AddClassSheet />
         </div>
       </div>
