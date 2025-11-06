@@ -2,7 +2,8 @@ import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { BookMarked, Loader2, Trash2 } from 'lucide-react';
 import SubjectSheet from '@/components/subjects/SubjectSheet';
-import AssessmentTypeSheet from '@/components/subjects/AssessmentTypeSheet'; // NOVO IMPORT
+import AssessmentTypeSheet from '@/components/subjects/AssessmentTypeSheet';
+import AcademicPeriodSheet from '@/components/subjects/AcademicPeriodSheet'; // NOVO IMPORT
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useProfile } from '@/hooks/useProfile';
@@ -96,7 +97,8 @@ const SubjectsPage: React.FC = () => {
       <div className="flex justify-between items-center">
         <h1 className="text-3xl font-bold">Gestão de Matérias</h1>
         <div className="flex gap-2">
-          <AssessmentTypeSheet /> {/* NOVO BOTÃO */}
+          <AcademicPeriodSheet /> {/* NOVO BOTÃO */}
+          <AssessmentTypeSheet />
           <SubjectSheet />
         </div>
       </div>
