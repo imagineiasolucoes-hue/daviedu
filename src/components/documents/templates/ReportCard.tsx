@@ -75,7 +75,7 @@ const fetchStudentData = async (studentId: string): Promise<StudentDetails> => {
       tenant_id, 
       class_id,
       course_id,
-      created_at, -- Buscando a data de criação (matrícula)
+      created_at, 
       classes (
         id,
         name, 
