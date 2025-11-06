@@ -13,8 +13,8 @@ export interface Profile {
   role: UserRole;
   updated_at: string | null;
   phone: string | null;
-  email: string | null; // Adicionado para buscar employee_id
-  employee_id?: string | null; // NOVO: ID do funcionário, se o perfil for de um professor
+  email: string | null; 
+  employee_id?: string | null; // ID do funcionário, se o perfil for de um professor
 }
 
 const fetchProfile = async (userId: string): Promise<Profile | null> => {
@@ -42,25 +42,24 @@ const fetchProfile = async (userId: string): Promise<Profile | null> => {
 
   const profile: Profile = profileData as Profile;
 
-  // 3. Se o perfil for de um professor, busca o employee_id correspondente
-  if (profile.role === 'teacher' && profile.tenant_id && profile.email) {
+  // 3. Se o perfil for de um professor, busca o employee_id correspondente usando o novo user_id
+  if (profile.role === 'teacher' && profile.tenant_id) {
     const { data: employeeData, error: employeeError } = await supabase
       .from('employees')
       .select('id')
       .eq('tenant_id', profile.tenant_id)
-      .eq('email', profile.email)
+      .eq('user_id', profile.id) // Usando o profile.id (que é o auth.uid())
       .eq('is_teacher', true)
       .maybeSingle();
 
     if (employeeError) {
       console.error("Supabase fetchEmployeeId error for teacher:", employeeError);
-      // Não impede o carregamento do perfil, mas loga o erro
     }
 
     if (employeeData) {
       profile.employee_id = employeeData.id;
     } else {
-      console.warn(`Employee ID not found for teacher profile ${profile.id} with email ${profile.email}.`);
+      console.warn(`Employee ID not found for teacher profile ${profile.id} linked via user_id.`);
     }
   }
 
@@ -80,7 +79,7 @@ export const useProfile = () => {
   const isLoading = isAuthLoading || isProfileLoading;
   const isSuperAdmin = profile?.role === 'super_admin';
   const isAdmin = profile?.role === 'admin';
-  const isTeacher = profile?.role === 'teacher'; // Adicionado
+  const isTeacher = profile?.role === 'teacher'; 
   const isSchoolUser = profile?.tenant_id !== null;
 
   return {
@@ -90,7 +89,7 @@ export const useProfile = () => {
     refetch,
     isSuperAdmin,
     isAdmin,
-    isTeacher, // Adicionado
+    isTeacher, 
     isSchoolUser,
   };
 };

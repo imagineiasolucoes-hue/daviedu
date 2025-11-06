@@ -20,7 +20,7 @@ serve(async (req) => {
   }
 
   try {
-    const { employee_id, tenant_id, classes_to_teach, ...updateData } = await req.json();
+    const { employee_id, tenant_id, classes_to_teach, user_id, ...updateData } = await req.json(); // Capturando user_id
 
     if (!employee_id || !tenant_id) {
       throw new Error("ID do funcionário e da escola são obrigatórios.");
@@ -34,6 +34,7 @@ serve(async (req) => {
     // 1. Preparar dados do funcionário (removendo classes_to_teach para não tentar inserir na tabela employees)
     const employeeUpdateData = {
         ...updateData,
+        user_id: user_id || null, // Atualizando o user_id
         email: updateData.email || null,
         phone: updateData.phone || null,
         zip_code: updateData.zip_code || null,

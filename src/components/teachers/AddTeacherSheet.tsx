@@ -14,6 +14,7 @@ import { Loader2, PlusCircle, X } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
+import { useAuth } from '@/components/auth/SessionContextProvider'; // Importar useAuth
 
 // --- Tipos e Schemas ---
 const classAssignmentSchema = z.object({
@@ -81,6 +82,7 @@ const fetchSubjects = async (tenantId: string): Promise<Subject[]> => { // Nova 
 const AddTeacherSheet: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
   const { profile } = useProfile();
+  const { user } = useAuth(); // Obter o usuário autenticado
   const queryClient = useQueryClient();
   const tenantId = profile?.tenant_id;
   const [classesToTeach, setClassesToTeach] = useState<ClassAssignment[]>([]);
@@ -150,6 +152,10 @@ const AddTeacherSheet: React.FC = () => {
       toast.error("Erro", { description: "ID da escola não encontrado." });
       return;
     }
+    if (!user?.id) {
+      toast.error("Erro", { description: "ID do usuário autenticado não encontrado." });
+      return;
+    }
 
     const classesPayload = classesToTeach.map(c => ({
         class_id: c.class_id,
@@ -160,6 +166,7 @@ const AddTeacherSheet: React.FC = () => {
       const payload = { 
         ...data, 
         tenant_id: tenantId,
+        user_id: user.id, // Enviando o user_id
         classes_to_teach: classesPayload,
         email: data.email || null,
         phone: data.phone || null,

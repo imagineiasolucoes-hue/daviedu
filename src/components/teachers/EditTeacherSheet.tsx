@@ -14,6 +14,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Loader2, X } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
+import { useAuth } from '@/components/auth/SessionContextProvider'; // Importar useAuth
 
 // --- Tipos e Schemas ---
 const classAssignmentSchema = z.object({
@@ -57,6 +58,7 @@ interface Subject { // Interface para matérias
 interface TeacherDetails extends TeacherFormData {
   id: string;
   tenant_id: string;
+  user_id: string | null; // Adicionado user_id
   teacher_classes: {
     class_id: string;
     period: 'Manhã' | 'Tarde' | 'Noite' | 'Integral';
@@ -122,6 +124,7 @@ const fetchSubjects = async (tenantId: string): Promise<Subject[]> => { // Nova 
 
 const EditTeacherSheet: React.FC<EditTeacherSheetProps> = ({ teacherId, open, onOpenChange }) => {
   const { profile } = useProfile();
+  const { user } = useAuth(); // Obter o usuário autenticado
   const queryClient = useQueryClient();
   const tenantId = profile?.tenant_id;
   const [classesToTeach, setClassesToTeach] = useState<ClassAssignment[]>([]);
@@ -215,6 +218,7 @@ const EditTeacherSheet: React.FC<EditTeacherSheetProps> = ({ teacherId, open, on
   const mutation = useMutation({
     mutationFn: async (data: TeacherFormData) => {
       if (!teacherId) throw new Error("ID do professor ausente.");
+      if (!user?.id) throw new Error("ID do usuário autenticado não encontrado.");
 
       const classesPayload = classesToTeach.map(c => ({
         class_id: c.class_id,
@@ -225,6 +229,7 @@ const EditTeacherSheet: React.FC<EditTeacherSheetProps> = ({ teacherId, open, on
         ...data,
         employee_id: teacherId,
         tenant_id: tenantId,
+        user_id: user.id, // Enviando o user_id
         classes_to_teach: classesPayload, // Enviando a lista completa de turmas
         email: data.email || null,
         phone: data.phone || null,

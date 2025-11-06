@@ -23,7 +23,7 @@ serve(async (req) => {
     const body = await req.json();
     console.log("create-teacher: Incoming request body:", JSON.stringify(body, null, 2)); // Log do corpo da requisição
 
-    const { tenant_id, classes_to_teach, ...teacherInfo } = body; // Capturando classes_to_teach
+    const { tenant_id, classes_to_teach, user_id, ...teacherInfo } = body; // Capturando classes_to_teach e user_id
 
     if (!tenant_id) {
       throw new Error("Identificador da escola (tenant_id) ausente.");
@@ -42,6 +42,7 @@ serve(async (req) => {
       tenant_id: tenant_id,
       is_teacher: true,
       status: "active",
+      user_id: user_id || null, // Armazenando o user_id
       
       // Novos campos de contato e endereço
       email: teacherInfo.email || null,
