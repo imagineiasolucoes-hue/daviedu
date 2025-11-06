@@ -223,7 +223,7 @@ const ReportCard: React.FC = () => {
         <h1 className="text-2xl text-destructive">Erro ao Carregar Dados</h1>
         <p className="text-muted-foreground">Verifique se o aluno e a escola estão corretamente cadastrados. Erro: {error.message}</p>
         <Button asChild variant="link" className="mt-4 print-hidden">
-          <Link to="/secretaria/documents">
+          <Link to="/documents"> {/* Corrigido o caminho para /documents */}
             <ArrowLeft className="mr-2 h-4 w-4" /> Voltar
           </Link>
         </Button>
@@ -254,7 +254,7 @@ const ReportCard: React.FC = () => {
       {/* Botões de Ação (Ocultos na Impressão) */}
       <div className="flex justify-between items-center mb-6 print-hidden">
         <Button variant="outline" asChild>
-          <Link to="/secretaria/documents">
+          <Link to="/documents"> {/* Corrigido o caminho para /documents */}
             <ArrowLeft className="mr-2 h-4 w-4" /> Voltar
           </Link>
         </Button>
