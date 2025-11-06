@@ -279,7 +279,7 @@ const ReportCard: React.FC = () => {
 
         {/* Logo da Escola (Direita) */}
         {tenant.config?.logo_url && (
-          <img src={tenant.config.logo_url} alt="Logo da Escola" className="h-24 w-auto object-contain" />
+          <img src={tenant.config.logo_url} alt="Logo da Escola" className="h-32 w-auto object-contain" />
         )}
       </div>
 
