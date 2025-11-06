@@ -38,6 +38,9 @@ interface Class {
 }
 
 const fetchClasses = async (tenantId: string): Promise<Class[]> => {
+  // Adicionando console.log para depuração
+  console.log(`Fetching classes for tenant: ${tenantId}`);
+  
   const { data, error } = await supabase
     .from('classes')
     .select(`
@@ -54,7 +57,14 @@ const fetchClasses = async (tenantId: string): Promise<Class[]> => {
     .order('school_year', { ascending: false })
     .order('name', { ascending: true });
 
-  if (error) throw new Error(error.message);
+  if (error) {
+    console.error("Supabase fetchClasses error:", error);
+    throw new Error(error.message);
+  }
+  
+  // Adicionando console.log para ver os dados brutos
+  console.log("Fetched classes data:", data);
+  
   return data as unknown as Class[];
 };
 
@@ -122,7 +132,6 @@ const ClassesPage: React.FC = () => {
       <div className="flex justify-between items-center">
         <h1 className="text-3xl font-bold">Gestão de Turmas</h1>
         <div className="flex gap-2">
-          {/* SubjectSheet removido daqui, agora acessível via menu lateral em /classes/subjects */}
           <AddClassSheet />
         </div>
       </div>
@@ -153,6 +162,7 @@ const ClassesPage: React.FC = () => {
                     <TableCell className="font-medium">{classItem.name}</TableCell>
                     <TableCell>
                       <div className="flex flex-wrap gap-1">
+                        {/* Renderiza os cursos associados */}
                         {classItem.class_courses.map((cc, index) => (
                           cc.courses?.name ? (
                             <Badge key={index} variant="outline" className="text-xs">
