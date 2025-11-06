@@ -200,20 +200,23 @@ const StudentTranscript: React.FC = () => {
         </Button>
       </div>
 
-      {/* Cabeçalho do Documento */}
-      <div className="text-center mb-8 border-b pb-4">
-        {tenant.config?.logo_url && (
-          <img src={tenant.config.logo_url} alt="Logo da Escola" className="h-16 mx-auto mb-3" />
-        )}
-        <h1 className="text-2xl font-bold text-primary">{tenant.name}</h1>
-        <p className="text-sm text-muted-foreground">Histórico Escolar do Aluno</p>
-        
-        {/* Detalhes da Escola */}
-        <div className="mt-4 text-xs text-muted-foreground space-y-1">
-          {schoolConfig?.cnpj && <p>CNPJ: {schoolConfig.cnpj}</p>}
-          {schoolConfig?.phone && <p>Telefone: {schoolConfig.phone}</p>}
-          {fullAddress && <p>Endereço: {fullAddress}</p>}
+      {/* Cabeçalho do Documento (Agora igual ao Boletim) */}
+      <div className="flex justify-between items-center mb-8 border-b pb-4">
+        {/* Informações da Escola (Esquerda) */}
+        <div className="text-left space-y-1">
+          <h1 className="text-2xl font-bold text-primary">{tenant.name}</h1>
+          <p className="text-sm text-muted-foreground">HISTÓRICO ESCOLAR DO ALUNO</p> {/* Título específico */}
+          <div className="mt-2 text-xs text-muted-foreground space-y-1">
+            {schoolConfig?.cnpj && <p>CNPJ: {schoolConfig.cnpj}</p>}
+            {schoolConfig?.phone && <p>Telefone: {schoolConfig.phone}</p>}
+            {fullAddress && <p>Endereço: {fullAddress}</p>}
+          </div>
         </div>
+
+        {/* Logo da Escola (Direita) */}
+        {tenant.config?.logo_url && (
+          <img src={tenant.config.logo_url} alt="Logo da Escola" className="h-32 w-auto object-contain" />
+        )}
       </div>
 
       {/* Dados do Aluno */}
@@ -253,7 +256,7 @@ const StudentTranscript: React.FC = () => {
       {/* Seção de Notas e Histórico */}
       <h2 className="text-xl font-bold mb-4">Registro Acadêmico</h2>
       
-      {grades && grades.length > 0 ? (
+      {groupedGrades && Object.keys(groupedGrades).length > 0 ? (
         Object.entries(groupedGrades || {}).map(([period, subjects]) => (
           <div key={period} className="mb-8 break-inside-avoid">
             <h3 className="text-lg font-semibold mb-3 p-2 bg-muted rounded-md">{period}</h3>
