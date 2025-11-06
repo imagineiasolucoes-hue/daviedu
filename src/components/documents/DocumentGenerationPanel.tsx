@@ -77,7 +77,7 @@ const DocumentGenerationPanel: React.FC = () => {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="transcript">Histórico Escolar</SelectItem>
-                <SelectItem value="report_card" disabled>Boletim (Em Breve)</SelectItem>
+                <SelectItem value="report_card">Boletim Escolar</SelectItem>
               </SelectContent>
             </Select>
           </div>

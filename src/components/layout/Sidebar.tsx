@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Home, Users, Settings, LogOut, School, BookOpen, DollarSign, TrendingUp, TrendingDown, CalendarDays, FileText, UserCheck, ListChecks, HardDrive, ShoppingCart, HelpCircle, LayoutDashboard, ClipboardList, GraduationCap, ChevronDown, BookMarked } from 'lucide-react';
+import { Home, Users, Settings, LogOut, School, BookOpen, DollarSign, TrendingUp, TrendingDown, CalendarDays, FileText, UserCheck, ListChecks, HardDrive, ShoppingCart, HelpCircle, LayoutDashboard, ClipboardList, GraduationCap, ChevronDown, BookMarked, FolderKanban } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { cn } from '@/lib/utils';
@@ -70,30 +70,21 @@ const Sidebar: React.FC<SidebarProps> = ({ isSuperAdmin, displayName, roleDispla
 
   const adminNavItems: NavigationItem[] = [
     { to: "/dashboard", icon: <Home className="h-5 w-5" />, label: "Dashboard", onCloseSheet },
-    { to: "/students", icon: <Users className="h-5 w-5" />, label: "Alunos", onCloseSheet },
     {
-      to: "/teachers",
-      icon: <UserCheck className="h-5 w-5" />,
-      label: "Professores",
+      to: "/secretaria", // Nova página da Secretaria
+      icon: <FolderKanban className="h-5 w-5" />,
+      label: "Secretaria",
       onCloseSheet: () => onCloseSheet(),
       children: [
-        { to: "/teacher/grade-entry", icon: <GraduationCap className="h-5 w-5" />, label: "Lançar Notas", onCloseSheet, isSubItem: true },
-        { to: "/teacher/class-diary", icon: <BookOpen className="h-5 w-5" />, label: "Diário de Classe", onCloseSheet, isSubItem: true },
-        { to: "/classes/subjects", icon: <BookMarked className="h-5 w-5" />, label: "Matérias", onCloseSheet, isSubItem: true }, // MOVIDO PARA CÁ
-      ],
-    },
-    {
-      to: "/classes", // Página principal de Turmas
-      icon: <BookOpen className="h-5 w-5" />,
-      label: "Turmas",
-      onCloseSheet: () => onCloseSheet(),
-      children: [
+        { to: "/students", icon: <Users className="h-5 w-5" />, label: "Alunos", onCloseSheet, isSubItem: true },
+        { to: "/teachers", icon: <UserCheck className="h-5 w-5" />, label: "Professores", onCloseSheet, isSubItem: true },
+        { to: "/classes", icon: <BookOpen className="h-5 w-5" />, label: "Turmas", onCloseSheet, isSubItem: true },
         { to: "/classes/courses", icon: <ListChecks className="h-5 w-5" />, label: "Séries/Anos", onCloseSheet, isSubItem: true },
-        // { to: "/classes/subjects", icon: <BookMarked className="h-5 w-5" />, label: "Matérias", onCloseSheet, isSubItem: true }, // REMOVIDO DAQUI
+        { to: "/classes/subjects", icon: <BookMarked className="h-5 w-5" />, label: "Matérias", onCloseSheet, isSubItem: true },
+        { to: "/calendar", icon: <CalendarDays className="h-5 w-5" />, label: "Calendário", onCloseSheet, isSubItem: true },
+        { to: "/documents", icon: <FileText className="h-5 w-5" />, label: "Documentos", onCloseSheet, isSubItem: true },
       ],
     },
-    { to: "/calendar", icon: <CalendarDays className="h-5 w-5" />, label: "Calendário", onCloseSheet },
-    { to: "/documents", icon: <FileText className="h-5 w-5" />, label: "Documentos", onCloseSheet },
     {
       to: "/finance",
       icon: <DollarSign className="h-5 w-5" />,
@@ -119,7 +110,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isSuperAdmin, displayName, roleDispla
     { to: "/teacher/dashboard", icon: <LayoutDashboard className="h-5 w-5" />, label: "Meu Painel", onCloseSheet },
     { to: "/teacher/grade-entry", icon: <GraduationCap className="h-5 w-5" />, label: "Lançar Notas", onCloseSheet },
     { to: "/teacher/class-diary", icon: <BookOpen className="h-5 w-5" />, label: "Diário de Classe", onCloseSheet },
-    { to: "/classes/subjects", icon: <BookMarked className="h-5 w-5" />, label: "Matérias", onCloseSheet }, // Adicionado para professores
+    { to: "/classes/subjects", icon: <BookMarked className="h-5 w-5" />, label: "Matérias", onCloseSheet },
     { to: "/settings", icon: <Settings className="h-5 w-5" />, label: "Configurações", onCloseSheet },
     { to: "/faq", icon: <HelpCircle className="h-5 w-5" />, label: "Ajuda (FAQ)", variant: 'accent', onCloseSheet },
   ];
@@ -188,7 +179,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isSuperAdmin, displayName, roleDispla
               {(openParent === item.to || (item.children && item.children.some(child => location.pathname.startsWith(child.to)))) && item.children && (
                 <div className="grid gap-1 pl-4">
                   {item.children.map((child) => (
-                    <NavItem key={child.to} {...child} />
+                    <NavItem key={child.to} {...child} isSubItem={true} />
                   ))}
                 </div>
               )}
