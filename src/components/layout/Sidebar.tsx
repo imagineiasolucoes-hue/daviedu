@@ -79,6 +79,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isSuperAdmin, displayName, roleDispla
       children: [
         { to: "/teacher/grade-entry", icon: <GraduationCap className="h-5 w-5" />, label: "Lançar Notas", onCloseSheet, isSubItem: true },
         { to: "/teacher/class-diary", icon: <BookOpen className="h-5 w-5" />, label: "Diário de Classe", onCloseSheet, isSubItem: true },
+        { to: "/classes/subjects", icon: <BookMarked className="h-5 w-5" />, label: "Matérias", onCloseSheet, isSubItem: true }, // MOVIDO PARA CÁ
       ],
     },
     {
@@ -88,7 +89,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isSuperAdmin, displayName, roleDispla
       onCloseSheet: () => onCloseSheet(),
       children: [
         { to: "/classes/courses", icon: <ListChecks className="h-5 w-5" />, label: "Séries/Anos", onCloseSheet, isSubItem: true },
-        { to: "/classes/subjects", icon: <BookMarked className="h-5 w-5" />, label: "Matérias", onCloseSheet, isSubItem: true }, // NOVO SUB-ITEM
+        // { to: "/classes/subjects", icon: <BookMarked className="h-5 w-5" />, label: "Matérias", onCloseSheet, isSubItem: true }, // REMOVIDO DAQUI
       ],
     },
     { to: "/calendar", icon: <CalendarDays className="h-5 w-5" />, label: "Calendário", onCloseSheet },
@@ -118,6 +119,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isSuperAdmin, displayName, roleDispla
     { to: "/teacher/dashboard", icon: <LayoutDashboard className="h-5 w-5" />, label: "Meu Painel", onCloseSheet },
     { to: "/teacher/grade-entry", icon: <GraduationCap className="h-5 w-5" />, label: "Lançar Notas", onCloseSheet },
     { to: "/teacher/class-diary", icon: <BookOpen className="h-5 w-5" />, label: "Diário de Classe", onCloseSheet },
+    { to: "/classes/subjects", icon: <BookMarked className="h-5 w-5" />, label: "Matérias", onCloseSheet }, // Adicionado para professores
     { to: "/settings", icon: <Settings className="h-5 w-5" />, label: "Configurações", onCloseSheet },
     { to: "/faq", icon: <HelpCircle className="h-5 w-5" />, label: "Ajuda (FAQ)", variant: 'accent', onCloseSheet },
   ];
