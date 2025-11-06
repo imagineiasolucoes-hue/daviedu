@@ -59,6 +59,7 @@ const fetchProfile = async (userId: string): Promise<Profile | null> => {
 
     if (employeeData) {
       profile.employee_id = employeeData.id;
+      console.log(`Employee ID found for user ${profile.id}: ${employeeData.id}`); // NOVO LOG
     } else {
       console.warn(`Employee ID not found for teacher/admin profile ${profile.id} linked via user_id.`);
     }
