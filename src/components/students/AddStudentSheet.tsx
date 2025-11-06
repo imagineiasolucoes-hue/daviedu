@@ -1,4 +1,3 @@
-Série/Ano e ajustando a lógica de filtragem.">
 import React, { useState, useMemo, useEffect } from 'react';
 import { useForm, FormProvider } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
