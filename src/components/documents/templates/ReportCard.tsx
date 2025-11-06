@@ -265,19 +265,22 @@ const ReportCard: React.FC = () => {
       </div>
 
       {/* Cabeçalho do Documento */}
-      <div className="text-center mb-8 border-b pb-4">
-        {tenant.config?.logo_url && (
-          <img src={tenant.config.logo_url} alt="Logo da Escola" className="h-16 mx-auto mb-3" />
-        )}
-        <h1 className="text-2xl font-bold text-primary">{tenant.name}</h1>
-        <p className="text-sm text-muted-foreground">BOLETIM ESCOLAR</p>
-        
-        {/* Detalhes da Escola */}
-        <div className="mt-4 text-xs text-muted-foreground space-y-1">
-          {schoolConfig?.cnpj && <p>CNPJ: {schoolConfig.cnpj}</p>}
-          {schoolConfig?.phone && <p>Telefone: {schoolConfig.phone}</p>}
-          {fullAddress && <p>Endereço: {fullAddress}</p>}
+      <div className="flex justify-between items-center mb-8 border-b pb-4">
+        {/* Informações da Escola (Esquerda) */}
+        <div className="text-left space-y-1">
+          <h1 className="text-2xl font-bold text-primary">{tenant.name}</h1>
+          <p className="text-sm text-muted-foreground">BOLETIM ESCOLAR</p>
+          <div className="mt-2 text-xs text-muted-foreground space-y-1">
+            {schoolConfig?.cnpj && <p>CNPJ: {schoolConfig.cnpj}</p>}
+            {schoolConfig?.phone && <p>Telefone: {schoolConfig.phone}</p>}
+            {fullAddress && <p>Endereço: {fullAddress}</p>}
+          </div>
         </div>
+
+        {/* Logo da Escola (Direita) */}
+        {tenant.config?.logo_url && (
+          <img src={tenant.config.logo_url} alt="Logo da Escola" className="h-24 w-auto object-contain" />
+        )}
       </div>
 
       {/* Dados do Aluno */}
