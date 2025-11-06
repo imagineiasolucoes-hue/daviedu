@@ -1,3 +1,4 @@
+Série/Ano e ajustando a lógica de filtragem.">
 import React, { useState, useMemo, useEffect } from 'react';
 import { useForm, FormProvider } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -29,6 +30,7 @@ interface Class {
   // Incluindo a relação N:M para saber quais cursos estão nesta turma
   class_courses: {
     course_id: string;
+    courses: { name: string } | null; // Adicionando o nome do curso para facilitar a filtragem
   }[];
 }
 
@@ -37,11 +39,11 @@ const studentSchema = z.object({
   full_name: z.string().min(5, "Nome completo é obrigatório."),
   birth_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Data de nascimento inválida. Use o formato AAAA-MM-DD."),
   
-  // NOVO CAMPO OBRIGATÓRIO: Série/Ano (Course)
-  course_id: z.string().uuid("Selecione a Série/Ano."),
-  
-  // Turma: Agora a turma deve ser compatível com o curso selecionado
+  // Turma: Selecionada primeiro
   class_id: z.string().uuid("Selecione uma turma."),
+  
+  // Série/Ano (Course): Selecionada em segundo, filtrada pela turma
+  course_id: z.string().uuid("Selecione a Série/Ano."),
   
   // Contato e Documentos do Aluno
   phone: z.string().optional().nullable(), 
@@ -89,7 +91,8 @@ const fetchClasses = async (tenantId: string): Promise<Class[]> => {
       name, 
       school_year,
       class_courses (
-        course_id
+        course_id,
+        courses (id, name)
       )
     `)
     .eq('tenant_id', tenantId)
@@ -104,6 +107,8 @@ const AddStudentSheet: React.FC = () => {
   const queryClient = useQueryClient();
   const tenantId = profile?.tenant_id;
 
+  // Não precisamos mais de allCourses, pois a lista de cursos é filtrada pela turma
+  // Mas mantemos a query para fins de cache e consistência, embora não seja usada diretamente
   const { data: allCourses, isLoading: isLoadingCourses } = useQuery<Course[], Error>({
     queryKey: ['courses', tenantId],
     queryFn: () => fetchCourses(tenantId!),
@@ -124,7 +129,7 @@ const AddStudentSheet: React.FC = () => {
       phone: null,
       email: null,
       class_id: undefined, 
-      course_id: undefined, // Novo campo
+      course_id: undefined, 
       gender: null,
       nationality: null,
       naturality: null,
@@ -149,31 +154,28 @@ const AddStudentSheet: React.FC = () => {
   const selectedClassId = form.watch('class_id');
   const selectedCourseId = form.watch('course_id');
 
-  // Filtra as turmas disponíveis com base no curso selecionado
-  const filteredClasses = useMemo(() => {
-    if (!allClasses || !selectedCourseId) return [];
-    
-    return allClasses.filter(c => 
-      c.class_courses.some(cc => cc.course_id === selectedCourseId)
-    );
-  }, [allClasses, selectedCourseId]);
-
-  // Encontra o ano letivo da turma selecionada (necessário para a Edge Function)
+  // Encontra a turma selecionada e seus cursos associados
   const selectedClass = useMemo(() => {
     if (!allClasses || !selectedClassId) return null;
     return allClasses.find(c => c.id === selectedClassId);
   }, [allClasses, selectedClassId]);
 
-  // Efeito para resetar a turma se o curso mudar
+  // Filtra as Séries/Anos disponíveis com base na Turma selecionada
+  const filteredCourses = useMemo(() => {
+    if (!selectedClass) return [];
+    
+    return selectedClass.class_courses
+      .map(cc => cc.courses)
+      .filter(c => c !== null) as Course[];
+  }, [selectedClass]);
+
+  // Efeito para resetar o course_id se a turma mudar
   useEffect(() => {
-    if (selectedCourseId) {
-      // Verifica se a turma atual é compatível com o novo curso
-      const isCurrentClassCompatible = filteredClasses.some(c => c.id === selectedClassId);
-      if (!isCurrentClassCompatible) {
-        form.setValue('class_id', undefined, { shouldValidate: true });
-      }
+    if (selectedClassId) {
+      // Se a turma mudar, resetamos o curso
+      form.setValue('course_id', undefined, { shouldValidate: true });
     }
-  }, [selectedCourseId, form, filteredClasses, selectedClassId]);
+  }, [selectedClassId, form]);
 
 
   const onSubmit = async (data: StudentFormData) => {
@@ -204,7 +206,7 @@ const AddStudentSheet: React.FC = () => {
 
     const studentPayload = {
         ...studentData,
-        class_id: studentData.class_id, // Agora é obrigatório e não pode ser null/undefined
+        class_id: studentData.class_id, 
         gender: studentData.gender || null,
         email: studentData.email || null,
         phone: studentData.phone || null,
@@ -230,9 +232,6 @@ const AddStudentSheet: React.FC = () => {
     };
 
     try {
-      // A Edge Function 'create-student-and-guardian' não precisa do course_id,
-      // pois a matrícula é feita na tabela 'students' que referencia 'classes'.
-      // O course_id é usado apenas para filtrar a lista de turmas no frontend.
       const { error } = await supabase.functions.invoke('create-student-and-guardian', {
         body: JSON.stringify(payload),
       });
@@ -311,53 +310,52 @@ const AddStudentSheet: React.FC = () => {
                 </div>
               </div>
 
-              {/* CAMPO: Série/Ano (Course) */}
+              {/* CAMPO 1: Turma (Selecionada primeiro) */}
+              <div className="space-y-2">
+                <Label htmlFor="class_id">Turma</Label>
+                <Select 
+                  onValueChange={(value) => form.setValue('class_id', value)} 
+                  value={form.watch('class_id') || ''} 
+                  disabled={isLoadingClasses}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder={isLoadingClasses ? "Carregando Turmas..." : "Selecione a turma"} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {allClasses?.map((c) => (
+                      <SelectItem key={c.id} value={c.id}>{c.name} ({c.school_year})</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {form.formState.errors.class_id && <p className="text-sm text-destructive">{form.formState.errors.class_id.message}</p>}
+                {(!allClasses || allClasses.length === 0) && !isLoadingClasses && (
+                  <p className="text-xs text-muted-foreground mt-1">
+                      Nenhuma turma encontrada.
+                  </p>
+                )}
+              </div>
+
+              {/* CAMPO 2: Série/Ano (Course) (Filtrado pela Turma) */}
               <div className="space-y-2">
                 <Label htmlFor="course_id">Série / Ano</Label>
                 <Select 
                   onValueChange={(value) => form.setValue('course_id', value)}
                   value={form.watch('course_id') || ''}
-                  disabled={isLoadingCourses || (allCourses && allCourses.length === 0)}
+                  disabled={!selectedClassId || filteredCourses.length === 0}
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder={isLoadingCourses ? "Carregando Séries/Anos..." : "Selecione a Série/Ano"} />
+                    <SelectValue placeholder={!selectedClassId ? "Selecione a Turma primeiro" : (filteredCourses.length === 0 ? "Nenhuma Série/Ano associada" : "Selecione a Série/Ano")} />
                   </SelectTrigger>
                   <SelectContent>
-                    {allCourses?.map((c) => (
+                    {filteredCourses.map((c) => (
                       <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
                 {form.formState.errors.course_id && <p className="text-sm text-destructive">{form.formState.errors.course_id.message}</p>}
-                {(!allCourses || allCourses.length === 0) && !isLoadingCourses && (
+                {selectedClassId && filteredCourses.length === 0 && (
                   <p className="text-xs text-muted-foreground mt-1">
-                      Nenhuma Série/Ano encontrada.
-                  </p>
-                )}
-              </div>
-
-              {/* CAMPO: Turma (agora filtrado pelo Course) */}
-              <div className="space-y-2">
-                <Label htmlFor="class_id">Turma</Label>
-                <Select 
-                  onValueChange={(value) => form.setValue('class_id', value)}
-                  value={form.watch('class_id') || ''}
-                  disabled={!selectedCourseId || isLoadingClasses || filteredClasses.length === 0}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder={!selectedCourseId ? "Selecione a Série/Ano primeiro" : (isLoadingClasses ? "Carregando Turmas..." : "Selecione a turma")} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {filteredClasses.map((c) => (
-                      <SelectItem key={c.id} value={c.id}>{c.name} ({c.school_year})</SelectItem>
-                    ))}
-                  </SelectContent>
-                  
-                </Select>
-                {form.formState.errors.class_id && <p className="text-sm text-destructive">{form.formState.errors.class_id.message}</p>}
-                {selectedCourseId && filteredClasses.length === 0 && (
-                  <p className="text-xs text-muted-foreground mt-1">
-                      Nenhuma turma compatível com a Série/Ano selecionada.
+                      Nenhuma Série/Ano compatível com a turma selecionada.
                   </p>
                 )}
               </div>
