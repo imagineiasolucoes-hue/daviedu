@@ -14,7 +14,8 @@ import { formatCurrency } from '@/lib/utils';
 import { Skeleton } from '@/components/ui/skeleton';
 import SchoolEvolutionIndicator from '@/components/dashboard/SchoolEvolutionIndicator';
 import MonthlyEnrollmentChart from '@/components/dashboard/MonthlyEnrollmentChart';
-import SuperAdminOverviewPage from './super-admin/SuperAdminOverviewPage'; // NOVO IMPORT
+import SuperAdminOverviewPage from './super-admin/SuperAdminOverviewPage';
+import GenerateDemoStudents from '@/components/demo/GenerateDemoStudents'; // Importando o componente
 
 const MetricCardSkeleton: React.FC = () => (
   <Card>
@@ -44,7 +45,7 @@ const fetchMonthlyEnrollments = async (tenantId: string): Promise<MonthlyEnrollm
 };
 
 const Dashboard: React.FC = () => {
-  const { profile, isLoading: isProfileLoading, isSuperAdmin, isSchoolUser } = useProfile();
+  const { profile, isLoading: isProfileLoading, isSuperAdmin, isSchoolUser, isAdmin } = useProfile(); // Adicionado isAdmin
   const tenantId = profile?.tenant_id;
 
   const fetchDashboardMetrics = async (tenantId: string) => {
@@ -164,6 +165,9 @@ const Dashboard: React.FC = () => {
       </div>
 
       <SchoolEvolutionIndicator />
+
+      {/* Adicionando o componente GenerateDemoStudents aqui, visível apenas para admins */}
+      {isAdmin && <GenerateDemoStudents />}
     </div>
   );
 };
