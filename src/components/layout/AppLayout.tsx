@@ -10,9 +10,10 @@ import { useProfile } from '@/hooks/useProfile';
 import Sidebar from './Sidebar';
 import AppFooter from './AppFooter';
 import { useBackupMonitoring } from '@/hooks/useBackupMonitoring';
+import { toast } from 'sonner'; // Certifique-se de que o toast está importado
 
 const AppLayout: React.FC = () => {
-  const { user } = useAuth();
+  const { user, session } = useAuth(); // Obtenha a sessão aqui
   const { profile, isLoading, isSuperAdmin } = useProfile();
   const [isSheetOpen, setIsSheetOpen] = useState(false); // Estado para controlar a abertura da Sheet
 
@@ -20,7 +21,22 @@ const AppLayout: React.FC = () => {
   useBackupMonitoring();
 
   const handleLogout = async () => {
-    await supabase.auth.signOut();
+    console.log("Tentando deslogar. Usuário atual:", user);
+    console.log("Objeto de sessão atual:", session); // console.log corrigido
+
+    if (!session) {
+      console.warn("Nenhuma sessão ativa encontrada ao tentar deslogar. O usuário pode já estar deslogado ou a sessão é inválida.");
+      toast.info("Você já está desconectado ou sua sessão expirou.");
+      return;
+    }
+
+    const { error } = await supabase.auth.signOut();
+    if (error) {
+      console.error("Erro durante o signOut:", error);
+      toast.error("Erro ao Sair", { description: error.message });
+    } else {
+      toast.success("Você foi desconectado com sucesso.");
+    }
   };
 
   if (isLoading) {
