@@ -249,7 +249,7 @@ const ReportCard: React.FC = () => {
   ].filter(Boolean).join('');
 
   return (
-    <div className="max-w-4xl mx-auto bg-white p-6 shadow-lg print:shadow-none print:p-0" ref={printRef}>
+    <div className="max-w-4xl mx-auto bg-white p-6 shadow-lg print:shadow-none print:p-0 min-h-screen flex flex-col" ref={printRef}>
       
       {/* Botões de Ação (Ocultos na Impressão) */}
       <div className="flex justify-between items-center mb-6 print-hidden">
@@ -331,35 +331,35 @@ const ReportCard: React.FC = () => {
           <Table className="w-full">
             <TableHeader>
               <TableRow>
-                <TableHead className="min-w-[150px]">Disciplina</TableHead>
+                <TableHead className="min-w-[150px] text-sm">Disciplina</TableHead>
                 {sortedPeriods.map(period => (
-                  <TableHead key={period} className="text-center min-w-[80px]">{period}</TableHead>
+                  <TableHead key={period} className="text-center min-w-[80px] text-sm">{period}</TableHead>
                 ))}
-                <TableHead className="text-center min-w-[80px]">Total</TableHead>
-                <TableHead className="text-center min-w-[100px]">Média Final</TableHead>
-                <TableHead className="text-center min-w-[80px]">Faltas</TableHead>
-                <TableHead className="text-center min-w-[100px]">Resultado</TableHead>
+                <TableHead className="text-center min-w-[80px] text-sm">Total</TableHead>
+                <TableHead className="text-center min-w-[100px] text-sm">Média Final</TableHead>
+                <TableHead className="text-center min-w-[80px] text-sm">Faltas</TableHead>
+                <TableHead className="text-center min-w-[100px] text-sm">Resultado</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {processedGrades.map((subject) => (
-                <TableRow key={subject.subject_name}>
-                  <TableCell className="font-medium">{subject.subject_name}</TableCell>
+                <TableRow key={subject.subject_name} className="page-break-inside-avoid"> {/* Adicionado para impressão */}
+                  <TableCell className="font-medium text-sm">{subject.subject_name}</TableCell>
                   {sortedPeriods.map(period => (
-                    <TableCell key={`${subject.subject_name}-${period}`} className="text-center">
+                    <TableCell key={`${subject.subject_name}-${period}`} className="text-center text-sm">
                       {subject.unit_grades[period] !== null ? subject.unit_grades[period]?.toFixed(1) : 'N/A'}
                     </TableCell>
                   ))}
-                  <TableCell className="text-center font-bold">
+                  <TableCell className="text-center font-bold text-sm">
                     {subject.total_units_grade !== null ? subject.total_units_grade.toFixed(1) : 'N/A'}
                   </TableCell>
-                  <TableCell className="text-center font-bold">
+                  <TableCell className="text-center font-bold text-sm">
                     {subject.final_average !== null ? subject.final_average.toFixed(1) : 'N/A'}
                   </TableCell>
-                  <TableCell className="text-center">
+                  <TableCell className="text-center text-sm">
                     {subject.absences !== null ? subject.absences : 'N/A'}
                   </TableCell>
-                  <TableCell className="text-center">
+                  <TableCell className="text-center text-sm">
                     {subject.result === 'Aprovado' && <span className="text-green-600 font-semibold">Aprovado</span>}
                     {subject.result === 'Reprovado' && <span className="text-red-600 font-semibold">Reprovado</span>}
                     {subject.result === 'Recuperação' && <span className="text-yellow-600 font-semibold">Recup.</span>}
