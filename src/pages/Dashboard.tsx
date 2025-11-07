@@ -15,7 +15,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import SchoolEvolutionIndicator from '@/components/dashboard/SchoolEvolutionIndicator';
 import MonthlyEnrollmentChart from '@/components/dashboard/MonthlyEnrollmentChart';
 import SuperAdminOverviewPage from './super-admin/SuperAdminOverviewPage';
-import GenerateDemoStudents from '@/components/demo/GenerateDemoStudents'; // Importando o componente
+// import GenerateDemoStudents from '@/components/demo/GenerateDemoStudents'; // Removendo o import do componente
 
 const MetricCardSkeleton: React.FC = () => (
   <Card>
@@ -167,7 +167,7 @@ const Dashboard: React.FC = () => {
       <SchoolEvolutionIndicator />
 
       {/* Adicionando o componente GenerateDemoStudents aqui, visível apenas para admins */}
-      {isAdmin && <GenerateDemoStudents />}
+      {/* {isAdmin && <GenerateDemoStudents />} */} {/* Removido */}
     </div>
   );
 };
