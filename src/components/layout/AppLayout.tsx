@@ -11,11 +11,13 @@ import Sidebar from './Sidebar';
 import AppFooter from './AppFooter';
 import { useBackupMonitoring } from '@/hooks/useBackupMonitoring';
 import { toast } from 'sonner';
+import { useNavigate } from 'react-router-dom';
 
 const AppLayout: React.FC = () => {
   const { user, session } = useAuth();
   const { profile, isLoading, isSuperAdmin } = useProfile();
   const [isSheetOpen, setIsSheetOpen] = useState(false);
+  const navigate = useNavigate();
 
   useBackupMonitoring();
 
@@ -26,31 +28,33 @@ const AppLayout: React.FC = () => {
     if (!session) {
       console.warn("Nenhuma sessão ativa encontrada ao tentar deslogar. O usuário pode já estar deslogado ou a sessão é inválida.");
       toast.info("Você já está desconectado ou sua sessão expirou.");
+      // Garante o redirecionamento mesmo se nenhuma sessão for encontrada
+      navigate('/', { replace: true });
       return;
     }
 
     try {
       const { error } = await supabase.auth.signOut();
+
       if (error) {
-        console.error("Erro durante o signOut:", error);
+        console.error("Erro durante o signOut do Supabase:", error);
         toast.error("Erro ao Sair", { description: error.message });
         
-        // Fallback para limpar o armazenamento local e recarregar a página
-        // Isso é um último recurso para garantir que o usuário seja deslogado do lado do cliente
-        // se o Supabase Auth falhar internamente ou com um 403.
-        console.warn("Tentando fallback: limpando armazenamento local e recarregando a página.");
-        localStorage.removeItem('sb-fhrxqkzswawlellkiaak-auth-token'); // Substitua 'YOUR_SUPABASE_PROJECT_ID' pelo seu ID real
-        window.location.reload();
+        // Fallback: Se o signOut do Supabase falhar, limpa manualmente o armazenamento local e recarrega
+        console.warn("Supabase signOut falhou. Tentando fallback: limpando armazenamento local e recarregando a página.");
+        localStorage.removeItem('sb-fhrxqkzswawlellkiaak-auth-token'); 
+        window.location.reload(); // Isso irá disparar uma reinicialização completa
       } else {
         toast.success("Você foi desconectado com sucesso.");
+        // O onAuthStateChange do Supabase deve lidar com a navegação para '/'
       }
     } catch (error: any) {
       console.error("Erro inesperado durante o signOut:", error);
       toast.error("Erro ao Sair", { description: error.message || "Ocorreu um erro inesperado." });
       
-      // Também aciona o fallback para erros inesperados
-      console.warn("Tentando fallback: limpando armazenamento local e recarregando a página devido a erro inesperado.");
-      localStorage.removeItem('sb-fhrxqkzswawlellkiaak-auth-token'); // Substitua 'YOUR_SUPABASE_PROJECT_ID' pelo seu ID real
+      // Fallback para quaisquer erros inesperados
+      console.warn("Erro inesperado durante o signOut. Tentando fallback: limpando armazenamento local e recarregando a página.");
+      localStorage.removeItem('sb-fhrxqkzswawlellkiaak-auth-token'); 
       window.location.reload();
     }
   };
