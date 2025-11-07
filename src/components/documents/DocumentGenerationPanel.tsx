@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
-import { Loader2, FileText, GraduationCap, ArrowRight } from 'lucide-react';
+import { Loader2, FileText, GraduationCap, ArrowRight, DollarSign } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface Student {
@@ -17,7 +17,7 @@ interface Student {
 }
 
 // Tipos de documentos dinâmicos que podemos gerar
-type DynamicDocumentType = 'transcript' | 'report_card';
+type DynamicDocumentType = 'transcript' | 'report_card' | 'monthly_fee_collection';
 
 const fetchStudents = async (tenantId: string): Promise<Student[]> => {
   const { data, error } = await supabase
@@ -61,7 +61,7 @@ const DocumentGenerationPanel: React.FC = () => {
           <FileText className="h-5 w-5 text-accent" />
           Geração de Documentos Dinâmicos
         </CardTitle>
-        <CardDescription>Gere documentos oficiais (Históricos, Boletins) a partir dos dados do sistema.</CardDescription>
+        <CardDescription>Gere documentos oficiais (Históricos, Boletins, Cobranças) a partir dos dados do sistema.</CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -78,6 +78,7 @@ const DocumentGenerationPanel: React.FC = () => {
               <SelectContent>
                 <SelectItem value="transcript">Histórico Escolar</SelectItem>
                 <SelectItem value="report_card">Boletim Escolar</SelectItem>
+                <SelectItem value="monthly_fee_collection">Cobrança de Mensalidade</SelectItem> {/* NOVA OPÇÃO */}
               </SelectContent>
             </Select>
           </div>

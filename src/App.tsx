@@ -35,6 +35,7 @@ import GradeEntryPage from "./pages/teacher/GradeEntryPage";
 import ClassDiaryPage from "./pages/teacher/ClassDiaryPage";
 import ReportCard from "./components/documents/templates/ReportCard"; // Importar ReportCard
 import StudentTranscript from "./components/documents/templates/StudentTranscript"; // Importar StudentTranscript
+import MonthlyFeeCollection from "./components/documents/templates/MonthlyFeeCollection"; // NOVO IMPORT
 import SecretariaPage from "./pages/SecretariaPage"; // Importar SecretariaPage
 
 const queryClient = new QueryClient({
@@ -104,7 +105,8 @@ const App = () => {
                 {/* Document Generation Routes (using DocumentLayout for print-friendly view) */}
                 <Route element={<DocumentLayout />}>
                   <Route path="/documents/generate/transcript/:entityId" element={<StudentTranscript />} />
-                  <Route path="/documents/generate/report_card/:entityId" element={<ReportCard />} /> {/* NOVA ROTA */}
+                  <Route path="/documents/generate/report_card/:entityId" element={<ReportCard />} />
+                  <Route path="/documents/generate/monthly_fee_collection/:entityId" element={<MonthlyFeeCollection />} /> {/* NOVA ROTA */}
                 </Route>
 
               </Route>
