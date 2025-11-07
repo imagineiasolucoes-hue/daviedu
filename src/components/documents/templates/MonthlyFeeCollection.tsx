@@ -2,7 +2,7 @@ import React, { useRef } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { Loader2, Printer, ArrowLeft, School, User, Calendar, DollarSign, CheckCircle } from 'lucide-react';
+import { Loader2, Printer, ArrowLeft, School, User, Calendar, DollarSign, CheckCircle, QrCode } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -12,6 +12,7 @@ import { ptBR } from 'date-fns/locale';
 import { useProfile } from '@/hooks/useProfile';
 import { formatCurrency } from '@/lib/utils';
 import { toast } from 'sonner';
+import { QRCodeSVG } from 'qrcode.react'; // Importação adicionada
 
 // --- Tipos de Dados ---
 interface StudentDetails {
@@ -243,6 +244,18 @@ const MonthlyFeeCollection: React.FC = () => {
   ].filter(Boolean).join('');
 
   const totalPendingAmount = pendingRevenues?.reduce((sum, rev) => sum + rev.amount, 0) || 0;
+  
+  // --- Dados Mockados para PIX e Banco (A serem configurados nas Settings da Escola futuramente) ---
+  const pixKey = schoolConfig?.cnpj || '00.000.000/0001-00'; // Usando CNPJ como chave PIX de exemplo
+  const pixValue = totalPendingAmount.toFixed(2).replace('.', ',');
+  const pixQrCodeData = `Chave PIX: ${pixKey} | Valor: R$ ${pixValue} | Escola: ${tenant.name}`;
+  
+  const bankDetails = {
+    bankName: 'Banco Davi EDU S.A.',
+    agency: '0001',
+    account: '123456-7',
+    cnpj: schoolConfig?.cnpj || '00.000.000/0001-00',
+  };
 
   return (
     <div className="max-w-4xl mx-auto bg-white p-6 shadow-lg print:shadow-none print:p-0" ref={printRef}>
@@ -278,6 +291,18 @@ const MonthlyFeeCollection: React.FC = () => {
         )}
       </div>
 
+      {/* Data de Emissão e Total */}
+      <div className="flex justify-between items-center mb-6 p-4 bg-muted/50 rounded-md border">
+        <div className="space-y-1">
+          <p className="text-sm text-muted-foreground">Data de Emissão:</p>
+          <p className="font-semibold">{format(new Date(), 'dd/MM/yyyy', { locale: ptBR })}</p>
+        </div>
+        <div className="text-right space-y-1">
+          <p className="text-lg font-semibold text-muted-foreground">TOTAL PENDENTE</p>
+          <p className="text-3xl font-bold text-destructive">{formatCurrency(totalPendingAmount)}</p>
+        </div>
+      </div>
+
       {/* Dados do Aluno e Responsável */}
       <Card className="mb-6 border-dashed">
         <CardHeader>
@@ -304,14 +329,14 @@ const MonthlyFeeCollection: React.FC = () => {
         </CardContent>
       </Card>
 
-      {/* Seção de Cobranças Pendentes */}
+      {/* Seção de Cobranças Pendentes (Resumo) */}
       <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
         <DollarSign className="h-5 w-5 text-primary" />
-        Cobranças Pendentes
+        Detalhes das Cobranças Pendentes
       </h2>
       
       {pendingRevenues && pendingRevenues.length > 0 ? (
-        <div className="overflow-x-auto mb-6">
+        <div className="overflow-x-auto mb-8">
           <Table className="w-full">
             <TableHeader>
               <TableRow>
@@ -353,12 +378,46 @@ const MonthlyFeeCollection: React.FC = () => {
         <p className="text-center py-8 text-muted-foreground">Nenhuma cobrança pendente para este aluno.</p>
       )}
 
-      {pendingRevenues && pendingRevenues.length > 0 && (
-        <div className="flex justify-end items-center mt-4 p-4 bg-muted/50 rounded-md border">
-          <span className="text-lg font-semibold mr-4">Total Pendente:</span>
-          <span className="text-2xl font-bold text-destructive">{formatCurrency(totalPendingAmount)}</span>
-        </div>
-      )}
+      <Separator className="mb-8" />
+
+      {/* Seção de Dados para Pagamento */}
+      <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
+        <QrCode className="h-5 w-5 text-accent" />
+        Dados para Pagamento
+      </h2>
+      
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Coluna 1: PIX QR Code */}
+        <Card className="lg:col-span-1 text-center p-4">
+          <CardTitle className="text-lg mb-4">Pagamento via PIX</CardTitle>
+          <div className="flex justify-center mb-4">
+            <div className="p-2 border rounded-lg bg-white">
+              <QRCodeSVG value={pixQrCodeData} size={150} level="L" />
+            </div>
+          </div>
+          <p className="text-sm font-semibold">Chave PIX (CNPJ):</p>
+          <p className="text-sm text-primary font-mono break-all">{pixKey}</p>
+          <p className="text-xs text-muted-foreground mt-2">Valor: {formatCurrency(totalPendingAmount)}</p>
+        </Card>
+
+        {/* Coluna 2 & 3: Dados Bancários */}
+        <Card className="lg:col-span-2 p-4">
+          <CardTitle className="text-lg mb-4">Transferência Bancária (TED/DOC)</CardTitle>
+          <div className="grid grid-cols-2 gap-4 text-sm">
+            <div className="space-y-2">
+              <p><span className="font-semibold">Banco:</span> {bankDetails.bankName}</p>
+              <p><span className="font-semibold">Agência:</span> {bankDetails.agency}</p>
+            </div>
+            <div className="space-y-2">
+              <p><span className="font-semibold">Conta Corrente:</span> {bankDetails.account}</p>
+              <p><span className="font-semibold">CNPJ:</span> {bankDetails.cnpj}</p>
+            </div>
+          </div>
+          <p className="text-xs text-muted-foreground mt-4">
+            Por favor, envie o comprovante de pagamento para a secretaria da escola.
+          </p>
+        </Card>
+      </div>
 
       {/* Rodapé do Documento (para impressão) */}
       <div className="mt-12 pt-4 border-t text-center text-xs text-muted-foreground print:mt-4">
