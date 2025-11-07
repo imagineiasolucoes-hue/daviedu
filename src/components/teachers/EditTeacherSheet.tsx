@@ -370,17 +370,17 @@ const EditTeacherSheet: React.FC<EditTeacherSheetProps> = ({ teacherId, open, on
                 </div>
                 <div className="space-y-2 col-span-2">
                   <Label htmlFor="address_neighborhood">Bairro (Opcional)</Label>
-                  <Input id="address_neighborhood" {...form.register("config.address_neighborhood")} />
+                  <Input id="address_neighborhood" {...form.register("address_neighborhood")} />
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="address_city">Cidade (Opcional)</Label>
-                  <Input id="address_city" {...form.register("config.address_city")} />
+                  <Input id="address_city" {...form.register("address_city")} />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="address_state">Estado (Opcional)</Label>
-                  <Input id="address_state" {...form.register("config.address_state")} />
+                  <Input id="address_state" {...form.register("address_state")} />
                 </div>
               </div>
             </div>
