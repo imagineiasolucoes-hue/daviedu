@@ -124,7 +124,6 @@ const fetchSubjects = async (tenantId: string): Promise<Subject[]> => { // Nova 
 
 const EditTeacherSheet: React.FC<EditTeacherSheetProps> = ({ teacherId, open, onOpenChange }) => {
   const { profile } = useProfile();
-  const { user } = useAuth(); // Obter o usuário autenticado
   const queryClient = useQueryClient();
   const tenantId = profile?.tenant_id;
   const [classesToTeach, setClassesToTeach] = useState<ClassAssignment[]>([]);
@@ -218,7 +217,6 @@ const EditTeacherSheet: React.FC<EditTeacherSheetProps> = ({ teacherId, open, on
   const mutation = useMutation({
     mutationFn: async (data: TeacherFormData) => {
       if (!teacherId) throw new Error("ID do professor ausente.");
-      if (!user?.id) throw new Error("ID do usuário autenticado não encontrado.");
 
       const classesPayload = classesToTeach.map(c => ({
         class_id: c.class_id,
@@ -229,7 +227,7 @@ const EditTeacherSheet: React.FC<EditTeacherSheetProps> = ({ teacherId, open, on
         ...data,
         employee_id: teacherId,
         tenant_id: tenantId,
-        user_id: user.id, // Enviando o user_id
+        user_id: teacher?.user_id || null, // USANDO O user_id DO PROFESSOR QUE ESTÁ SENDO EDITADO
         classes_to_teach: classesPayload, // Enviando a lista completa de turmas
         email: data.email || null,
         phone: data.phone || null,
@@ -251,6 +249,7 @@ const EditTeacherSheet: React.FC<EditTeacherSheetProps> = ({ teacherId, open, on
       toast.success("Professor atualizado com sucesso.");
       queryClient.invalidateQueries({ queryKey: ['teachers', tenantId] });
       queryClient.invalidateQueries({ queryKey: ['teacher', teacherId] }); // Refetch details
+      queryClient.invalidateQueries({ queryKey: ['profile'] }); // Força a atualização do perfil do usuário logado (se for ele mesmo)
       onOpenChange(false);
     },
     onError: (error) => {
@@ -371,17 +370,17 @@ const EditTeacherSheet: React.FC<EditTeacherSheetProps> = ({ teacherId, open, on
                 </div>
                 <div className="space-y-2 col-span-2">
                   <Label htmlFor="address_neighborhood">Bairro (Opcional)</Label>
-                  <Input id="address_neighborhood" {...form.register("address_neighborhood")} />
+                  <Input id="address_neighborhood" {...form.register("config.address_neighborhood")} />
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="address_city">Cidade (Opcional)</Label>
-                  <Input id="address_city" {...form.register("address_city")} />
+                  <Input id="address_city" {...form.register("config.address_city")} />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="address_state">Estado (Opcional)</Label>
-                  <Input id="address_state" {...form.register("address_state")} />
+                  <Input id="address_state" {...form.register("config.address_state")} />
                 </div>
               </div>
             </div>
