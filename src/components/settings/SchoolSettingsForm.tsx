@@ -11,7 +11,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Loader2, Upload, Download, School } from 'lucide-react';
+import { Loader2, Upload, Download, School, Banknote, QrCode } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import { Separator } from '@/components/ui/separator';
 
@@ -25,6 +25,12 @@ const tenantConfigSchema = z.object({
   address_state: z.string().optional().nullable(),
   address_zip_code: z.string().optional().nullable(),
   logo_url: z.string().url("URL da logo inválida.").optional().nullable(),
+  
+  // NOVOS CAMPOS FINANCEIROS
+  pix_key: z.string().optional().nullable(),
+  bank_name: z.string().optional().nullable(),
+  bank_agency: z.string().optional().nullable(),
+  bank_account: z.string().optional().nullable(),
 });
 
 const tenantSchema = z.object({
@@ -81,6 +87,11 @@ const SchoolSettingsForm: React.FC = () => {
           address_state: tenant.config?.address_state || null,
           address_zip_code: tenant.config?.address_zip_code || null,
           logo_url: tenant.config?.logo_url || null,
+          // NOVOS CAMPOS
+          pix_key: tenant.config?.pix_key || null,
+          bank_name: tenant.config?.bank_name || null,
+          bank_agency: tenant.config?.bank_agency || null,
+          bank_account: tenant.config?.bank_account || null,
         },
       });
     }
@@ -131,6 +142,11 @@ const SchoolSettingsForm: React.FC = () => {
       address_state: data.config?.address_state || null,
       address_zip_code: data.config?.address_zip_code || null,
       logo_url: logoUrl || null,
+      // NOVOS CAMPOS
+      pix_key: data.config?.pix_key || null,
+      bank_name: data.config?.bank_name || null,
+      bank_agency: data.config?.bank_agency || null,
+      bank_account: data.config?.bank_account || null,
     };
 
     const { error } = await supabase
@@ -174,7 +190,6 @@ const SchoolSettingsForm: React.FC = () => {
     return <div className="flex justify-center items-center h-64"><Loader2 className="h-8 w-8 animate-spin" /></div>;
   }
 
-  // Adicionando verificação explícita para tenantId e tenant
   if (!tenantId || !tenant) {
     return (
       <Card>
@@ -193,7 +208,7 @@ const SchoolSettingsForm: React.FC = () => {
   }
 
   const preEnrollmentLink = `${window.location.origin}/pre-matricula/${tenantId}`;
-  console.log("Generated Pre-Enrollment Link:", preEnrollmentLink); // Log para depuração
+  const pixKey = form.watch('config.pix_key') || 'Nenhuma chave PIX configurada';
 
   return (
     <form onSubmit={form.handleSubmit(onSubmit)}>
@@ -224,6 +239,43 @@ const SchoolSettingsForm: React.FC = () => {
                   <Label htmlFor="phone">Telefone (Opcional)</Label>
                   <Input id="phone" {...form.register("config.phone")} />
                 </div>
+              </div>
+            </div>
+          </div>
+
+          <Separator />
+
+          {/* Configurações Financeiras */}
+          <div className="grid md:grid-cols-3 gap-6 items-start">
+            <div className="md:col-span-1">
+              <h3 className="font-semibold flex items-center gap-2">
+                <Banknote className="h-5 w-5 text-green-600" />
+                Dados Financeiros
+              </h3>
+              <p className="text-sm text-muted-foreground">Informações usadas para gerar documentos de cobrança (faturas).</p>
+            </div>
+            <div className="md:col-span-2 grid gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="pix_key">Chave PIX (CPF/CNPJ/Email/Telefone)</Label>
+                <Input id="pix_key" {...form.register("config.pix_key")} placeholder="Ex: 00.000.000/0001-00" />
+              </div>
+              <Separator />
+              <h4 className="font-medium text-sm flex items-center gap-2">
+                Dados Bancários para Transferência
+              </h4>
+              <div className="grid sm:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="bank_name">Nome do Banco</Label>
+                  <Input id="bank_name" {...form.register("config.bank_name")} placeholder="Ex: Banco Davi EDU S.A." />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="bank_agency">Agência</Label>
+                  <Input id="bank_agency" {...form.register("config.bank_agency")} placeholder="Ex: 0001" />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="bank_account">Conta Corrente</Label>
+                <Input id="bank_account" {...form.register("config.bank_account")} placeholder="Ex: 123456-7" />
               </div>
             </div>
           </div>
@@ -300,7 +352,7 @@ const SchoolSettingsForm: React.FC = () => {
 
           <Separator />
 
-          {/* QR Code */}
+          {/* QR Code de Pré-Matrícula */}
           <div className="grid md:grid-cols-3 gap-6 items-start">
             <div className="md:col-span-1">
               <h3 className="font-semibold">QR Code de Pré-Matrícula</h3>

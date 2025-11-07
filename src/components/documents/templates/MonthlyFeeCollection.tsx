@@ -58,6 +58,11 @@ interface TenantConfig {
   address_state: string | null;
   address_zip_code: string | null;
   logo_url: string | null;
+  // NOVOS CAMPOS
+  pix_key: string | null;
+  bank_name: string | null;
+  bank_agency: string | null;
+  bank_account: string | null;
 }
 
 interface TenantDetails {
@@ -245,17 +250,20 @@ const MonthlyFeeCollection: React.FC = () => {
 
   const totalPendingAmount = pendingRevenues?.reduce((sum, rev) => sum + rev.amount, 0) || 0;
   
-  // --- Dados Mockados para PIX e Banco (A serem configurados nas Settings da Escola futuramente) ---
-  const pixKey = schoolConfig?.cnpj || '00.000.000/0001-00'; // Usando CNPJ como chave PIX de exemplo
+  // --- Dados de Pagamento (Lendo da Configuração do Tenant) ---
+  const pixKey = schoolConfig?.pix_key || schoolConfig?.cnpj || 'Nenhuma chave PIX configurada';
   const pixValue = totalPendingAmount.toFixed(2).replace('.', ',');
   const pixQrCodeData = `Chave PIX: ${pixKey} | Valor: R$ ${pixValue} | Escola: ${tenant.name}`;
   
   const bankDetails = {
-    bankName: 'Banco Davi EDU S.A.',
-    agency: '0001',
-    account: '123456-7',
-    cnpj: schoolConfig?.cnpj || '00.000.000/0001-00',
+    bankName: schoolConfig?.bank_name || 'N/A',
+    agency: schoolConfig?.bank_agency || 'N/A',
+    account: schoolConfig?.bank_account || 'N/A',
+    cnpj: schoolConfig?.cnpj || 'N/A',
   };
+
+  const isPixConfigured = !!schoolConfig?.pix_key;
+  const isBankConfigured = !!schoolConfig?.bank_name && !!schoolConfig?.bank_agency && !!schoolConfig?.bank_account;
 
   return (
     <div className="max-w-4xl mx-auto bg-white p-6 shadow-lg print:shadow-none print:p-0" ref={printRef}>
@@ -390,29 +398,39 @@ const MonthlyFeeCollection: React.FC = () => {
         {/* Coluna 1: PIX QR Code */}
         <Card className="lg:col-span-1 text-center p-4">
           <CardTitle className="text-lg mb-4">Pagamento via PIX</CardTitle>
-          <div className="flex justify-center mb-4">
-            <div className="p-2 border rounded-lg bg-white">
-              <QRCodeSVG value={pixQrCodeData} size={150} level="L" />
-            </div>
-          </div>
-          <p className="text-sm font-semibold">Chave PIX (CNPJ):</p>
-          <p className="text-sm text-primary font-mono break-all">{pixKey}</p>
-          <p className="text-xs text-muted-foreground mt-2">Valor: {formatCurrency(totalPendingAmount)}</p>
+          {isPixConfigured ? (
+            <>
+              <div className="flex justify-center mb-4">
+                <div className="p-2 border rounded-lg bg-white">
+                  <QRCodeSVG value={pixQrCodeData} size={150} level="L" />
+                </div>
+              </div>
+              <p className="text-sm font-semibold">Chave PIX:</p>
+              <p className="text-sm text-primary font-mono break-all">{pixKey}</p>
+              <p className="text-xs text-muted-foreground mt-2">Valor: {formatCurrency(totalPendingAmount)}</p>
+            </>
+          ) : (
+            <p className="text-sm text-destructive py-8">Chave PIX não configurada nas Configurações da Escola.</p>
+          )}
         </Card>
 
         {/* Coluna 2 & 3: Dados Bancários */}
         <Card className="lg:col-span-2 p-4">
           <CardTitle className="text-lg mb-4">Transferência Bancária (TED/DOC)</CardTitle>
-          <div className="grid grid-cols-2 gap-4 text-sm">
-            <div className="space-y-2">
-              <p><span className="font-semibold">Banco:</span> {bankDetails.bankName}</p>
-              <p><span className="font-semibold">Agência:</span> {bankDetails.agency}</p>
+          {isBankConfigured ? (
+            <div className="grid grid-cols-2 gap-4 text-sm">
+              <div className="space-y-2">
+                <p><span className="font-semibold">Banco:</span> {bankDetails.bankName}</p>
+                <p><span className="font-semibold">Agência:</span> {bankDetails.agency}</p>
+              </div>
+              <div className="space-y-2">
+                <p><span className="font-semibold">Conta Corrente:</span> {bankDetails.account}</p>
+                <p><span className="font-semibold">CNPJ:</span> {bankDetails.cnpj}</p>
+              </div>
             </div>
-            <div className="space-y-2">
-              <p><span className="font-semibold">Conta Corrente:</span> {bankDetails.account}</p>
-              <p><span className="font-semibold">CNPJ:</span> {bankDetails.cnpj}</p>
-            </div>
-          </div>
+          ) : (
+            <p className="text-sm text-destructive py-8">Dados bancários incompletos nas Configurações da Escola.</p>
+          )}
           <p className="text-xs text-muted-foreground mt-4">
             Por favor, envie o comprovante de pagamento para a secretaria da escola.
           </p>
