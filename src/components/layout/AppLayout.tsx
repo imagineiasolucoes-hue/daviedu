@@ -10,19 +10,18 @@ import { useProfile } from '@/hooks/useProfile';
 import Sidebar from './Sidebar';
 import AppFooter from './AppFooter';
 import { useBackupMonitoring } from '@/hooks/useBackupMonitoring';
-import { toast } from 'sonner'; // Certifique-se de que o toast está importado
+import { toast } from 'sonner';
 
 const AppLayout: React.FC = () => {
-  const { user, session } = useAuth(); // Obtenha a sessão aqui
+  const { user, session } = useAuth();
   const { profile, isLoading, isSuperAdmin } = useProfile();
-  const [isSheetOpen, setIsSheetOpen] = useState(false); // Estado para controlar a abertura da Sheet
+  const [isSheetOpen, setIsSheetOpen] = useState(false);
 
-  // Ativa o monitoramento de backup para gerar alertas proativos
   useBackupMonitoring();
 
   const handleLogout = async () => {
     console.log("Tentando deslogar. Usuário atual:", user);
-    console.log("Objeto de sessão atual:", session); // console.log corrigido
+    console.log("Objeto de sessão atual:", session);
 
     if (!session) {
       console.warn("Nenhuma sessão ativa encontrada ao tentar deslogar. O usuário pode já estar deslogado ou a sessão é inválida.");
@@ -30,12 +29,29 @@ const AppLayout: React.FC = () => {
       return;
     }
 
-    const { error } = await supabase.auth.signOut();
-    if (error) {
-      console.error("Erro durante o signOut:", error);
-      toast.error("Erro ao Sair", { description: error.message });
-    } else {
-      toast.success("Você foi desconectado com sucesso.");
+    try {
+      const { error } = await supabase.auth.signOut();
+      if (error) {
+        console.error("Erro durante o signOut:", error);
+        toast.error("Erro ao Sair", { description: error.message });
+        
+        // Fallback para limpar o armazenamento local e recarregar a página
+        // Isso é um último recurso para garantir que o usuário seja deslogado do lado do cliente
+        // se o Supabase Auth falhar internamente ou com um 403.
+        console.warn("Tentando fallback: limpando armazenamento local e recarregando a página.");
+        localStorage.removeItem('sb-fhrxqkzswawlellkiaak-auth-token'); // Substitua 'YOUR_SUPABASE_PROJECT_ID' pelo seu ID real
+        window.location.reload();
+      } else {
+        toast.success("Você foi desconectado com sucesso.");
+      }
+    } catch (error: any) {
+      console.error("Erro inesperado durante o signOut:", error);
+      toast.error("Erro ao Sair", { description: error.message || "Ocorreu um erro inesperado." });
+      
+      // Também aciona o fallback para erros inesperados
+      console.warn("Tentando fallback: limpando armazenamento local e recarregando a página devido a erro inesperado.");
+      localStorage.removeItem('sb-fhrxqkzswawlellkiaak-auth-token'); // Substitua 'YOUR_SUPABASE_PROJECT_ID' pelo seu ID real
+      window.location.reload();
     }
   };
 
@@ -59,7 +75,7 @@ const AppLayout: React.FC = () => {
           displayName={displayName} 
           roleDisplay={roleDisplay} 
           onLogout={handleLogout} 
-          onCloseSheet={() => {}} // Não faz nada no desktop, mas mantém a prop
+          onCloseSheet={() => {}}
         />
       </div>
 
@@ -67,7 +83,7 @@ const AppLayout: React.FC = () => {
       <div className="flex flex-col flex-grow">
         {/* Header for Mobile/Tablet */}
         <header className="sticky top-0 z-30 flex h-14 items-center gap-4 border-b bg-background px-4 sm:static sm:h-auto sm:border-0 sm:bg-transparent lg:hidden print-hidden">
-          <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}> {/* Controla a Sheet com o estado */}
+          <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
             <SheetTrigger asChild>
               <Button size="icon" variant="outline">
                 <Menu className="h-5 w-5" />
@@ -75,7 +91,6 @@ const AppLayout: React.FC = () => {
               </Button>
             </SheetTrigger>
             <SheetContent side="left" className="sm:max-w-xs p-0">
-              {/* Adicionando SheetHeader, Title e Description para acessibilidade (sr-only) */}
               <SheetHeader className="sr-only">
                 <SheetTitle>Menu de Navegação</SheetTitle>
                 <SheetDescription>Navegue pelas seções do aplicativo.</SheetDescription>
@@ -85,7 +100,7 @@ const AppLayout: React.FC = () => {
                 displayName={displayName} 
                 roleDisplay={roleDisplay} 
                 onLogout={handleLogout} 
-                onCloseSheet={() => setIsSheetOpen(false)} // Fecha a Sheet ao clicar em um item
+                onCloseSheet={() => setIsSheetOpen(false)}
               />
             </SheetContent>
           </Sheet>
