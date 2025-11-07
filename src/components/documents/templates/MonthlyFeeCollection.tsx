@@ -2,7 +2,7 @@ import React, { useRef } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { Loader2, Printer, ArrowLeft, School, User, Calendar, DollarSign, CheckCircle, QrCode } from 'lucide-react';
+import { Loader2, Printer, ArrowLeft, School, User, Calendar, DollarSign, CheckCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -12,7 +12,6 @@ import { ptBR } from 'date-fns/locale';
 import { useProfile } from '@/hooks/useProfile';
 import { formatCurrency } from '@/lib/utils';
 import { toast } from 'sonner';
-import { QRCodeSVG } from 'qrcode.react'; // Importação adicionada
 
 // --- Tipos de Dados ---
 interface StudentDetails {
@@ -30,7 +29,6 @@ interface StudentDetails {
     school_year: number; 
   } | null;
   courses: { name: string } | null;
-  // Adicionado para refletir a estrutura do join do Supabase antes do processamento
   student_guardians?: {
     guardians: {
       full_name: string;
@@ -39,7 +37,6 @@ interface StudentDetails {
       email: string | null;
     } | null;
   }[];
-  // Propriedade final após o mapeamento
   guardians: {
     full_name: string;
     relationship: string;
@@ -58,7 +55,7 @@ interface TenantConfig {
   address_state: string | null;
   address_zip_code: string | null;
   logo_url: string | null;
-  // NOVOS CAMPOS
+  // CAMPOS FINANCEIROS
   pix_key: string | null;
   bank_name: string | null;
   bank_agency: string | null;
@@ -114,9 +111,7 @@ const fetchStudentData = async (studentId: string): Promise<StudentDetails> => {
   if (error) throw new Error(error.message);
   
   const student = data as unknown as StudentDetails;
-  // Mapear os guardiões para a estrutura desejada
   student.guardians = student.student_guardians?.map((sg: any) => sg.guardians).filter(Boolean) || [];
-  // Remover a propriedade student_guardians original se não for mais necessária
   delete (student as any).student_guardians;
 
   return student;
@@ -184,8 +179,8 @@ const MonthlyFeeCollection: React.FC = () => {
         .from('revenues')
         .update({ 
           status: 'pago', 
-          date: new Date().toISOString().split('T')[0], // Data de hoje
-          payment_method: 'Sistema' // Marcado como pago via sistema
+          date: new Date().toISOString().split('T')[0],
+          payment_method: 'Sistema'
         })
         .eq('id', revenueId);
       if (error) throw new Error(error.message);
@@ -193,9 +188,9 @@ const MonthlyFeeCollection: React.FC = () => {
     onSuccess: () => {
       toast.success("Receita marcada como paga!", { description: "O status da cobrança foi atualizado." });
       queryClient.invalidateQueries({ queryKey: ['pendingRevenues', studentId] });
-      queryClient.invalidateQueries({ queryKey: ['revenues', tenantId] }); // Invalida a lista geral de receitas
-      queryClient.invalidateQueries({ queryKey: ['dashboardMetrics', tenantId] }); // Atualiza o dashboard
-      queryClient.invalidateQueries({ queryKey: ['financeMetrics', tenantId] }); // Atualiza o financeiro
+      queryClient.invalidateQueries({ queryKey: ['revenues', tenantId] });
+      queryClient.invalidateQueries({ queryKey: ['dashboardMetrics', tenantId] });
+      queryClient.invalidateQueries({ queryKey: ['financeMetrics', tenantId] });
     },
     onError: (error) => {
       toast.error("Erro ao marcar como pago", { description: error.message });
@@ -251,9 +246,7 @@ const MonthlyFeeCollection: React.FC = () => {
   const totalPendingAmount = pendingRevenues?.reduce((sum, rev) => sum + rev.amount, 0) || 0;
   
   // --- Dados de Pagamento (Lendo da Configuração do Tenant) ---
-  const pixKey = schoolConfig?.pix_key || schoolConfig?.cnpj || 'Nenhuma chave PIX configurada';
-  const pixValue = totalPendingAmount.toFixed(2).replace('.', ',');
-  const pixQrCodeData = `Chave PIX: ${pixKey} | Valor: R$ ${pixValue} | Escola: ${tenant.name}`;
+  const pixKey = schoolConfig?.pix_key || 'Nenhuma chave PIX configurada';
   
   const bankDetails = {
     bankName: schoolConfig?.bank_name || 'N/A',
@@ -388,34 +381,29 @@ const MonthlyFeeCollection: React.FC = () => {
 
       <Separator className="mb-8" />
 
-      {/* Seção de Dados para Pagamento */}
+      {/* Seção de Dados para Pagamento (Apenas Chave PIX e Bancário) */}
       <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
-        <QrCode className="h-5 w-5 text-accent" />
+        <DollarSign className="h-5 w-5 text-accent" />
         Dados para Pagamento
       </h2>
       
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Coluna 1: PIX QR Code */}
-        <Card className="lg:col-span-1 text-center p-4">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Coluna 1: PIX */}
+        <Card className="p-4">
           <CardTitle className="text-lg mb-4">Pagamento via PIX</CardTitle>
           {isPixConfigured ? (
-            <>
-              <div className="flex justify-center mb-4">
-                <div className="p-2 border rounded-lg bg-white">
-                  <QRCodeSVG value={pixQrCodeData} size={150} level="L" />
-                </div>
-              </div>
-              <p className="text-sm font-semibold">Chave PIX:</p>
-              <p className="text-sm text-primary font-mono break-all">{pixKey}</p>
-              <p className="text-xs text-muted-foreground mt-2">Valor: {formatCurrency(totalPendingAmount)}</p>
-            </>
+            <div className="space-y-2 text-sm">
+              <p><span className="font-semibold">Chave PIX:</span></p>
+              <p className="text-primary font-mono break-all p-2 bg-muted rounded-md">{pixKey}</p>
+              <p className="text-xs text-muted-foreground mt-2">Valor total pendente: {formatCurrency(totalPendingAmount)}</p>
+            </div>
           ) : (
-            <p className="text-sm text-destructive py-8">Chave PIX não configurada nas Configurações da Escola.</p>
+            <p className="text-sm text-destructive py-4">Chave PIX não configurada nas Configurações da Escola.</p>
           )}
         </Card>
 
-        {/* Coluna 2 & 3: Dados Bancários */}
-        <Card className="lg:col-span-2 p-4">
+        {/* Coluna 2: Dados Bancários */}
+        <Card className="p-4">
           <CardTitle className="text-lg mb-4">Transferência Bancária (TED/DOC)</CardTitle>
           {isBankConfigured ? (
             <div className="grid grid-cols-2 gap-4 text-sm">
@@ -429,7 +417,7 @@ const MonthlyFeeCollection: React.FC = () => {
               </div>
             </div>
           ) : (
-            <p className="text-sm text-destructive py-8">Dados bancários incompletos nas Configurações da Escola.</p>
+            <p className="text-sm text-destructive py-4">Dados bancários incompletos nas Configurações da Escola.</p>
           )}
           <p className="text-xs text-muted-foreground mt-4">
             Por favor, envie o comprovante de pagamento para a secretaria da escola.
