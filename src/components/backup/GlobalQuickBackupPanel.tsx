@@ -6,7 +6,6 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Zap, Database, Code, Settings, AlertTriangle, Loader2, ChevronDown, RefreshCcw } from 'lucide-react';
-// import { useBackupNotifications } from '@/hooks/useBackupNotifications'; // Removido
 import useGlobalBackupStatus from '@/hooks/useGlobalBackupStatus';
 import { toast } from 'sonner'; // Adicionado toast para feedback simples
 
@@ -20,13 +19,10 @@ const GlobalQuickBackupPanel: React.FC = () => {
     startGlobalConfigBackup,
     startFullGlobalBackup,
   } = useGlobalBackupStatus();
-  // const { showSuccessFeedback, showEmergencyAlert, showProgressNotification, dismissNotification } = useBackupNotifications(); // Removido
   const [progressNotificationId, setProgressNotificationId] = useState<string | null>(null);
   const [isRestoreConfirmOpen, setIsRestoreConfirmOpen] = useState(false); // Para restauração global
 
   const handleFullGlobalBackup = async () => {
-    // const id = showProgressNotification('Backup Global em Andamento', 'Realizando backup completo do sistema SaaS...'); // Removido
-    // setProgressNotificationId(id); // Removido
     try {
       await startFullGlobalBackup();
       toast.success('Backup Global Concluído!', { description: 'O backup completo do sistema SaaS foi realizado com sucesso.' });
@@ -35,14 +31,11 @@ const GlobalQuickBackupPanel: React.FC = () => {
         description: (error as Error).message || 'Não foi possível completar o backup global completo.',
       });
     } finally {
-      // if (progressNotificationId) dismissNotification(progressNotificationId); // Removido
       setProgressNotificationId(null);
     }
   };
 
   const handleGlobalSelectiveBackup = async (type: GlobalSelectiveBackupType) => {
-    // const id = showProgressNotification('Backup Seletivo Global em Andamento', `Realizando backup seletivo global de ${type}...`); // Removido
-    // setProgressNotificationId(id); // Removido
     try {
       switch (type) {
         case 'code': await startGlobalCodeBackup(); break;
@@ -55,15 +48,12 @@ const GlobalQuickBackupPanel: React.FC = () => {
         description: (error as Error).message || `Não foi possível completar o backup seletivo global de ${type}.`,
       });
     } finally {
-      // if (progressNotificationId) dismissNotification(progressNotificationId); // Removido
       setProgressNotificationId(null);
     }
   };
 
   const handleGlobalEmergencyRestore = async () => {
     // Simulação de restauração global
-    // const id = showProgressNotification('Restauração Global em Andamento', 'Restaurando o sistema SaaS para o último backup estável...'); // Removido
-    // setProgressNotificationId(id); // Removido
     try {
       await new Promise(resolve => setTimeout(resolve, 7000)); // Simula API call de restauração global
       toast.success('Restauração Global Concluída!', { description: 'O sistema SaaS foi restaurado com sucesso.' });
@@ -73,7 +63,6 @@ const GlobalQuickBackupPanel: React.FC = () => {
       });
     } finally {
       setIsRestoreConfirmOpen(false);
-      // if (progressNotificationId) dismissNotification(progressNotificationId); // Removido
       setProgressNotificationId(null);
     }
   };

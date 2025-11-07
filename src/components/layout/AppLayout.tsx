@@ -9,8 +9,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useProfile } from '@/hooks/useProfile';
 import Sidebar from './Sidebar';
 import AppFooter from './AppFooter';
-// import BackupAlerts from '@/components/BackupAlerts'; // Removido
-// import { useBackupMonitoring } from '@/hooks/useBackupMonitoring'; // Removido
+import { useBackupMonitoring } from '@/hooks/useBackupMonitoring';
 
 const AppLayout: React.FC = () => {
   const { user } = useAuth();
@@ -18,7 +17,7 @@ const AppLayout: React.FC = () => {
   const [isSheetOpen, setIsSheetOpen] = useState(false); // Estado para controlar a abertura da Sheet
 
   // Ativa o monitoramento de backup para gerar alertas proativos
-  // useBackupMonitoring(); // Removido
+  useBackupMonitoring();
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
@@ -90,9 +89,6 @@ const AppLayout: React.FC = () => {
         {/* Footer */}
         <AppFooter />
       </div>
-
-      {/* Backup Alerts Display */}
-      {/* <BackupAlerts /> */} {/* Removido */}
     </div>
   );
 };

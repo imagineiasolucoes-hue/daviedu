@@ -6,8 +6,7 @@ import { Separator } from '@/components/ui/separator';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
-import { Zap, Database, Folder, Code, HardDrive, AlertTriangle, Loader2, ChevronDown, RefreshCcw, Cloud } from 'lucide-react'; // Adicionado Cloud
-// import { useBackupNotifications } from '@/hooks/useBackupNotifications'; // Removido
+import { Zap, Database, Folder, Code, HardDrive, AlertTriangle, Loader2, ChevronDown, RefreshCcw, Cloud } from 'lucide-react';
 import { toast } from 'sonner'; // Adicionado toast para feedback simples
 
 type SelectiveBackupType = 'database' | 'files' | 'code';
@@ -39,13 +38,10 @@ const QuickBackupPanel: React.FC<QuickBackupPanelProps> = ({
   const [isSelectiveBackupLoading, setIsSelectiveBackupLoading] = useState(false);
   const [isRestoreLoading, setIsRestoreLoading] = useState(false);
   const [isRestoreConfirmOpen, setIsRestoreConfirmOpen] = useState(false);
-  // const { showSuccessFeedback, showEmergencyAlert, showProgressNotification, dismissNotification } = useBackupNotifications(); // Removido
   const [progressNotificationId, setProgressNotificationId] = useState<string | null>(null);
 
   const handleQuickBackup = async () => {
     setIsQuickBackupLoading(true);
-    // const id = showProgressNotification('Backup em Andamento', 'Realizando backup completo de todos os dados...'); // Removido
-    // setProgressNotificationId(id); // Removido
     try {
       await onQuickBackup();
       toast.success('Backup Concluído!', { description: 'O backup completo foi realizado com sucesso.' });
@@ -55,15 +51,12 @@ const QuickBackupPanel: React.FC<QuickBackupPanelProps> = ({
       });
     } finally {
       setIsQuickBackupLoading(false);
-      // if (progressNotificationId) dismissNotification(progressNotificationId); // Removido
       setProgressNotificationId(null);
     }
   };
 
   const handleSelectiveBackup = async (type: SelectiveBackupType) => {
     setIsSelectiveBackupLoading(true);
-    // const id = showProgressNotification('Backup Seletivo em Andamento', `Realizando backup seletivo de ${type}...`); // Removido
-    // setProgressNotificationId(id); // Removido
     try {
       await onSelectiveBackup(type);
       toast.success('Backup Seletivo Concluído!', { description: `O backup dos dados de ${type} foi realizado com sucesso.` });
@@ -73,15 +66,12 @@ const QuickBackupPanel: React.FC<QuickBackupPanelProps> = ({
       });
     } finally {
       setIsSelectiveBackupLoading(false);
-      // if (progressNotificationId) dismissNotification(progressNotificationId); // Removido
       setProgressNotificationId(null);
     }
   };
 
   const handleEmergencyRestore = async () => {
     setIsRestoreLoading(true);
-    // const id = showProgressNotification('Restauração em Andamento', 'Restaurando o sistema para o último backup estável...'); // Removido
-    // setProgressNotificationId(id); // Removido
     try {
       await onEmergencyRestore();
       toast.success('Restauração Concluída!', { description: 'O último backup estável foi restaurado com sucesso.' });
@@ -92,7 +82,6 @@ const QuickBackupPanel: React.FC<QuickBackupPanelProps> = ({
     } finally {
       setIsRestoreLoading(false);
       setIsRestoreConfirmOpen(false);
-      // if (progressNotificationId) dismissNotification(progressNotificationId); // Removido
       setProgressNotificationId(null);
     }
   };

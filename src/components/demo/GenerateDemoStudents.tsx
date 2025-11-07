@@ -120,6 +120,7 @@ const GenerateDemoStudents: React.FC = () => {
             phone: `719${generateRandomNumber(10000000, 99999999)}`,
             email: `${studentFirstName.toLowerCase()}.${studentLastName.toLowerCase()}${i}@demo.com`,
             class_id: classId,
+            course_id: courseId, // Passando o course_id
             gender: getRandomElement(genders),
             nationality: "Brasileira",
             naturality: randomCity,

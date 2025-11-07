@@ -31,7 +31,7 @@ serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
     );
     
-    // 1. Preparar dados do funcionário (removendo classes_to_teach para não tentar inserir na tabela employees)
+    // 1. Preparar dados do funcionário
     const employeeUpdateData = {
         ...updateData,
         user_id: user_id || null, // Atualizando o user_id
@@ -88,6 +88,19 @@ serve(async (req) => {
             throw new Error(`Erro ao sincronizar turmas: ${insertError.message}`);
         }
     }
+    
+    // 4. Atualizar Perfil (profiles) com o employee_id, se user_id estiver presente
+    if (user_id) {
+        const { error: profileUpdateError } = await supabaseAdmin
+            .from("profiles")
+            .update({ employee_id: employee_id })
+            .eq("id", user_id);
+
+        if (profileUpdateError) {
+            console.error("update-teacher: Supabase Profile Update Error:", JSON.stringify(profileUpdateError, null, 2));
+        }
+    }
+
 
     return new Response(JSON.stringify({ success: true, teacher: data }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },

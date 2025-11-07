@@ -9,7 +9,6 @@ import MetricCard from '@/components/dashboard/MetricCard';
 import { Skeleton } from '@/components/ui/skeleton';
 import GlobalBackupStatusWidget from '@/components/backup/GlobalBackupStatusWidget';
 import useAllTenantsBackupStatus from '@/hooks/useAllTenantsBackupStatus';
-// import { useBackupNotifications } from '@/hooks/useBackupNotifications'; // Removido
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner'; // Adicionado toast para feedback simples
@@ -41,7 +40,6 @@ const MetricCardSkeleton: React.FC = () => (
 
 const SuperAdminOverviewPage: React.FC = () => {
   const { isSuperAdmin, isLoading: isProfileLoading } = useProfile();
-  // const { showSuccessFeedback, showEmergencyAlert, showProgressNotification, dismissNotification } = useBackupNotifications(); // Removido
   const { overallTenantsStatus, isLoading: isLoadingAllTenantsBackup, startBackupAllTenants, tenantsSummary } = useAllTenantsBackupStatus();
   const [backupAllTenantsProgressId, setBackupAllTenantsProgressId] = React.useState<string | null>(null);
 
@@ -52,8 +50,6 @@ const SuperAdminOverviewPage: React.FC = () => {
   });
 
   const handleBackupAllTenants = async () => {
-    // const id = showProgressNotification('Backup de Todos os Tenants em Andamento', 'Iniciando backup para todas as escolas...'); // Removido
-    // setBackupAllTenantsProgressId(id); // Removido
     try {
       await startBackupAllTenants();
       toast.success('Backup de Todos os Tenants Concluído!', { description: 'O backup para todas as escolas foi realizado com sucesso.' });
@@ -62,7 +58,6 @@ const SuperAdminOverviewPage: React.FC = () => {
         description: (error as Error).message || 'Não foi possível completar o backup para todas as escolas.',
       });
     } finally {
-      // if (backupAllTenantsProgressId) dismissNotification(id); // Removido
       setBackupAllTenantsProgressId(null);
     }
   };

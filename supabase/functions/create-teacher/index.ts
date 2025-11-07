@@ -83,14 +83,23 @@ serve(async (req) => {
 
         if (linkError) {
             console.error("create-teacher: Supabase Insert Error (teacher_classes):", JSON.stringify(linkError, null, 2)); // Log detalhado do erro de vínculo
-            // NOTA: Em um ambiente de produção, para garantir atomicidade, a criação do professor
-            // também deveria ser revertida se o vínculo das turmas falhar.
-            // Isso geralmente é feito com uma função de banco de dados (stored procedure)
-            // que encapsula todas as operações em uma única transação.
             console.error("Erro ao vincular professor às turmas:", linkError);
-            // Continuar, mas informar o erro
         }
     }
+    
+    // 3. Atualizar Perfil (profiles) com o employee_id, se user_id estiver presente
+    if (user_id) {
+        const { error: profileUpdateError } = await supabaseAdmin
+            .from("profiles")
+            .update({ employee_id: employeeId })
+            .eq("id", user_id);
+
+        if (profileUpdateError) {
+            console.error("create-teacher: Supabase Profile Update Error:", JSON.stringify(profileUpdateError, null, 2));
+            // Não lançamos erro fatal aqui, pois o professor foi criado, mas logamos o problema de sincronização.
+        }
+    }
+
 
     return new Response(JSON.stringify({ success: true, teacherId: employeeId }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },

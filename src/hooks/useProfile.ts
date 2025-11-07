@@ -18,7 +18,7 @@ export interface Profile {
 }
 
 const fetchProfile = async (userId: string): Promise<Profile | null> => {
-  // 1. Tenta buscar o perfil existente
+  // 1. Busca o perfil existente, incluindo o employee_id
   const { data: profileData, error: profileError } = await supabase
     .from('profiles')
     .select('*')
@@ -35,36 +35,16 @@ const fetchProfile = async (userId: string): Promise<Profile | null> => {
     return null;
   }
 
-  // 2. Garante que o campo role está presente (embora o schema garanta um default)
+  // 2. Garante que o campo role está presente
   if (!profileData.role) {
       profileData.role = 'student' as UserRole;
   }
 
   const profile: Profile = profileData as Profile;
 
-  // 3. Se o perfil for de um professor OU um admin que também é professor, busca o employee_id correspondente
-  // O employee_id é necessário para lançar notas, pois a tabela 'grades' referencia 'employees(id)'.
-  if ((profile.role === 'teacher' || profile.role === 'admin') && profile.tenant_id) {
-    const { data: employeeData, error: employeeError } = await supabase
-      .from('employees')
-      .select('id')
-      .eq('tenant_id', profile.tenant_id)
-      .eq('user_id', profile.id) // Usando o profile.id (que é o auth.uid())
-      .eq('is_teacher', true) // Apenas se for um funcionário que é professor
-      .maybeSingle();
-
-    if (employeeError) {
-      console.error("Supabase fetchEmployeeId error for teacher/admin:", employeeError);
-    }
-
-    if (employeeData) {
-      profile.employee_id = employeeData.id;
-      console.log(`Employee ID found for user ${profile.id}: ${employeeData.id}`); // NOVO LOG
-    } else {
-      console.warn(`Employee ID not found for teacher/admin profile ${profile.id} linked via user_id.`);
-    }
-  }
-
+  // A busca secundária por employee_id foi removida, pois as Edge Functions
+  // create-teacher e update-teacher agora sincronizam o employee_id no perfil.
+  
   return profile;
 };
 

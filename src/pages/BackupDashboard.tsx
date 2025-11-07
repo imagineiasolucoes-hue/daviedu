@@ -12,13 +12,11 @@ import { Badge } from '@/components/ui/badge';
 import { format, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import useAllTenantsBackupStatus from '@/hooks/useAllTenantsBackupStatus';
-// import { useBackupNotifications } from '@/hooks/useBackupNotifications'; // Removido
 import { toast } from 'sonner'; // Adicionado toast para feedback simples
 
 const BackupDashboard: React.FC = () => {
   const { profile, isLoading: isProfileLoading, isSuperAdmin, isSchoolUser } = useProfile();
   const { tenantsSummary, overallTenantsStatus, isLoading: isLoadingAllTenantsBackup, startBackupAllTenants } = useAllTenantsBackupStatus();
-  // const { showSuccessFeedback, showEmergencyAlert, showProgressNotification, dismissNotification } = useBackupNotifications(); // Removido
   const [backupAllTenantsProgressId, setBackupAllTenantsProgressId] = React.useState<string | null>(null);
 
   // Mock data e handlers para o QuickBackupPanel (tenant-specific)
@@ -47,8 +45,6 @@ const BackupDashboard: React.FC = () => {
   };
 
   const handleBackupAllTenants = async () => {
-    // const id = showProgressNotification('Backup de Todos os Tenants em Andamento', 'Iniciando backup para todas as escolas...'); // Removido
-    // setBackupAllTenantsProgressId(id); // Removido
     try {
       await startBackupAllTenants();
       toast.success('Backup de Todos os Tenants Concluído!', { description: 'O backup para todas as escolas foi realizado com sucesso.' });
@@ -57,7 +53,6 @@ const BackupDashboard: React.FC = () => {
         description: (error as Error).message || 'Não foi possível completar o backup para todas as escolas.',
       });
     } finally {
-      // if (backupAllTenantsProgressId) dismissNotification(backupAllTenantsProgressId); // Removido
       setBackupAllTenantsProgressId(null);
     }
   };
@@ -173,7 +168,7 @@ const BackupDashboard: React.FC = () => {
                   </Table>
                 </div>
                 {tenantsSummary.length === 0 && !isLoadingAllTenantsBackup && (
-                  <p className="text-center py-8 text-muted-foreground">Nenhuma escola encontrada.</p>
+                  <p className="text-center py-8 text-muted-foreground">Nenhuma escola cadastrada.</p>
                 )}
               </CardContent>
             </Card>

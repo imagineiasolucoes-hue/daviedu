@@ -3,13 +3,11 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Database, Clock, AlertTriangle, CheckCircle, Loader2, ShieldAlert } from 'lucide-react';
 import useBackupStatus, { BackupStatus } from '@/hooks/useBackupStatus';
 import { format, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
-// import { useBackupNotifications } from '@/hooks/useBackupNotifications'; // Removido
 
 const getStatusDetails = (status: BackupStatus) => {
   switch (status) {
@@ -43,7 +41,6 @@ const BackupStatusWidget: React.FC = () => {
     isBackingUp, 
     startBackup 
   } = useBackupStatus();
-  // const { showSuccessFeedback, showProgressNotification, dismissNotification } = useBackupNotifications(); // Removido
   const [progressNotificationId, setProgressNotificationId] = useState<string | null>(null);
 
   const { label, color, icon: StatusIcon } = getStatusDetails(currentStatus);
@@ -57,17 +54,12 @@ const BackupStatusWidget: React.FC = () => {
     : 'N/A';
 
   const handleManualBackup = async () => {
-    // const id = showProgressNotification('Backup em Andamento', 'Realizando backup manual...'); // Removido
-    // setProgressNotificationId(id); // Removido
+    // A lógica de notificação foi removida, confiando no toast simples
     try {
       await startBackup();
-      // showSuccessFeedback('Backup Concluído!', 'O backup manual foi realizado com sucesso.'); // Removido
     } catch (error) {
-      // Erros do startBackup são tratados pelo useBackupMonitoring ou pelo QuickBackupPanel
-      // Este widget apenas mostra o progresso e sucesso do backup manual
       console.error("Erro ao iniciar backup manual:", error);
     } finally {
-      // if (progressNotificationId) dismissNotification(progressNotificationId); // Removido
       setProgressNotificationId(null);
     }
   };
@@ -93,8 +85,6 @@ const BackupStatusWidget: React.FC = () => {
       </CardHeader>
       
       <CardContent className="flex-grow space-y-4 pt-4">
-        {/* Alerta de Pendência - REMOVIDO, AGORA GERENCIADO POR BackupAlerts/useBackupMonitoring */}
-
         {/* Informações de Tempo */}
         <div className="space-y-2">
           <div className="flex justify-between text-sm">
