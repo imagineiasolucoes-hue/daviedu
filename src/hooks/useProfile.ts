@@ -40,10 +40,38 @@ const fetchProfile = async (userId: string): Promise<Profile | null> => {
       profileData.role = 'student' as UserRole;
   }
 
-  const profile: Profile = profileData as Profile;
+  let profile: Profile = profileData as Profile;
 
-  // A busca secundária por employee_id foi removida, pois as Edge Functions
-  // create-teacher e update-teacher agora sincronizam o employee_id no perfil.
+  // 3. Se o perfil é de um professor/admin e o employee_id está faltando, tenta preencher
+  if ((profile.role === 'teacher' || profile.role === 'admin') && !profile.employee_id) {
+    console.log(`Attempting to link employee_id for user ${userId} with role ${profile.role}`);
+    const { data: employeeData, error: employeeError } = await supabase
+      .from('employees')
+      .select('id')
+      .eq('user_id', userId)
+      .eq('tenant_id', profile.tenant_id) // Adiciona tenant_id para segurança
+      .maybeSingle();
+
+    if (employeeError) {
+      console.error("Error finding employee for profile linking:", employeeError);
+    } else if (employeeData) {
+      console.log(`Found employee_id ${employeeData.id} for user ${userId}. Updating profile.`);
+      // Atualiza o perfil no banco de dados
+      const { error: updateError } = await supabase
+        .from('profiles')
+        .update({ employee_id: employeeData.id })
+        .eq('id', userId);
+
+      if (updateError) {
+        console.error("Error updating profile with employee_id:", updateError);
+      } else {
+        // Atualiza o objeto profile em memória para a sessão atual
+        profile = { ...profile, employee_id: employeeData.id };
+      }
+    } else {
+      console.warn(`No employee record found for user ${userId} with role ${profile.role}.`);
+    }
+  }
   
   return profile;
 };
