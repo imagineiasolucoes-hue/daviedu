@@ -6,9 +6,9 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
+import { Input } from '@/components/ui/input'; // Manter import para outros inputs, se houver
 import { Label } from '@/components/ui/label';
-import { Loader2, Eye, EyeOff } from 'lucide-react'; // Importando Eye e EyeOff
+import { Loader2, Eye, EyeOff } from 'lucide-react';
 
 const securitySchema = z.object({
   password: z.string().min(6, "A nova senha deve ter pelo menos 6 caracteres."),
@@ -17,7 +17,7 @@ const securitySchema = z.object({
 type SecurityFormData = z.infer<typeof securitySchema>;
 
 const SecuritySettingsForm: React.FC = () => {
-  const [showPassword, setShowPassword] = useState(false); // Estado para controlar a visibilidade da senha
+  const [showPassword, setShowPassword] = useState(false);
 
   const form = useForm<SecurityFormData>({
     resolver: zodResolver(securitySchema),
@@ -59,20 +59,21 @@ const SecuritySettingsForm: React.FC = () => {
             <div className="md:col-span-2 grid gap-4">
               <div className="space-y-2">
                 <Label htmlFor="password">Nova Senha</Label>
-                <div className="relative"> {/* Adicionado div para posicionamento do ícone */}
-                  <Input
+                <div className="relative">
+                  {/* Usando input HTML nativo para depuração */}
+                  <input
                     id="password"
-                    type={showPassword ? "text" : "password"} // Alterna o tipo do input
+                    type={showPassword ? "text" : "password"}
                     {...form.register("password")}
                     placeholder="••••••••"
-                    className="pr-10" // Adiciona padding à direita para o ícone
+                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 pr-10" // Adicionando classes Tailwind diretamente
                   />
                   <Button
                     type="button"
                     variant="ghost"
                     size="icon"
                     className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
-                    onClick={() => setShowPassword(!showPassword)} // Alterna a visibilidade
+                    onClick={() => setShowPassword(!showPassword)}
                   >
                     {showPassword ? (
                       <EyeOff className="h-4 w-4 text-muted-foreground" />
