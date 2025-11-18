@@ -31,6 +31,9 @@ const tenantConfigSchema = z.object({
   bank_name: z.string().optional().nullable(),
   bank_agency: z.string().optional().nullable(),
   bank_account: z.string().optional().nullable(),
+
+  // NOVO CAMPO: Ato de Criação/Autorização
+  authorization_act: z.string().optional().nullable(),
 });
 
 const tenantSchema = z.object({
@@ -92,6 +95,8 @@ const SchoolSettingsForm: React.FC = () => {
           bank_name: tenant.config?.bank_name || null,
           bank_agency: tenant.config?.bank_agency || null,
           bank_account: tenant.config?.bank_account || null,
+          // NOVO CAMPO
+          authorization_act: tenant.config?.authorization_act || null,
         },
       });
     }
@@ -147,6 +152,8 @@ const SchoolSettingsForm: React.FC = () => {
       bank_name: data.config?.bank_name || null,
       bank_agency: data.config?.bank_agency || null,
       bank_account: data.config?.bank_account || null,
+      // NOVO CAMPO
+      authorization_act: data.config?.authorization_act || null,
     };
 
     const { error } = await supabase
@@ -239,6 +246,11 @@ const SchoolSettingsForm: React.FC = () => {
                   <Label htmlFor="phone">Telefone (Opcional)</Label>
                   <Input id="phone" {...form.register("config.phone")} />
                 </div>
+              </div>
+              {/* NOVO CAMPO: Ato de Criação/Autorização */}
+              <div className="space-y-2">
+                <Label htmlFor="authorization_act">Ato de Criação/Autorização (Opcional)</Label>
+                <Input id="authorization_act" {...form.register("config.authorization_act")} placeholder="Ex: Portaria nº 123/2020 - SEDUC" />
               </div>
             </div>
           </div>
