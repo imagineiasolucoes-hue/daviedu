@@ -78,7 +78,7 @@ const DocumentGenerationPanel: React.FC = () => {
               <SelectContent>
                 <SelectItem value="transcript">Histórico Escolar</SelectItem>
                 <SelectItem value="report_card">Boletim Escolar</SelectItem>
-                <SelectItem value="monthly_fee_collection">Cobrança de Mensalidade</SelectItem> {/* NOVA OPÇÃO */}
+                <SelectItem value="monthly_fee_collection">Cobrança de Mensalidade</SelectItem>
               </SelectContent>
             </Select>
           </div>

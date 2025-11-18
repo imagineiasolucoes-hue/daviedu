@@ -1,20 +1,16 @@
-import React, { useRef, useMemo, useState } from 'react';
+import React, { useMemo } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { useQuery, useMutation } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { Loader2, Printer, ArrowLeft, School, User, Calendar, BookOpen, GraduationCap, ClipboardList, QrCode, Link as LinkIcon, CheckCircle } from 'lucide-react';
+import { Loader2, CheckCircle, XCircle, ShieldCheck, School, User, Calendar, BookOpen, GraduationCap, ClipboardList, Link as LinkIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { useProfile } from '@/hooks/useProfile';
-import { Badge } from '@/components/ui/badge';
-import { toast } from 'sonner';
-import { QRCodeSVG } from 'qrcode.react';
 
-// --- Tipos de Dados ---
+// --- Tipos de Dados (Replicados do StudentTranscript para consistência) ---
 interface StudentDetails {
   id: string;
   full_name: string;
@@ -37,15 +33,7 @@ interface StudentDetails {
     school_year: number; 
   } | null;
   courses: { name: string } | null;
-  student_guardians?: {
-    guardians: {
-      full_name: string;
-      relationship: string;
-      phone: string | null;
-      email: string | null;
-    } | null;
-  }[];
-  guardians: { // Adicionado para facilitar o acesso aos guardiões
+  guardians: {
     full_name: string;
     relationship: string;
     phone: string | null;
@@ -63,11 +51,7 @@ interface TenantConfig {
   address_state: string | null;
   address_zip_code: string | null;
   logo_url: string | null;
-  pix_key: string | null;
-  bank_name: string | null;
-  bank_agency: string | null;
-  bank_account: string | null;
-  authorization_act: string | null; // NOVO CAMPO
+  authorization_act: string | null;
 }
 
 interface TenantDetails {
@@ -92,179 +76,44 @@ interface ProcessedSubjectGrade {
   result: 'Aprovado' | 'Reprovado' | 'Recuperação' | 'N/A';
 }
 
-// --- Funções de Busca ---
-const fetchStudentData = async (studentId: string): Promise<StudentDetails> => {
-  const { data, error } = await supabase
-    .from('students')
-    .select(`
-      id, 
-      full_name, 
-      registration_code, 
-      birth_date, 
-      tenant_id, 
-      class_id,
-      course_id,
-      created_at, 
-      gender,
-      nationality,
-      naturality,
-      cpf,
-      rg,
-      phone,
-      email,
-      classes (
-        id,
-        name, 
-        school_year
-      ),
-      courses (name),
-      student_guardians (
-        guardians (
-          full_name,
-          relationship,
-          phone,
-          email
-        )
-      )
-    `)
-    .eq('id', studentId)
-    .single();
+interface VerificationData {
+  success: boolean;
+  student: StudentDetails;
+  tenant: TenantDetails;
+  grades: Grade[];
+  documentId: string;
+}
+
+const fetchVerifiedDocument = async (token: string): Promise<VerificationData> => {
+  const { data, error } = await supabase.functions.invoke('verify-document', {
+    body: JSON.stringify({ token }),
+  });
   if (error) throw new Error(error.message);
-  
-  const student = data as unknown as StudentDetails;
-  student.guardians = student.student_guardians?.map((sg: any) => sg.guardians).filter(Boolean) || [];
-  delete (student as any).student_guardians; // Limpa a propriedade intermediária
-  return student;
+  // @ts-ignore
+  if (data.error) throw new Error(data.error);
+  return data as VerificationData;
 };
 
-const fetchTenantDetails = async (tenantId: string): Promise<TenantDetails> => {
-  const { data, error } = await supabase
-    .from('tenants')
-    .select('name, config')
-    .eq('id', tenantId)
-    .single();
-  if (error) throw new Error(error.message);
-  return data as TenantDetails;
-};
+const VerifyDocumentPage: React.FC = () => {
+  const { token } = useParams<{ token: string }>();
 
-const fetchGrades = async (studentId: string): Promise<Grade[]> => {
-  const { data, error } = await supabase
-    .from('grades')
-    .select(`subject_name, grade_value, assessment_type, period, date_recorded`)
-    .eq('student_id', studentId)
-    .order('period')
-    .order('subject_name');
-  
-  if (error) throw new Error(error.message);
-  return data as Grade[];
-};
-
-const StudentTranscript: React.FC = () => {
-  const { entityId: studentId } = useParams<{ entityId: string }>();
-  const { profile } = useProfile();
-  const tenantId = profile?.tenant_id;
-  const printRef = useRef<HTMLDivElement>(null);
-  const [verificationToken, setVerificationToken] = useState<string | null>(null);
-  const [verificationLink, setVerificationLink] = useState<string | null>(null);
-
-  const { data: student, isLoading: isLoadingStudent, error: studentError } = useQuery<StudentDetails, Error>({
-    queryKey: ['studentDetails', studentId],
-    queryFn: () => fetchStudentData(studentId!),
-    enabled: !!studentId,
+  const { data, isLoading, error } = useQuery<VerificationData, Error>({
+    queryKey: ['verifiedDocument', token],
+    queryFn: () => fetchVerifiedDocument(token!),
+    enabled: !!token,
+    retry: false, // Não tentar novamente em caso de token inválido
   });
 
-  const { data: tenant, isLoading: isLoadingTenant, error: tenantError } = useQuery<TenantDetails, Error>({
-    queryKey: ['tenantDetails', tenantId],
-    queryFn: () => fetchTenantDetails(tenantId!),
-    enabled: !!tenantId && !!student?.tenant_id,
-  });
+  const student = data?.student;
+  const tenant = data?.tenant;
+  const grades = data?.grades;
 
-  const { data: grades, isLoading: isLoadingGrades, error: gradesError } = useQuery<Grade[], Error>({
-    queryKey: ['studentGrades', studentId],
-    queryFn: () => fetchGrades(studentId!),
-    enabled: !!studentId,
-  });
-
-  const generateTokenMutation = useMutation({
-    mutationFn: async (documentId: string) => {
-      const { data, error } = await supabase.functions.invoke('generate-document-token', {
-        body: JSON.stringify({ document_id: documentId }),
-      });
-      if (error) throw new Error(error.message);
-      // @ts-ignore
-      if (data.error) throw new Error(data.error);
-      // @ts-ignore
-      return data.token as string;
-    },
-    onSuccess: (token) => {
-      setVerificationToken(token);
-      setVerificationLink(`${window.location.origin}/verify-document/${token}`);
-      toast.success("Link de verificação gerado com sucesso!");
-    },
-    onError: (error) => {
-      toast.error("Erro ao gerar link de verificação", { description: error.message });
-    },
-  });
-
-  const handleGenerateVerificationLink = async () => {
-    if (!studentId) {
-      toast.error("Erro", { description: "ID do aluno não encontrado para gerar o documento." });
-      return;
-    }
-
-    // Primeiro, precisamos do ID do documento na tabela 'documents'
-    // Para simplificar, vamos assumir que o 'entityId' (studentId) é o 'related_entity_id'
-    // e que existe um documento do tipo 'transcript' para este aluno.
-    // Em um sistema mais robusto, você criaria o registro do documento aqui se ele não existisse.
-    const { data: existingDoc, error: docError } = await supabase
-      .from('documents')
-      .select('id')
-      .eq('related_entity_id', studentId)
-      .eq('document_type', 'transcript')
-      .maybeSingle();
-
-    let documentIdToUse = existingDoc?.id;
-
-    if (!documentIdToUse) {
-      // Se não existir, cria um registro de documento (apenas metadados)
-      const { data: newDoc, error: insertDocError } = await supabase
-        .from('documents')
-        .insert({
-          tenant_id: tenantId,
-          document_type: 'transcript',
-          related_entity_id: studentId,
-          file_url: 'generated_on_demand', // URL placeholder, pois o conteúdo é dinâmico
-          description: `Histórico Escolar de ${student?.full_name || 'Aluno'}`,
-          metadata: { generatedBy: profile?.id, studentName: student?.full_name },
-        })
-        .select('id')
-        .single();
-
-      if (insertDocError) {
-        toast.error("Erro ao criar registro do documento", { description: insertDocError.message });
-        return;
-      }
-      documentIdToUse = newDoc.id;
-    }
-
-    if (documentIdToUse) {
-      generateTokenMutation.mutate(documentIdToUse);
-    }
-  };
-
-  const handlePrint = () => {
-    window.print();
-  };
-
-  const isLoading = isLoadingStudent || isLoadingTenant || isLoadingGrades;
-  const error = studentError || tenantError || gradesError;
-
-  // Processar as notas para o formato do boletim
+  // Processar as notas para o formato do boletim (lógica replicada do StudentTranscript)
   const processedGrades = useMemo(() => {
     if (!grades || grades.length === 0) return [];
 
     const subjectsMap = new Map<string, ProcessedSubjectGrade>();
-    const allPeriods = new Set<string>(); // Para coletar todos os períodos existentes
+    const allPeriods = new Set<string>();
 
     grades.forEach(grade => {
       if (!subjectsMap.has(grade.subject_name)) {
@@ -273,21 +122,15 @@ const StudentTranscript: React.FC = () => {
           unit_grades: {},
           total_units_grade: null,
           final_average: null,
-          absences: 0, // Placeholder
+          absences: 0,
           result: 'N/A',
         });
       }
       const subject = subjectsMap.get(grade.subject_name)!;
-
-      if (!subject.unit_grades[grade.period]) {
-        subject.unit_grades[grade.period] = grade.grade_value;
-      } else {
-        subject.unit_grades[grade.period] = grade.grade_value;
-      }
+      subject.unit_grades[grade.period] = grade.grade_value;
       allPeriods.add(grade.period);
     });
 
-    // Converter para array e calcular totais e médias
     const result: ProcessedSubjectGrade[] = Array.from(subjectsMap.values()).map(subject => {
       const validUnitGrades = Object.values(subject.unit_grades).filter(g => g !== null) as number[];
       
@@ -311,7 +154,6 @@ const StudentTranscript: React.FC = () => {
     return result;
   }, [grades]);
 
-  // Ordenar os períodos para o cabeçalho da tabela (ex: 1ª Unidade, 2ª Unidade)
   const sortedPeriods = useMemo(() => {
     const periods = Array.from(new Set(grades?.map(g => g.period) || []));
     return periods.sort((a, b) => {
@@ -321,7 +163,6 @@ const StudentTranscript: React.FC = () => {
     });
   }, [grades]);
 
-
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -330,22 +171,29 @@ const StudentTranscript: React.FC = () => {
     );
   }
 
-  if (error) {
+  if (error || !data?.success || !student || !tenant) {
     return (
-      <div className="p-8 text-center">
-        <h1 className="text-2xl text-destructive">Erro ao Carregar Dados</h1>
-        <p className="text-muted-foreground">Verifique se o aluno e a escola estão corretamente cadastrados. Erro: {error.message}</p>
-        <Button asChild variant="link" className="mt-4 print-hidden">
-          <Link to="/documents">
-            <ArrowLeft className="mr-2 h-4 w-4" /> Voltar
-          </Link>
-        </Button>
+      <div className="min-h-screen flex items-center justify-center bg-gray-100 dark:bg-gray-900 p-4">
+        <Card className="w-full max-w-md text-center">
+          <CardHeader>
+            <CardTitle className="flex items-center justify-center gap-2 text-destructive">
+              <XCircle className="h-8 w-8" /> Documento Inválido
+            </CardTitle>
+            <CardDescription>
+              O token de verificação é inválido, expirou ou o documento não foi encontrado.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <p className="text-muted-foreground mb-4">
+              Por favor, verifique o link ou entre em contato com a escola emissora.
+            </p>
+            <Button asChild>
+              <Link to="/">Voltar à Página Inicial</Link>
+            </Button>
+          </CardContent>
+        </Card>
       </div>
     );
-  }
-
-  if (!student || !tenant) {
-    return <div className="text-destructive p-8">Aluno ou escola não encontrados.</div>;
   }
 
   const studentCourseName = student.courses?.name || 'N/A';
@@ -362,37 +210,15 @@ const StudentTranscript: React.FC = () => {
   ].filter(Boolean).join('');
 
   return (
-    <div className="max-w-4xl mx-auto bg-white p-6 shadow-lg print:shadow-none print:p-0" ref={printRef}>
-      
-      {/* Botões de Ação (Ocultos na Impressão) */}
-      <div className="flex justify-between items-center mb-6 print-hidden">
-        <Button variant="outline" asChild>
-          <Link to="/documents">
-            <ArrowLeft className="mr-2 h-4 w-4" /> Voltar
-          </Link>
-        </Button>
-        <div className="flex gap-2">
-          <Button 
-            onClick={handleGenerateVerificationLink} 
-            disabled={generateTokenMutation.isPending}
-            variant="secondary"
-          >
-            {generateTokenMutation.isPending ? (
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            ) : (
-              <LinkIcon className="mr-2 h-4 w-4" />
-            )}
-            Gerar Link de Verificação
-          </Button>
-          <Button onClick={handlePrint}>
-            <Printer className="mr-2 h-4 w-4" /> Imprimir Histórico
-          </Button>
-        </div>
+    <div className="max-w-4xl mx-auto bg-white p-6 shadow-lg">
+      <div className="text-center mb-6 p-4 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800">
+        <CheckCircle className="h-10 w-10 text-green-600 mx-auto mb-2" />
+        <h2 className="text-xl font-bold text-green-700">Documento Autêntico Verificado!</h2>
+        <p className="text-sm text-green-600">Este histórico escolar é oficial e foi emitido por {tenant.name}.</p>
       </div>
 
-      {/* Cabeçalho do Documento (Agora igual ao Boletim) */}
+      {/* Cabeçalho do Documento */}
       <div className="flex justify-between items-center mb-8 border-b pb-4">
-        {/* Informações da Escola (Esquerda) */}
         <div className="text-left space-y-1">
           <h1 className="text-2xl font-bold text-primary">{tenant.name}</h1>
           <p className="text-sm text-muted-foreground">HISTÓRICO ESCOLAR DO ALUNO</p>
@@ -400,11 +226,9 @@ const StudentTranscript: React.FC = () => {
             {schoolConfig?.cnpj && <p>CNPJ: {schoolConfig.cnpj}</p>}
             {schoolConfig?.phone && <p>Telefone: {schoolConfig.phone}</p>}
             {fullAddress && <p>Endereço: {fullAddress}</p>}
-            {schoolConfig?.authorization_act && <p>Ato de Criação/Autorização: {schoolConfig.authorization_act}</p>} {/* NOVO CAMPO */}
+            {schoolConfig?.authorization_act && <p>Ato de Criação/Autorização: {schoolConfig.authorization_act}</p>}
           </div>
         </div>
-
-        {/* Logo da Escola (Direita) */}
         {tenant.config?.logo_url && (
           <img src={tenant.config.logo_url} alt="Logo da Escola" className="h-32 w-auto object-contain" />
         )}
@@ -532,41 +356,13 @@ const StudentTranscript: React.FC = () => {
         <p className="text-center py-8 text-muted-foreground">Nenhuma nota registrada para este aluno ainda.</p>
       )}
 
-      <div className="mt-8 p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-md text-sm text-blue-800 dark:text-blue-200 print-hidden">
-        <p className="font-semibold">Atenção:</p>
-        <ul className="list-disc list-inside ml-2">
-          <li>As colunas de "Unidade" são preenchidas com a última nota registrada para o período correspondente. Para um cálculo de média mais preciso por unidade, seria necessário um sistema de pesos ou múltiplas avaliações por período.</li>
-          <li>A coluna "Faltas" é um placeholder. A funcionalidade de registro de faltas não está implementada no sistema atual e exigiria uma extensão no banco de dados.</li>
-          <li>A regra de "Resultado" é um exemplo (Média Final &gt;= 7: Aprovado; &gt;= 5: Recuperação; &lt; 5: Reprovado).</li>
-        </ul>
-      </div>
-
-      {/* Seção de Verificação (Visível na Impressão) */}
-      {verificationLink && (
-        <div className="mt-12 pt-4 border-t border-dashed flex flex-col items-center justify-center gap-4 text-center print:mt-4 print:pt-2 print:border-t-0 print:border-b print:pb-2">
-          <h3 className="text-lg font-semibold flex items-center gap-2 print:text-base">
-            <CheckCircle className="h-5 w-5 text-green-600 print:h-4 print:w-4" />
-            Verificação de Autenticidade
-          </h3>
-          <p className="text-sm text-muted-foreground print:text-xs">
-            Escaneie o QR Code ou acesse o link para verificar a autenticidade deste documento.
-          </p>
-          <div className="p-2 border rounded-md bg-white print:p-1 print:border-0">
-            <QRCodeSVG value={verificationLink} size={100} />
-          </div>
-          <p className="text-xs text-muted-foreground break-all print:text-[10px]">
-            {verificationLink}
-          </p>
-        </div>
-      )}
-
-      {/* Rodapé do Documento (para impressão) */}
-      <div className="mt-12 pt-4 border-t text-center text-xs text-muted-foreground print:mt-4">
-        <p>Documento gerado pelo sistema Davi EDU em {format(new Date(), 'dd/MM/yyyy HH:mm', { locale: ptBR })}.</p>
-        <p>Validade sujeita à conferência da Secretaria Escolar.</p>
+      {/* Rodapé do Documento */}
+      <div className="mt-12 pt-4 border-t text-center text-xs text-muted-foreground">
+        <p>Documento verificado pelo sistema Davi EDU em {format(new Date(), 'dd/MM/yyyy HH:mm', { locale: ptBR })}.</p>
+        <p>Este documento é uma representação autêntica do histórico escolar do aluno.</p>
       </div>
     </div>
   );
 };
 
-export default StudentTranscript;
+export default VerifyDocumentPage;

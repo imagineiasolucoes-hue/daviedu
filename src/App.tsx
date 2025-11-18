@@ -14,7 +14,7 @@ import SuperAdminProtectedRoute from "./components/auth/SuperAdminProtectedRoute
 import TeacherProtectedRoute from "./components/auth/TeacherProtectedRoute";
 import Dashboard from "./pages/Dashboard";
 import AppLayout from "./components/layout/AppLayout";
-import DocumentLayout from "./components/layout/DocumentLayout"; // Importar DocumentLayout
+import DocumentLayout from "./components/layout/DocumentLayout";
 import TenantsPage from "./pages/super-admin/TenantsPage";
 import UsersPage from "./pages/super-admin/UsersPage";
 import StudentsPage from "./pages/StudentsPage";
@@ -33,10 +33,11 @@ import FAQPage from "./pages/FAQPage";
 import TeacherDashboard from "./pages/teacher/TeacherDashboard";
 import GradeEntryPage from "./pages/teacher/GradeEntryPage";
 import ClassDiaryPage from "./pages/teacher/ClassDiaryPage";
-import ReportCard from "./components/documents/templates/ReportCard"; // Importar ReportCard
-import StudentTranscript from "./components/documents/templates/StudentTranscript"; // Importar StudentTranscript
-import MonthlyFeeCollection from "./components/documents/templates/MonthlyFeeCollection"; // NOVO IMPORT
-import SecretariaPage from "./pages/SecretariaPage"; // Importar SecretariaPage
+import ReportCard from "./components/documents/templates/ReportCard";
+import StudentTranscript from "./components/documents/templates/StudentTranscript";
+import MonthlyFeeCollection from "./components/documents/templates/MonthlyFeeCollection";
+import SecretariaPage from "./pages/SecretariaPage";
+import VerifyDocumentPage from "./pages/VerifyDocumentPage"; // NOVO IMPORT
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -67,12 +68,13 @@ const App = () => {
               <Route path="/pre-matricula" element={<PreEnrollmentInfoPage />} />
               <Route path="/pre-matricula/:tenantId" element={<PreEnrollment />} />
               <Route path="/faq" element={<FAQPage />} />
+              <Route path="/verify-document/:token" element={<VerifyDocumentPage />} /> {/* NOVA ROTA DE VERIFICAÇÃO */}
 
               {/* Protected Routes using AppLayout */}
               <Route element={<ProtectedRoute />}>
                 <Route element={<AppLayout />}>
                   <Route path="/dashboard" element={<Dashboard />} />
-                  <Route path="/secretaria" element={<SecretariaPage />} /> {/* NOVA ROTA PARA SECRETARIA */}
+                  <Route path="/secretaria" element={<SecretariaPage />} />
                   <Route path="/students" element={<StudentsPage />} />
                   <Route path="/teachers" element={<TeachersPage />} />
                   <Route path="/classes" element={<ClassesPage />} /> 
@@ -106,7 +108,7 @@ const App = () => {
                 <Route element={<DocumentLayout />}>
                   <Route path="/documents/generate/transcript/:entityId" element={<StudentTranscript />} />
                   <Route path="/documents/generate/report_card/:entityId" element={<ReportCard />} />
-                  <Route path="/documents/generate/monthly_fee_collection/:entityId" element={<MonthlyFeeCollection />} /> {/* NOVA ROTA */}
+                  <Route path="/documents/generate/monthly_fee_collection/:entityId" element={<MonthlyFeeCollection />} />
                 </Route>
 
               </Route>
