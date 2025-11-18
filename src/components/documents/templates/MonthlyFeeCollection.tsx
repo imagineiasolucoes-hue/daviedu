@@ -389,14 +389,16 @@ const MonthlyFeeCollection: React.FC = () => {
           Dados para Pagamento
         </h2>
         
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6"> {/* Força 2 colunas em md e acima */}
+        <div className="grid grid-cols-1 md:grid-cols-2 print:grid-cols-2 gap-6"> {/* Força 2 colunas em md e acima, e também na impressão */}
           {/* Coluna 1: PIX */}
           <Card className="p-4">
             <CardTitle className="text-lg mb-4">Pagamento via PIX</CardTitle>
             {isPixConfigured ? (
               <div className="flex flex-col items-center space-y-3 text-sm"> {/* Centraliza conteúdo */}
                 <p><span className="font-semibold">Chave PIX:</span></p>
-                <p className="text-primary font-mono break-all p-2 bg-muted rounded-md text-xs">{pixKey}</p> {/* Fonte menor */}
+                <p className="text-primary font-mono break-all p-2 bg-muted rounded-md text-xs">
+                  {pixKey}
+                </p> {/* Fonte menor */}
                 {pixKey && (
                   <div className="p-2 border rounded-md bg-white">
                     <QRCodeSVG value={pixKey} size={80} /> {/* QR Code menor */}
