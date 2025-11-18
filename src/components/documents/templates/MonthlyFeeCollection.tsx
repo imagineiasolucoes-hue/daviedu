@@ -381,30 +381,30 @@ const MonthlyFeeCollection: React.FC = () => {
           <p className="text-center py-8 text-muted-foreground text-sm">Nenhuma cobrança pendente para este aluno.</p> /* Fonte menor */
         )}
 
-        <Separator className="mb-8" />
+        <Separator className="mb-4" /> {/* Reduzido de mb-8 para mb-4 */}
 
         {/* Seção de Dados para Pagamento (Duas Colunas com QR Code) */}
-        <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
+        <h2 className="text-lg font-bold mb-2 flex items-center gap-2"> {/* Reduzido de mb-4 para mb-2 */}
           <DollarSign className="h-5 w-5 text-accent" />
           Dados para Pagamento
         </h2>
         
-        <div className="grid grid-cols-1 md:grid-cols-2 print:grid-cols-2 gap-6"> {/* Força 2 colunas em md e acima, e também na impressão */}
+        <div className="grid grid-cols-1 md:grid-cols-2 print:grid-cols-2 gap-4"> {/* Reduzido de gap-6 para gap-4 */}
           {/* Coluna 1: PIX */}
-          <Card className="p-4">
-            <CardTitle className="text-lg mb-4">Pagamento via PIX</CardTitle>
+          <Card className="p-3"> {/* Reduzido de p-4 para p-3 */}
+            <CardTitle className="text-lg mb-2">Pagamento via PIX</CardTitle> {/* Reduzido de mb-4 para mb-2 */}
             {isPixConfigured ? (
-              <div className="flex flex-col items-center space-y-3 text-sm"> {/* Centraliza conteúdo */}
+              <div className="flex flex-col items-center space-y-2 text-sm"> {/* Reduzido de space-y-3 para space-y-2 */}
                 <p><span className="font-semibold">Chave PIX:</span></p>
                 <p className="text-primary font-mono break-all p-2 bg-muted rounded-md text-xs">
                   {pixKey}
                 </p> {/* Fonte menor */}
                 {pixKey && (
-                  <div className="p-2 border rounded-md bg-white">
+                  <div className="p-1 border rounded-md bg-white"> {/* Reduzido de p-2 para p-1 */}
                     <QRCodeSVG value={pixKey} size={80} /> {/* QR Code menor */}
                   </div>
                 )}
-                <p className="text-xs text-muted-foreground mt-2">Valor total pendente: {formatCurrency(totalPendingAmount)}</p>
+                <p className="text-xs text-muted-foreground mt-1">Valor total pendente: {formatCurrency(totalPendingAmount)}</p> {/* Reduzido de mt-2 para mt-1 */}
               </div>
             ) : (
               <p className="text-sm text-destructive py-4">Chave PIX não configurada nas Configurações da Escola.</p>
@@ -412,15 +412,15 @@ const MonthlyFeeCollection: React.FC = () => {
           </Card>
 
           {/* Coluna 2: Dados Bancários */}
-          <Card className="p-4">
-            <CardTitle className="text-lg mb-4">Transferência Bancária (TED/DOC)</CardTitle>
+          <Card className="p-3"> {/* Reduzido de p-4 para p-3 */}
+            <CardTitle className="text-lg mb-2">Transferência Bancária (TED/DOC)</CardTitle> {/* Reduzido de mb-4 para mb-2 */}
             {isBankConfigured ? (
-              <div className="grid grid-cols-2 gap-4 text-sm">
-                <div className="space-y-2">
+              <div className="grid grid-cols-2 gap-2 text-sm"> {/* Reduzido de gap-4 para gap-2 */}
+                <div className="space-y-1"> {/* Reduzido de space-y-2 para space-y-1 */}
                   <p><span className="font-semibold">Banco:</span> {bankDetails.bankName}</p>
                   <p><span className="font-semibold">Agência:</span> {bankDetails.agency}</p>
                 </div>
-                <div className="space-y-2">
+                <div className="space-y-1"> {/* Reduzido de space-y-2 para space-y-1 */}
                   <p><span className="font-semibold">Conta Corrente:</span> {bankDetails.account}</p>
                   <p><span className="font-semibold">CNPJ:</span> {bankDetails.cnpj}</p>
                 </div>
@@ -428,7 +428,7 @@ const MonthlyFeeCollection: React.FC = () => {
             ) : (
               <p className="text-sm text-destructive py-4">Dados bancários incompletos nas Configurações da Escola.</p>
             )}
-            <p className="text-xs text-muted-foreground mt-4">
+            <p className="text-xs text-muted-foreground mt-2"> {/* Reduzido de mt-4 para mt-2 */}
               Por favor, envie o comprovante de pagamento para a secretaria da escola.
             </p>
           </Card>
