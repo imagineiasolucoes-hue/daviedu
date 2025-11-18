@@ -12,6 +12,7 @@ import { ptBR } from 'date-fns/locale';
 import { useProfile } from '@/hooks/useProfile';
 import { formatCurrency } from '@/lib/utils';
 import { toast } from 'sonner';
+import { QRCodeSVG } from 'qrcode.react'; // Importar QRCodeSVG
 
 // --- Tipos de Dados ---
 interface StudentDetails {
@@ -274,11 +275,11 @@ const MonthlyFeeCollection: React.FC = () => {
       </div>
 
       {/* Cabeçalho do Documento */}
-      <div className="flex justify-between items-center mb-8 border-b pb-4">
+      <div className="flex justify-between items-start mb-6 border-b pb-4"> {/* Ajustado para items-start */}
         {/* Informações da Escola (Esquerda) */}
-        <div className="text-left space-y-1">
-          <h1 className="text-2xl font-bold text-primary">{tenant.name}</h1>
-          <p className="text-sm text-muted-foreground">DOCUMENTO DE COBRANÇA DE MENSALIDADE</p>
+        <div className="text-left space-y-1 flex-1"> {/* flex-1 para ocupar espaço */}
+          <h1 className="text-xl font-bold text-primary">{tenant.name}</h1> {/* Fonte menor */}
+          <p className="text-xs text-muted-foreground">DOCUMENTO DE COBRANÇA DE MENSALIDADE</p> {/* Fonte menor */}
           <div className="mt-2 text-xs text-muted-foreground space-y-1">
             {schoolConfig?.cnpj && <p>CNPJ: {schoolConfig.cnpj}</p>}
             {schoolConfig?.phone && <p>Telefone: {schoolConfig.phone}</p>}
@@ -288,31 +289,31 @@ const MonthlyFeeCollection: React.FC = () => {
 
         {/* Logo da Escola (Direita) */}
         {tenant.config?.logo_url && (
-          <img src={tenant.config.logo_url} alt="Logo da Escola" className="h-32 w-auto object-contain" />
+          <img src={tenant.config.logo_url} alt="Logo da Escola" className="h-20 w-auto object-contain" /> {/* Logo menor */}
         )}
       </div>
 
-      {/* Data de Emissão e Total */}
-      <div className="flex justify-between items-center mb-6 p-4 bg-muted/50 rounded-md border">
-        <div className="space-y-1">
-          <p className="text-sm text-muted-foreground">Data de Emissão:</p>
-          <p className="font-semibold">{format(new Date(), 'dd/MM/yyyy', { locale: ptBR })}</p>
+      {/* Data de Emissão e Total Pendente (Mais discreto) */}
+      <div className="flex justify-between items-center mb-6 p-3 bg-muted/50 rounded-md border"> {/* Padding menor */}
+        <div className="space-y-0.5"> {/* Espaçamento menor */}
+          <p className="text-xs text-muted-foreground">Data de Emissão:</p> {/* Fonte menor */}
+          <p className="font-semibold text-sm">{format(new Date(), 'dd/MM/yyyy', { locale: ptBR })}</p> {/* Fonte menor */}
         </div>
-        <div className="text-right space-y-1">
-          <p className="text-lg font-semibold text-muted-foreground">TOTAL PENDENTE</p>
-          <p className="text-3xl font-bold text-destructive">{formatCurrency(totalPendingAmount)}</p>
+        <div className="text-right space-y-0.5"> {/* Espaçamento menor */}
+          <p className="text-sm font-semibold text-muted-foreground">TOTAL PENDENTE</p> {/* Fonte menor */}
+          <p className="text-xl font-bold text-destructive">{formatCurrency(totalPendingAmount)}</p> {/* Fonte menor */}
         </div>
       </div>
 
-      {/* Dados do Aluno e Responsável */}
+      {/* Dados do Aluno e Responsável (Duas Colunas) */}
       <Card className="mb-6 border-dashed">
         <CardHeader>
-          <CardTitle className="text-xl flex items-center gap-2">
-            <User className="h-5 w-5 text-accent" />
+          <CardTitle className="text-lg flex items-center gap-2"> {/* Fonte menor */}
+            <User className="h-4 w-4 text-accent" /> {/* Ícone menor */}
             Dados do Aluno e Responsável
           </CardTitle>
         </CardHeader>
-        <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+        <CardContent className="grid grid-cols-2 gap-4 text-sm">
           <div>
             <p><span className="font-semibold">Aluno:</span> {student.full_name}</p>
             <p><span className="font-semibold">Matrícula:</span> {student.registration_code}</p>
@@ -331,8 +332,8 @@ const MonthlyFeeCollection: React.FC = () => {
       </Card>
 
       {/* Seção de Cobranças Pendentes (Resumo) */}
-      <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
-        <DollarSign className="h-5 w-5 text-primary" />
+      <h2 className="text-lg font-bold mb-4 flex items-center gap-2"> {/* Fonte menor */}
+        <DollarSign className="h-4 w-4 text-primary" /> {/* Ícone menor */}
         Detalhes das Cobranças Pendentes
       </h2>
       
@@ -341,33 +342,33 @@ const MonthlyFeeCollection: React.FC = () => {
           <Table className="w-full">
             <TableHeader>
               <TableRow>
-                <TableHead className="min-w-[120px]">Vencimento</TableHead>
-                <TableHead className="min-w-[200px]">Descrição</TableHead>
-                <TableHead>Categoria</TableHead>
-                <TableHead className="text-right min-w-[100px]">Valor</TableHead>
-                <TableHead className="text-center min-w-[120px] print-hidden">Ações</TableHead>
+                <TableHead className="min-w-[100px] text-xs">Vencimento</TableHead> {/* Fonte menor */}
+                <TableHead className="min-w-[150px] text-xs">Descrição</TableHead> {/* Fonte menor */}
+                <TableHead className="text-xs">Categoria</TableHead> {/* Fonte menor */}
+                <TableHead className="text-right min-w-[80px] text-xs">Valor</TableHead> {/* Fonte menor */}
+                <TableHead className="text-center min-w-[100px] print-hidden text-xs">Ações</TableHead> {/* Fonte menor */}
               </TableRow>
             </TableHeader>
             <TableBody>
               {pendingRevenues.map((revenue) => (
                 <TableRow key={revenue.id}>
-                  <TableCell>{format(new Date(revenue.date), 'dd/MM/yyyy', { locale: ptBR })}</TableCell>
-                  <TableCell className="font-medium">{revenue.description || 'Mensalidade'}</TableCell>
-                  <TableCell>{revenue.revenue_categories?.name || 'N/A'}</TableCell>
-                  <TableCell className="text-right font-bold">{formatCurrency(revenue.amount)}</TableCell>
+                  <TableCell className="text-xs">{format(new Date(revenue.date), 'dd/MM/yyyy', { locale: ptBR })}</TableCell> {/* Fonte menor */}
+                  <TableCell className="font-medium text-xs">{revenue.description || 'Mensalidade'}</TableCell> {/* Fonte menor */}
+                  <TableCell className="text-xs">{revenue.revenue_categories?.name || 'N/A'}</TableCell> {/* Fonte menor */}
+                  <TableCell className="text-right font-bold text-xs">{formatCurrency(revenue.amount)}</TableCell> {/* Fonte menor */}
                   <TableCell className="text-center print-hidden">
                     <Button 
                       variant="outline" 
-                      size="sm" 
+                      size="xs" // Tamanho menor para o botão
                       onClick={() => markAsPaidMutation.mutate(revenue.id)}
                       disabled={markAsPaidMutation.isPending}
                     >
                       {markAsPaidMutation.isPending ? (
-                        <Loader2 className="h-4 w-4 animate-spin" />
+                        <Loader2 className="h-3 w-3 animate-spin" /> {/* Ícone menor */}
                       ) : (
-                        <CheckCircle className="h-4 w-4 mr-2" />
+                        <CheckCircle className="h-3 w-3 mr-1" /> {/* Ícone menor */}
                       )}
-                      Marcar como Pago
+                      Pago
                     </Button>
                   </TableCell>
                 </TableRow>
@@ -376,25 +377,30 @@ const MonthlyFeeCollection: React.FC = () => {
           </Table>
         </div>
       ) : (
-        <p className="text-center py-8 text-muted-foreground">Nenhuma cobrança pendente para este aluno.</p>
+        <p className="text-center py-8 text-muted-foreground text-sm">Nenhuma cobrança pendente para este aluno.</p> {/* Fonte menor */}
       )}
 
       <Separator className="mb-8" />
 
-      {/* Seção de Dados para Pagamento (Apenas Chave PIX e Bancário) */}
+      {/* Seção de Dados para Pagamento (Duas Colunas com QR Code) */}
       <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
         <DollarSign className="h-5 w-5 text-accent" />
         Dados para Pagamento
       </h2>
       
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6"> {/* Força 2 colunas em md e acima */}
         {/* Coluna 1: PIX */}
         <Card className="p-4">
           <CardTitle className="text-lg mb-4">Pagamento via PIX</CardTitle>
           {isPixConfigured ? (
-            <div className="space-y-2 text-sm">
+            <div className="flex flex-col items-center space-y-3 text-sm"> {/* Centraliza conteúdo */}
               <p><span className="font-semibold">Chave PIX:</span></p>
-              <p className="text-primary font-mono break-all p-2 bg-muted rounded-md">{pixKey}</p>
+              <p className="text-primary font-mono break-all p-2 bg-muted rounded-md text-xs">{pixKey}</p> {/* Fonte menor */}
+              {pixKey && (
+                <div className="p-2 border rounded-md bg-white">
+                  <QRCodeSVG value={pixKey} size={80} /> {/* QR Code menor */}
+                </div>
+              )}
               <p className="text-xs text-muted-foreground mt-2">Valor total pendente: {formatCurrency(totalPendingAmount)}</p>
             </div>
           ) : (
