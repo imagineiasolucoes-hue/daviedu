@@ -1,8 +1,8 @@
-import React, { useRef, useMemo } from 'react';
+import React, { useRef, useMemo, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { Loader2, Printer, ArrowLeft, School, User, Calendar, BookOpen, GraduationCap, ClipboardList } from 'lucide-react';
+import { Loader2, Printer, ArrowLeft, School, User, Calendar, BookOpen, GraduationCap, ClipboardList, QrCode, Link as LinkIcon, CheckCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -10,6 +10,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { useProfile } from '@/hooks/useProfile';
+import { QRCodeSVG } from 'qrcode.react';
+import { toast } from 'sonner';
 
 // --- Tipos de Dados ---
 interface StudentDetails {
@@ -21,12 +23,33 @@ interface StudentDetails {
   class_id: string | null;
   course_id: string | null;
   created_at: string; // Adicionado created_at para a data de matrícula
+  gender: 'Masculino' | 'Feminino' | 'Outro' | null; // Adicionado
+  nationality: string | null; // Adicionado
+  naturality: string | null; // Adicionado
+  cpf: string | null; // Adicionado
+  rg: string | null; // Adicionado
+  phone: string | null; // Adicionado
+  email: string | null; // Adicionado
   classes: { 
     id: string;
     name: string; 
     school_year: number; 
   } | null;
   courses: { name: string } | null;
+  student_guardians?: { // Adicionado para buscar guardiões
+    guardians: {
+      full_name: string;
+      relationship: string;
+      phone: string | null;
+      email: string | null;
+    } | null;
+  }[];
+  guardians: { // Adicionado para facilitar o acesso aos guardiões
+    full_name: string;
+    relationship: string;
+    phone: string | null;
+    email: string | null;
+  }[];
 }
 
 interface TenantConfig {
@@ -39,6 +62,7 @@ interface TenantConfig {
   address_state: string | null;
   address_zip_code: string | null;
   logo_url: string | null;
+  authorization_act: string | null; // NOVO CAMPO
 }
 
 interface TenantDetails {
@@ -76,18 +100,36 @@ const fetchStudentData = async (studentId: string): Promise<StudentDetails> => {
       class_id,
       course_id,
       created_at, 
+      gender,
+      nationality,
+      naturality,
+      cpf,
+      rg,
+      phone,
+      email,
       classes (
         id,
         name, 
         school_year
       ),
-      courses (name)
+      courses (name),
+      student_guardians (
+        guardians (
+          full_name,
+          relationship,
+          phone,
+          email
+        )
+      )
     `)
     .eq('id', studentId)
     .single();
   if (error) throw new Error(error.message);
   
-  return data as unknown as StudentDetails;
+  const student = data as unknown as StudentDetails;
+  student.guardians = student.student_guardians?.map((sg: any) => sg.guardians).filter(Boolean) || [];
+  delete (student as any).student_guardians; // Limpa a propriedade intermediária
+  return student;
 };
 
 const fetchTenantDetails = async (tenantId: string): Promise<TenantDetails> => {
@@ -117,6 +159,8 @@ const ReportCard: React.FC = () => {
   const { profile } = useProfile();
   const tenantId = profile?.tenant_id;
   const printRef = useRef<HTMLDivElement>(null);
+  const [verificationToken, setVerificationToken] = useState<string | null>(null);
+  const [verificationLink, setVerificationLink] = useState<string | null>(null);
 
   const { data: student, isLoading: isLoadingStudent, error: studentError } = useQuery<StudentDetails, Error>({
     queryKey: ['studentDetails', studentId],
@@ -135,6 +179,72 @@ const ReportCard: React.FC = () => {
     queryFn: () => fetchGrades(studentId!),
     enabled: !!studentId,
   });
+
+  const generateTokenMutation = useMutation({
+    mutationFn: async (documentId: string) => {
+      const { data, error } = await supabase.functions.invoke('generate-document-token', {
+        body: JSON.stringify({ document_id: documentId }),
+      });
+      if (error) throw new Error(error.message);
+      // @ts-ignore
+      if (data.error) throw new Error(data.error);
+      // @ts-ignore
+      return data.token as string;
+    },
+    onSuccess: (token) => {
+      setVerificationToken(token);
+      setVerificationLink(`${window.location.origin}/verify-document/${token}`);
+      toast.success("Link de verificação gerado com sucesso!");
+    },
+    onError: (error) => {
+      toast.error("Erro ao gerar link de verificação", { description: error.message });
+    },
+  });
+
+  const handleGenerateVerificationLink = async () => {
+    if (!studentId) {
+      toast.error("Erro", { description: "ID do aluno não encontrado para gerar o documento." });
+      return;
+    }
+
+    // Primeiro, precisamos do ID do documento na tabela 'documents'
+    // Para simplificar, vamos assumir que o 'entityId' (studentId) é o 'related_entity_id'
+    // e que existe um documento do tipo 'report_card' para este aluno.
+    const { data: existingDoc, error: docError } = await supabase
+      .from('documents')
+      .select('id')
+      .eq('related_entity_id', studentId)
+      .eq('document_type', 'report_card') // Alterado para 'report_card'
+      .maybeSingle();
+
+    let documentIdToUse = existingDoc?.id;
+
+    if (!documentIdToUse) {
+      // Se não existir, cria um registro de documento (apenas metadados)
+      const { data: newDoc, error: insertDocError } = await supabase
+        .from('documents')
+        .insert({
+          tenant_id: tenantId,
+          document_type: 'report_card', // Alterado para 'report_card'
+          related_entity_id: studentId,
+          file_url: 'generated_on_demand', // URL placeholder, pois o conteúdo é dinâmico
+          description: `Boletim Escolar de ${student?.full_name || 'Aluno'}`,
+          metadata: { generatedBy: profile?.id, studentName: student?.full_name },
+        })
+        .select('id')
+        .single();
+
+      if (insertDocError) {
+        toast.error("Erro ao criar registro do documento", { description: insertDocError.message });
+        return;
+      }
+      documentIdToUse = newDoc.id;
+    }
+
+    if (documentIdToUse) {
+      generateTokenMutation.mutate(documentIdToUse);
+    }
+  };
 
   const handlePrint = () => {
     window.print();
@@ -165,11 +275,12 @@ const ReportCard: React.FC = () => {
 
       // Agrupar notas por período e calcular a média para cada período
       if (!subject.unit_grades[grade.period]) {
-        subject.unit_grades[grade.period] = 0; // Inicializa para a soma
+        subject.unit_grades[grade.period] = grade.grade_value; 
+      } else {
+        // Se houver múltiplas notas para o mesmo período, podemos somar ou pegar a última/média
+        // Por simplicidade, vamos pegar a última nota registrada para o período
+        subject.unit_grades[grade.period] = grade.grade_value; 
       }
-      // Para simplificar, vamos considerar a última nota lançada para o assessment_type dentro do período
-      // Em um cenário real, você calcularia a média de todas as notas de um período/unidade
-      subject.unit_grades[grade.period] = grade.grade_value; 
       allPeriods.add(grade.period);
     });
 
@@ -179,14 +290,16 @@ const ReportCard: React.FC = () => {
       
       if (validUnitGrades.length > 0) {
         subject.total_units_grade = validUnitGrades.reduce((sum, g) => sum + g, 0);
-        subject.final_average = subject.total_units_grade / validUnitGrades.length; // Corrigido aqui
+        subject.final_average = validUnitGrades.length > 0 ? subject.total_units_grade / validUnitGrades.length : null;
         
-        if (subject.final_average >= 7) { // Exemplo de regra de aprovação
+        if (subject.final_average !== null && subject.final_average >= 7) { // Exemplo de regra de aprovação
           subject.result = 'Aprovado';
-        } else if (subject.final_average >= 5) { // Exemplo de regra de recuperação
+        } else if (subject.final_average !== null && subject.final_average >= 5) { // Exemplo de regra de recuperação
           subject.result = 'Recuperação';
-        } else {
+        } else if (subject.final_average !== null) {
           subject.result = 'Reprovado';
+        } else {
+          subject.result = 'N/A';
         }
       } else {
         subject.result = 'N/A';
@@ -237,6 +350,8 @@ const ReportCard: React.FC = () => {
 
   // Acessando o nome do curso diretamente da relação 'courses' do aluno
   const studentCourseName = student.courses?.name || 'N/A';
+  const primaryGuardian = student.guardians.find(g => g.relationship === 'Pai' || g.relationship === 'Mãe' || g.relationship === 'Tutor') || student.guardians[0];
+
 
   const schoolConfig = tenant.config;
   const fullAddress = [
@@ -258,9 +373,23 @@ const ReportCard: React.FC = () => {
             <ArrowLeft className="mr-2 h-4 w-4" /> Voltar
           </Link>
         </Button>
-        <Button onClick={handlePrint}>
-          <Printer className="mr-2 h-4 w-4" /> Imprimir Boletim
-        </Button>
+        <div className="flex gap-2">
+          <Button 
+            onClick={handleGenerateVerificationLink} 
+            disabled={generateTokenMutation.isPending}
+            variant="secondary"
+          >
+            {generateTokenMutation.isPending ? (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            ) : (
+              <LinkIcon className="mr-2 h-4 w-4" />
+            )}
+            Gerar Link de Verificação
+          </Button>
+          <Button onClick={handlePrint}>
+            <Printer className="mr-2 h-4 w-4" /> Imprimir Boletim
+          </Button>
+        </div>
       </div>
 
       {/* Cabeçalho do Documento */}
@@ -273,6 +402,7 @@ const ReportCard: React.FC = () => {
             {schoolConfig?.cnpj && <p>CNPJ: {schoolConfig.cnpj}</p>}
             {schoolConfig?.phone && <p>Telefone: {schoolConfig.phone}</p>}
             {fullAddress && <p>Endereço: {fullAddress}</p>}
+            {schoolConfig?.authorization_act && <p>Ato de Criação/Autorização: {schoolConfig.authorization_act}</p>}
           </div>
         </div>
 
@@ -290,7 +420,7 @@ const ReportCard: React.FC = () => {
             {student.full_name}
           </CardTitle>
         </CardHeader>
-        <CardContent className="grid grid-cols-2 gap-4 text-sm">
+        <CardContent className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm print:text-xs">
           <div className="flex items-center gap-2">
             <User className="h-4 w-4 text-muted-foreground" />
             <span className="font-semibold">Nome:</span> {student.full_name}
@@ -310,13 +440,43 @@ const ReportCard: React.FC = () => {
               {studentCourseName}
             </div>
           </div>
-          <div className="flex items-center gap-2">
-            <Calendar className="h-4 w-4 text-muted-foreground" />
-            <span className="font-semibold">Matrícula:</span> {format(new Date(student.created_at), 'dd/MM/yyyy', { locale: ptBR })}
-          </div>
           <div className="flex items-center gap-2 col-span-2">
-            <span className="font-semibold">Código de Matrícula:</span> {student.registration_code}
+            <span className="font-semibold">Matrícula:</span> {student.registration_code}
           </div>
+          {student.cpf && (
+            <div className="flex items-center gap-2">
+              <span className="font-semibold">CPF:</span> {student.cpf}
+            </div>
+          )}
+          {student.rg && (
+            <div className="flex items-center gap-2">
+              <span className="font-semibold">RG:</span> {student.rg}
+            </div>
+          )}
+          {student.gender && (
+            <div className="flex items-center gap-2">
+              <span className="font-semibold">Gênero:</span> {student.gender}
+            </div>
+          )}
+          {student.nationality && (
+            <div className="flex items-center gap-2">
+              <span className="font-semibold">Nacionalidade:</span> {student.nationality}
+            </div>
+          )}
+          {student.naturality && (
+            <div className="flex items-center gap-2">
+              <span className="font-semibold">Naturalidade:</span> {student.naturality}
+            </div>
+          )}
+          {primaryGuardian && (
+            <div className="col-span-2 text-xs space-y-0.5">
+              <Separator className="my-1" />
+              <p className="font-semibold">Responsável Principal:</p>
+              <p>{primaryGuardian.full_name} ({primaryGuardian.relationship})</p>
+              {primaryGuardian.phone && <p>Telefone: {primaryGuardian.phone}</p>}
+              {primaryGuardian.email && <p>Email: {primaryGuardian.email}</p>}
+            </div>
+          )}
         </CardContent>
       </Card>
 
@@ -328,38 +488,38 @@ const ReportCard: React.FC = () => {
       
       {processedGrades && processedGrades.length > 0 ? (
         <div className="overflow-x-auto">
-          <Table className="w-full table-auto"> {/* Adicionado table-auto */}
+          <Table className="w-full table-auto">
             <TableHeader>
               <TableRow>
-                <TableHead className="min-w-[150px] text-left text-sm print:min-w-[120px] print:text-xs">Disciplina</TableHead>
+                <TableHead className="min-w-[120px] text-left text-xs py-1 px-2 print:min-w-[100px] print:text-[10px] print:py-0.5 print:px-1">Disciplina</TableHead>
                 {sortedPeriods.map(period => (
-                  <TableHead key={period} className="text-center min-w-[80px] text-sm print:min-w-[50px] print:text-xs">{period}</TableHead>
+                  <TableHead key={period} className="text-center min-w-[60px] text-xs py-1 px-2 print:min-w-[40px] print:text-[10px] print:py-0.5 print:px-1">{period}</TableHead>
                 ))}
-                <TableHead className="text-center min-w-[80px] text-sm print:min-w-[60px] print:text-xs">Total</TableHead>
-                <TableHead className="text-center min-w-[100px] text-sm print:min-w-[70px] print:text-xs">Média Final</TableHead>
-                <TableHead className="text-center min-w-[80px] text-sm print:min-w-[50px] print:text-xs">Faltas</TableHead>
-                <TableHead className="text-center min-w-[100px] text-sm print:min-w-[70px] print:text-xs">Resultado</TableHead>
+                <TableHead className="text-center min-w-[70px] text-xs py-1 px-2 print:min-w-[50px] print:text-[10px] print:py-0.5 print:px-1">Total</TableHead>
+                <TableHead className="text-center min-w-[90px] text-xs py-1 px-2 print:min-w-[60px] print:text-[10px] print:py-0.5 print:px-1">Média Final</TableHead>
+                <TableHead className="text-center min-w-[60px] text-xs py-1 px-2 print:min-w-[40px] print:text-[10px] print:py-0.5 print:px-1">Faltas</TableHead>
+                <TableHead className="text-center min-w-[90px] text-xs py-1 px-2 print:min-w-[60px] print:text-[10px] print:py-0.5 print:px-1">Resultado</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {processedGrades.map((subject) => (
-                <TableRow key={subject.subject_name} className="page-break-inside-avoid"> {/* Adicionado para impressão */}
-                  <TableCell className="font-medium text-sm print:text-xs">{subject.subject_name}</TableCell>
+                <TableRow key={subject.subject_name} className="page-break-inside-avoid">
+                  <TableCell className="font-medium text-xs py-1 px-2 print:text-[10px] print:py-0.5 print:px-1">{subject.subject_name}</TableCell>
                   {sortedPeriods.map(period => (
-                    <TableCell key={`${subject.subject_name}-${period}`} className="text-center text-sm print:text-xs">
+                    <TableCell key={`${subject.subject_name}-${period}`} className="text-center text-xs py-1 px-2 print:text-[10px] print:py-0.5 print:px-1">
                       {subject.unit_grades[period] !== null ? subject.unit_grades[period]?.toFixed(1) : 'N/A'}
                     </TableCell>
                   ))}
-                  <TableCell className="text-center font-bold text-sm print:text-xs">
+                  <TableCell className="text-center font-bold text-xs py-1 px-2 print:text-[10px] print:py-0.5 print:px-1">
                     {subject.total_units_grade !== null ? subject.total_units_grade.toFixed(1) : 'N/A'}
                   </TableCell>
-                  <TableCell className="text-center font-bold text-sm print:text-xs">
+                  <TableCell className="text-center font-bold text-xs py-1 px-2 print:text-[10px] print:py-0.5 print:px-1">
                     {subject.final_average !== null ? subject.final_average.toFixed(1) : 'N/A'}
                   </TableCell>
-                  <TableCell className="text-center text-sm print:text-xs">
+                  <TableCell className="text-center text-xs py-1 px-2 print:text-[10px] print:py-0.5 print:px-1">
                     {subject.absences !== null ? subject.absences : 'N/A'}
                   </TableCell>
-                  <TableCell className="text-center text-sm print:text-xs">
+                  <TableCell className="text-center text-xs py-1 px-2 print:text-[10px] print:py-0.5 print:px-1">
                     {subject.result === 'Aprovado' && <span className="text-green-600 font-semibold">Aprovado</span>}
                     {subject.result === 'Reprovado' && <span className="text-red-600 font-semibold">Reprovado</span>}
                     {subject.result === 'Recuperação' && <span className="text-yellow-600 font-semibold">Recup.</span>}
@@ -382,6 +542,25 @@ const ReportCard: React.FC = () => {
           <li>A regra de "Resultado" é um exemplo (Média Final &gt;= 7: Aprovado; &gt;= 5: Recuperação; &lt; 5: Reprovado).</li>
         </ul>
       </div>
+
+      {/* Seção de Verificação (Visível na Impressão) */}
+      {verificationLink && (
+        <div className="mt-12 pt-4 border-t border-dashed flex flex-col items-center justify-center gap-4 text-center print:mt-4 print:pt-2 print:border-t-0 print:border-b print:pb-2">
+          <h3 className="text-lg font-semibold flex items-center gap-2 print:text-base">
+            <CheckCircle className="h-5 w-5 text-green-600 print:h-4 print:w-4" />
+            Verificação de Autenticidade
+          </h3>
+          <p className="text-sm text-muted-foreground print:text-xs">
+            Escaneie o QR Code ou acesse o link para verificar a autenticidade deste documento.
+          </p>
+          <div className="p-2 border rounded-md bg-white print:p-1 print:border-0">
+            <QRCodeSVG value={verificationLink} size={100} />
+          </div>
+          <p className="text-xs text-muted-foreground break-all print:text-[10px]">
+            {verificationLink}
+          </p>
+        </div>
+      )}
 
       {/* Rodapé do Documento (para impressão) */}
       <div className="mt-12 pt-4 border-t text-center text-xs text-muted-foreground print:mt-4">

@@ -44,19 +44,21 @@ serve(async (req) => {
 
     const documentId = tokenData.document_id;
 
-    // 2. Buscar os detalhes do documento (que contém o student_id)
+    // 2. Buscar os detalhes do documento (que contém o student_id e o tipo de documento)
     const { data: documentDetails, error: documentError } = await supabaseAdmin
       .from('documents')
       .select('related_entity_id, tenant_id, document_type')
       .eq('id', documentId)
       .single();
 
-    if (documentError || !documentDetails || documentDetails.document_type !== 'transcript') {
-      throw new Error("Documento não encontrado ou não é um histórico escolar.");
+    if (documentError || !documentDetails || 
+        (documentDetails.document_type !== 'transcript' && documentDetails.document_type !== 'report_card')) {
+      throw new Error("Documento não encontrado ou não é um histórico escolar ou boletim.");
     }
 
     const studentId = documentDetails.related_entity_id;
     const tenantId = documentDetails.tenant_id;
+    const documentType = documentDetails.document_type; // Captura o tipo de documento
 
     if (!studentId || !tenantId) {
       throw new Error("ID do aluno ou da escola não encontrado no documento.");
@@ -140,7 +142,8 @@ serve(async (req) => {
       student: student,
       tenant: tenantData,
       grades: gradesData,
-      documentId: documentId, // Retorna o ID do documento original
+      documentId: documentId,
+      documentType: documentType, // Retorna o tipo de documento
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 200,
