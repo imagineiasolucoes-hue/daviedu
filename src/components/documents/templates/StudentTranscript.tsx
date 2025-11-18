@@ -293,14 +293,16 @@ const StudentTranscript: React.FC = () => {
       
       if (validUnitGrades.length > 0) {
         subject.total_units_grade = validUnitGrades.reduce((sum, g) => sum + g, 0);
-        subject.final_average = subject.total_units_grade / validUnitGrades.length;
+        subject.final_average = validUnitGrades.length > 0 ? subject.total_units_grade / validUnitGrades.length : null; // Corrigido aqui
         
-        if (subject.final_average >= 7) {
+        if (subject.final_average !== null && subject.final_average >= 7) {
           subject.result = 'Aprovado';
-        } else if (subject.final_average >= 5) {
+        } else if (subject.final_average !== null && subject.final_average >= 5) {
           subject.result = 'Recuperação';
-        } else {
+        } else if (subject.final_average !== null) {
           subject.result = 'Reprovado';
+        } else {
+          subject.result = 'N/A';
         }
       } else {
         subject.result = 'N/A';
@@ -418,7 +420,7 @@ const StudentTranscript: React.FC = () => {
             {student.full_name}
           </CardTitle>
         </CardHeader>
-        <CardContent className="grid grid-cols-2 gap-4 text-sm">
+        <CardContent className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm print:text-xs"> {/* Ajustado aqui */}
           <div className="flex items-center gap-2">
             <User className="h-4 w-4 text-muted-foreground" />
             <span className="font-semibold">Nome:</span> {student.full_name}
@@ -467,8 +469,8 @@ const StudentTranscript: React.FC = () => {
             </div>
           )}
           {primaryGuardian && (
-            <div className="col-span-2">
-              <Separator className="my-2" />
+            <div className="col-span-2 text-xs space-y-0.5"> {/* Ajustado aqui */}
+              <Separator className="my-1" /> {/* Ajustado aqui */}
               <p className="font-semibold">Responsável Principal:</p>
               <p>{primaryGuardian.full_name} ({primaryGuardian.relationship})</p>
               {primaryGuardian.phone && <p>Telefone: {primaryGuardian.phone}</p>}
@@ -489,35 +491,35 @@ const StudentTranscript: React.FC = () => {
           <Table className="w-full">
             <TableHeader>
               <TableRow>
-                <TableHead className="min-w-[150px]">Disciplina</TableHead>
+                <TableHead className="min-w-[120px] text-left text-xs py-1 px-2 print:min-w-[100px] print:text-[10px] print:py-0.5 print:px-1">Disciplina</TableHead> {/* Ajustado aqui */}
                 {sortedPeriods.map(period => (
-                  <TableHead key={period} className="text-center min-w-[80px]">{period}</TableHead>
+                  <TableHead key={period} className="text-center min-w-[60px] text-xs py-1 px-2 print:min-w-[40px] print:text-[10px] print:py-0.5 print:px-1">{period}</TableHead> 
                 ))}
-                <TableHead className="text-center min-w-[80px]">Total</TableHead>
-                <TableHead className="text-center min-w-[100px]">Média Final</TableHead>
-                <TableHead className="text-center min-w-[80px]">Faltas</TableHead>
-                <TableHead className="text-center min-w-[100px]">Resultado</TableHead>
+                <TableHead className="text-center min-w-[70px] text-xs py-1 px-2 print:min-w-[50px] print:text-[10px] print:py-0.5 print:px-1">Total</TableHead> {/* Ajustado aqui */}
+                <TableHead className="text-center min-w-[90px] text-xs py-1 px-2 print:min-w-[60px] print:text-[10px] print:py-0.5 print:px-1">Média Final</TableHead> {/* Ajustado aqui */}
+                <TableHead className="text-center min-w-[60px] text-xs py-1 px-2 print:min-w-[40px] print:text-[10px] print:py-0.5 print:px-1">Faltas</TableHead> {/* Ajustado aqui */}
+                <TableHead className="text-center min-w-[90px] text-xs py-1 px-2 print:min-w-[60px] print:text-[10px] print:py-0.5 print:px-1">Resultado</TableHead> {/* Ajustado aqui */}
               </TableRow>
             </TableHeader>
             <TableBody>
               {processedGrades.map((subject) => (
                 <TableRow key={subject.subject_name}>
-                  <TableCell className="font-medium">{subject.subject_name}</TableCell>
+                  <TableCell className="font-medium text-xs py-1 px-2 print:text-[10px] print:py-0.5 print:px-1">{subject.subject_name}</TableCell> {/* Ajustado aqui */}
                   {sortedPeriods.map(period => (
-                    <TableCell key={`${subject.subject_name}-${period}`} className="text-center">
+                    <TableCell key={`${subject.subject_name}-${period}`} className="text-center text-xs py-1 px-2 print:text-[10px] print:py-0.5 print:px-1"> {/* Ajustado aqui */}
                       {subject.unit_grades[period] !== null ? subject.unit_grades[period]?.toFixed(1) : 'N/A'}
                     </TableCell>
                   ))}
-                  <TableCell className="text-center font-bold">
+                  <TableCell className="text-center font-bold text-xs py-1 px-2 print:text-[10px] print:py-0.5 print:px-1"> {/* Ajustado aqui */}
                     {subject.total_units_grade !== null ? subject.total_units_grade.toFixed(1) : 'N/A'}
                   </TableCell>
-                  <TableCell className="text-center font-bold">
+                  <TableCell className="text-center font-bold text-xs py-1 px-2 print:text-[10px] print:py-0.5 print:px-1"> {/* Ajustado aqui */}
                     {subject.final_average !== null ? subject.final_average.toFixed(1) : 'N/A'}
                   </TableCell>
-                  <TableCell className="text-center">
+                  <TableCell className="text-center text-xs py-1 px-2 print:text-[10px] print:py-0.5 print:px-1"> {/* Ajustado aqui */}
                     {subject.absences !== null ? subject.absences : 'N/A'}
                   </TableCell>
-                  <TableCell className="text-center">
+                  <TableCell className="text-center text-xs py-1 px-2 print:text-[10px] print:py-0.5 print:px-1"> {/* Ajustado aqui */}
                     {subject.result === 'Aprovado' && <span className="text-green-600 font-semibold">Aprovado</span>}
                     {subject.result === 'Reprovado' && <span className="text-red-600 font-semibold">Reprovado</span>}
                     {subject.result === 'Recuperação' && <span className="text-yellow-600 font-semibold">Recup.</span>}
