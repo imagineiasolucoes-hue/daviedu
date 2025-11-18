@@ -260,183 +260,185 @@ const MonthlyFeeCollection: React.FC = () => {
   const isBankConfigured = !!schoolConfig?.bank_name && !!schoolConfig?.bank_agency && !!schoolConfig?.bank_account;
 
   return (
-    <div className="max-w-4xl mx-auto bg-white p-6 shadow-lg print:shadow-none print:p-0" ref={printRef}>
-      
-      {/* Botões de Ação (Ocultos na Impressão) */}
-      <div className="flex justify-between items-center mb-6 print-hidden">
-        <Button variant="outline" asChild>
-          <Link to="/documents">
-            <ArrowLeft className="mr-2 h-4 w-4" /> Voltar
-          </Link>
-        </Button>
-        <Button onClick={handlePrint}>
-          <Printer className="mr-2 h-4 w-4" /> Imprimir Cobrança
-        </Button>
-      </div>
+    <React.Fragment>
+      <div className="max-w-4xl mx-auto bg-white p-6 shadow-lg print:shadow-none print:p-0" ref={printRef}>
+        
+        {/* Botões de Ação (Ocultos na Impressão) */}
+        <div className="flex justify-between items-center mb-6 print-hidden">
+          <Button variant="outline" asChild>
+            <Link to="/documents">
+              <ArrowLeft className="mr-2 h-4 w-4" /> Voltar
+            </Link>
+          </Button>
+          <Button onClick={handlePrint}>
+            <Printer className="mr-2 h-4 w-4" /> Imprimir Cobrança
+          </Button>
+        </div>
 
-      {/* Cabeçalho do Documento */}
-      <div className="flex justify-between items-start mb-6 border-b pb-4"> {/* Ajustado para items-start */}
-        {/* Informações da Escola (Esquerda) */}
-        <div className="text-left space-y-1 flex-1"> {/* flex-1 para ocupar espaço */}
-          <h1 className="text-xl font-bold text-primary">{tenant.name}</h1> {/* Fonte menor */}
-          <p className="text-xs text-muted-foreground">DOCUMENTO DE COBRANÇA DE MENSALIDADE</p> {/* Fonte menor */}
-          <div className="mt-2 text-xs text-muted-foreground space-y-1">
-            {schoolConfig?.cnpj && <p>CNPJ: {schoolConfig.cnpj}</p>}
-            {schoolConfig?.phone && <p>Telefone: {schoolConfig.phone}</p>}
-            {fullAddress && <p>Endereço: {fullAddress}</p>}
+        {/* Cabeçalho do Documento */}
+        <div className="flex justify-between items-start mb-6 border-b pb-4"> {/* Ajustado para items-start */}
+          {/* Informações da Escola (Esquerda) */}
+          <div className="text-left space-y-1 flex-1"> {/* flex-1 para ocupar espaço */}
+            <h1 className="text-xl font-bold text-primary">{tenant.name}</h1> {/* Fonte menor */}
+            <p className="text-xs text-muted-foreground">DOCUMENTO DE COBRANÇA DE MENSALIDADE</p> {/* Fonte menor */}
+            <div className="mt-2 text-xs text-muted-foreground space-y-1">
+              {schoolConfig?.cnpj && <p>CNPJ: {schoolConfig.cnpj}</p>}
+              {schoolConfig?.phone && <p>Telefone: {schoolConfig.phone}</p>}
+              {fullAddress && <p>Endereço: {fullAddress}</p>}
+            </div>
+          </div>
+
+          {/* Logo da Escola (Direita) */}
+          {tenant.config?.logo_url && (
+            <img src={tenant.config.logo_url} alt="Logo da Escola" className="h-20 w-auto object-contain" /> /* Logo menor */
+          )}
+        </div>
+
+        {/* Data de Emissão e Total Pendente (Mais discreto) */}
+        <div className="flex justify-between items-center mb-6 p-3 bg-muted/50 rounded-md border"> {/* Padding menor */}
+          <div className="space-y-0.5"> {/* Espaçamento menor */}
+            <p className="text-xs text-muted-foreground">Data de Emissão:</p> {/* Fonte menor */}
+            <p className="font-semibold text-sm">{format(new Date(), 'dd/MM/yyyy', { locale: ptBR })}</p> {/* Fonte menor */}
+          </div>
+          <div className="text-right space-y-0.5"> {/* Espaçamento menor */}
+            <p className="text-sm font-semibold text-muted-foreground">TOTAL PENDENTE</p> {/* Fonte menor */}
+            <p className="text-xl font-bold text-destructive">{formatCurrency(totalPendingAmount)}</p> {/* Fonte menor */}
           </div>
         </div>
 
-        {/* Logo da Escola (Direita) */}
-        {tenant.config?.logo_url && (
-          <img src={tenant.config.logo_url} alt="Logo da Escola" className="h-20 w-auto object-contain" /> {/* Logo menor */}
-        )}
-      </div>
-
-      {/* Data de Emissão e Total Pendente (Mais discreto) */}
-      <div className="flex justify-between items-center mb-6 p-3 bg-muted/50 rounded-md border"> {/* Padding menor */}
-        <div className="space-y-0.5"> {/* Espaçamento menor */}
-          <p className="text-xs text-muted-foreground">Data de Emissão:</p> {/* Fonte menor */}
-          <p className="font-semibold text-sm">{format(new Date(), 'dd/MM/yyyy', { locale: ptBR })}</p> {/* Fonte menor */}
-        </div>
-        <div className="text-right space-y-0.5"> {/* Espaçamento menor */}
-          <p className="text-sm font-semibold text-muted-foreground">TOTAL PENDENTE</p> {/* Fonte menor */}
-          <p className="text-xl font-bold text-destructive">{formatCurrency(totalPendingAmount)}</p> {/* Fonte menor */}
-        </div>
-      </div>
-
-      {/* Dados do Aluno e Responsável (Duas Colunas) */}
-      <Card className="mb-6 border-dashed">
-        <CardHeader>
-          <CardTitle className="text-lg flex items-center gap-2"> {/* Fonte menor */}
-            <User className="h-4 w-4 text-accent" /> {/* Ícone menor */}
-            Dados do Aluno e Responsável
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="grid grid-cols-2 gap-4 text-sm">
-          <div>
-            <p><span className="font-semibold">Aluno:</span> {student.full_name}</p>
-            <p><span className="font-semibold">Matrícula:</span> {student.registration_code}</p>
-            <p><span className="font-semibold">Turma:</span> {student.classes?.name || 'N/A'} ({student.classes?.school_year || 'N/A'})</p>
-            <p><span className="font-semibold">Série/Ano:</span> {studentCourseName}</p>
-          </div>
-          {primaryGuardian && (
+        {/* Dados do Aluno e Responsável (Duas Colunas) */}
+        <Card className="mb-6 border-dashed">
+          <CardHeader>
+            <CardTitle className="text-lg flex items-center gap-2"> {/* Fonte menor */}
+              <User className="h-4 w-4 text-accent" /> {/* Ícone menor */}
+              Dados do Aluno e Responsável
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="grid grid-cols-2 gap-4 text-sm">
             <div>
-              <p><span className="font-semibold">Responsável:</span> {primaryGuardian.full_name}</p>
-              <p><span className="font-semibold">Parentesco:</span> {primaryGuardian.relationship}</p>
-              {primaryGuardian.phone && <p><span className="font-semibold">Telefone:</span> {primaryGuardian.phone}</p>}
-              {primaryGuardian.email && <p><span className="font-semibold">Email:</span> {primaryGuardian.email}</p>}
+              <p><span className="font-semibold">Aluno:</span> {student.full_name}</p>
+              <p><span className="font-semibold">Matrícula:</span> {student.registration_code}</p>
+              <p><span className="font-semibold">Turma:</span> {student.classes?.name || 'N/A'} ({student.classes?.school_year || 'N/A'})</p>
+              <p><span className="font-semibold">Série/Ano:</span> {studentCourseName}</p>
             </div>
-          )}
-        </CardContent>
-      </Card>
+            {primaryGuardian && (
+              <div>
+                <p><span className="font-semibold">Responsável:</span> {primaryGuardian.full_name}</p>
+                <p><span className="font-semibold">Parentesco:</span> {primaryGuardian.relationship}</p>
+                {primaryGuardian.phone && <p><span className="font-semibold">Telefone:</span> {primaryGuardian.phone}</p>}
+                {primaryGuardian.email && <p><span className="font-semibold">Email:</span> {primaryGuardian.email}</p>}
+              </div>
+            )}
+          </CardContent>
+        </Card>
 
-      {/* Seção de Cobranças Pendentes (Resumo) */}
-      <h2 className="text-lg font-bold mb-4 flex items-center gap-2"> {/* Fonte menor */}
-        <DollarSign className="h-4 w-4 text-primary" /> {/* Ícone menor */}
-        Detalhes das Cobranças Pendentes
-      </h2>
-      
-      {pendingRevenues && pendingRevenues.length > 0 ? (
-        <div className="overflow-x-auto mb-8">
-          <Table className="w-full">
-            <TableHeader>
-              <TableRow>
-                <TableHead className="min-w-[100px] text-xs">Vencimento</TableHead> {/* Fonte menor */}
-                <TableHead className="min-w-[150px] text-xs">Descrição</TableHead> {/* Fonte menor */}
-                <TableHead className="text-xs">Categoria</TableHead> {/* Fonte menor */}
-                <TableHead className="text-right min-w-[80px] text-xs">Valor</TableHead> {/* Fonte menor */}
-                <TableHead className="text-center min-w-[100px] print-hidden text-xs">Ações</TableHead> {/* Fonte menor */}
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {pendingRevenues.map((revenue) => (
-                <TableRow key={revenue.id}>
-                  <TableCell className="text-xs">{format(new Date(revenue.date), 'dd/MM/yyyy', { locale: ptBR })}</TableCell> {/* Fonte menor */}
-                  <TableCell className="font-medium text-xs">{revenue.description || 'Mensalidade'}</TableCell> {/* Fonte menor */}
-                  <TableCell className="text-xs">{revenue.revenue_categories?.name || 'N/A'}</TableCell> {/* Fonte menor */}
-                  <TableCell className="text-right font-bold text-xs">{formatCurrency(revenue.amount)}</TableCell> {/* Fonte menor */}
-                  <TableCell className="text-center print-hidden">
-                    <Button 
-                      variant="outline" 
-                      size="xs" // Tamanho menor para o botão
-                      onClick={() => markAsPaidMutation.mutate(revenue.id)}
-                      disabled={markAsPaidMutation.isPending}
-                    >
-                      {markAsPaidMutation.isPending ? (
-                        <Loader2 className="h-3 w-3 animate-spin" /> {/* Ícone menor */}
-                      ) : (
-                        <CheckCircle className="h-3 w-3 mr-1" /> {/* Ícone menor */}
-                      )}
-                      Pago
-                    </Button>
-                  </TableCell>
+        {/* Seção de Cobranças Pendentes (Resumo) */}
+        <h2 className="text-lg font-bold mb-4 flex items-center gap-2"> {/* Fonte menor */}
+          <DollarSign className="h-4 w-4 text-primary" /> {/* Ícone menor */}
+          Detalhes das Cobranças Pendentes
+        </h2>
+        
+        {pendingRevenues && pendingRevenues.length > 0 ? (
+          <div className="overflow-x-auto mb-8">
+            <Table className="w-full">
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="min-w-[100px] text-xs">Vencimento</TableHead> {/* Fonte menor */}
+                  <TableHead className="min-w-[150px] text-xs">Descrição</TableHead> {/* Fonte menor */}
+                  <TableHead className="text-xs">Categoria</TableHead> {/* Fonte menor */}
+                  <TableHead className="text-right min-w-[80px] text-xs">Valor</TableHead> {/* Fonte menor */}
+                  <TableHead className="text-center min-w-[100px] print-hidden text-xs">Ações</TableHead> {/* Fonte menor */}
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </div>
-      ) : (
-        <p className="text-center py-8 text-muted-foreground text-sm">Nenhuma cobrança pendente para este aluno.</p> {/* Fonte menor */}
-      )}
+              </TableHeader>
+              <TableBody>
+                {pendingRevenues.map((revenue) => (
+                  <TableRow key={revenue.id}>
+                    <TableCell className="text-xs">{format(new Date(revenue.date), 'dd/MM/yyyy', { locale: ptBR })}</TableCell> {/* Fonte menor */}
+                    <TableCell className="font-medium text-xs">{revenue.description || 'Mensalidade'}</TableCell> {/* Fonte menor */}
+                    <TableCell className="text-xs">{revenue.revenue_categories?.name || 'N/A'}</TableCell> {/* Fonte menor */}
+                    <TableCell className="text-right font-bold text-xs">{formatCurrency(revenue.amount)}</TableCell> {/* Fonte menor */}
+                    <TableCell className="text-center print-hidden">
+                      <Button 
+                        variant="outline" 
+                        size="sm" /* Tamanho menor para o botão */
+                        onClick={() => markAsPaidMutation.mutate(revenue.id)}
+                        disabled={markAsPaidMutation.isPending}
+                      >
+                        {markAsPaidMutation.isPending ? (
+                          <Loader2 className="h-3 w-3 animate-spin" /> /* Ícone menor */
+                        ) : (
+                          <CheckCircle className="h-3 w-3 mr-1" /> /* Ícone menor */
+                        )}
+                        Pago
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        ) : (
+          <p className="text-center py-8 text-muted-foreground text-sm">Nenhuma cobrança pendente para este aluno.</p> /* Fonte menor */
+        )}
 
-      <Separator className="mb-8" />
+        <Separator className="mb-8" />
 
-      {/* Seção de Dados para Pagamento (Duas Colunas com QR Code) */}
-      <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
-        <DollarSign className="h-5 w-5 text-accent" />
-        Dados para Pagamento
-      </h2>
-      
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6"> {/* Força 2 colunas em md e acima */}
-        {/* Coluna 1: PIX */}
-        <Card className="p-4">
-          <CardTitle className="text-lg mb-4">Pagamento via PIX</CardTitle>
-          {isPixConfigured ? (
-            <div className="flex flex-col items-center space-y-3 text-sm"> {/* Centraliza conteúdo */}
-              <p><span className="font-semibold">Chave PIX:</span></p>
-              <p className="text-primary font-mono break-all p-2 bg-muted rounded-md text-xs">{pixKey}</p> {/* Fonte menor */}
-              {pixKey && (
-                <div className="p-2 border rounded-md bg-white">
-                  <QRCodeSVG value={pixKey} size={80} /> {/* QR Code menor */}
+        {/* Seção de Dados para Pagamento (Duas Colunas com QR Code) */}
+        <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
+          <DollarSign className="h-5 w-5 text-accent" />
+          Dados para Pagamento
+        </h2>
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6"> {/* Força 2 colunas em md e acima */}
+          {/* Coluna 1: PIX */}
+          <Card className="p-4">
+            <CardTitle className="text-lg mb-4">Pagamento via PIX</CardTitle>
+            {isPixConfigured ? (
+              <div className="flex flex-col items-center space-y-3 text-sm"> {/* Centraliza conteúdo */}
+                <p><span className="font-semibold">Chave PIX:</span></p>
+                <p className="text-primary font-mono break-all p-2 bg-muted rounded-md text-xs">{pixKey}</p> {/* Fonte menor */}
+                {pixKey && (
+                  <div className="p-2 border rounded-md bg-white">
+                    <QRCodeSVG value={pixKey} size={80} /> {/* QR Code menor */}
+                  </div>
+                )}
+                <p className="text-xs text-muted-foreground mt-2">Valor total pendente: {formatCurrency(totalPendingAmount)}</p>
+              </div>
+            ) : (
+              <p className="text-sm text-destructive py-4">Chave PIX não configurada nas Configurações da Escola.</p>
+            )}
+          </Card>
+
+          {/* Coluna 2: Dados Bancários */}
+          <Card className="p-4">
+            <CardTitle className="text-lg mb-4">Transferência Bancária (TED/DOC)</CardTitle>
+            {isBankConfigured ? (
+              <div className="grid grid-cols-2 gap-4 text-sm">
+                <div className="space-y-2">
+                  <p><span className="font-semibold">Banco:</span> {bankDetails.bankName}</p>
+                  <p><span className="font-semibold">Agência:</span> {bankDetails.agency}</p>
                 </div>
-              )}
-              <p className="text-xs text-muted-foreground mt-2">Valor total pendente: {formatCurrency(totalPendingAmount)}</p>
-            </div>
-          ) : (
-            <p className="text-sm text-destructive py-4">Chave PIX não configurada nas Configurações da Escola.</p>
-          )}
-        </Card>
-
-        {/* Coluna 2: Dados Bancários */}
-        <Card className="p-4">
-          <CardTitle className="text-lg mb-4">Transferência Bancária (TED/DOC)</CardTitle>
-          {isBankConfigured ? (
-            <div className="grid grid-cols-2 gap-4 text-sm">
-              <div className="space-y-2">
-                <p><span className="font-semibold">Banco:</span> {bankDetails.bankName}</p>
-                <p><span className="font-semibold">Agência:</span> {bankDetails.agency}</p>
+                <div className="space-y-2">
+                  <p><span className="font-semibold">Conta Corrente:</span> {bankDetails.account}</p>
+                  <p><span className="font-semibold">CNPJ:</span> {bankDetails.cnpj}</p>
+                </div>
               </div>
-              <div className="space-y-2">
-                <p><span className="font-semibold">Conta Corrente:</span> {bankDetails.account}</p>
-                <p><span className="font-semibold">CNPJ:</span> {bankDetails.cnpj}</p>
-              </div>
-            </div>
-          ) : (
-            <p className="text-sm text-destructive py-4">Dados bancários incompletos nas Configurações da Escola.</p>
-          )}
-          <p className="text-xs text-muted-foreground mt-4">
-            Por favor, envie o comprovante de pagamento para a secretaria da escola.
-          </p>
-        </Card>
-      </div>
+            ) : (
+              <p className="text-sm text-destructive py-4">Dados bancários incompletos nas Configurações da Escola.</p>
+            )}
+            <p className="text-xs text-muted-foreground mt-4">
+              Por favor, envie o comprovante de pagamento para a secretaria da escola.
+            </p>
+          </Card>
+        </div>
 
-      {/* Rodapé do Documento (para impressão) */}
-      <div className="mt-12 pt-4 border-t text-center text-xs text-muted-foreground print:mt-4">
-        <p>Documento gerado pelo sistema Davi EDU em {format(new Date(), 'dd/MM/yyyy HH:mm', { locale: ptBR })}.</p>
-        <p>Este documento serve como um lembrete de cobrança. Para dúvidas, entre em contato com a secretaria da escola.</p>
+        {/* Rodapé do Documento (para impressão) */}
+        <div className="mt-12 pt-4 border-t text-center text-xs text-muted-foreground print:mt-4">
+          <p>Documento gerado pelo sistema Davi EDU em {format(new Date(), 'dd/MM/yyyy HH:mm', { locale: ptBR })}.</p>
+          <p>Este documento serve como um lembrete de cobrança. Para dúvidas, entre em contato com a secretaria da escola.</p>
+        </div>
       </div>
-    </div>
+    </React.Fragment>
   );
 };
 
