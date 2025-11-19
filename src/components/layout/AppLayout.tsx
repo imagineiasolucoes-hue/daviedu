@@ -12,10 +12,11 @@ import AppFooter from './AppFooter';
 import { useBackupMonitoring } from '@/hooks/useBackupMonitoring';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
+import SuspendedAccessOverlay from '@/components/auth/SuspendedAccessOverlay'; // NOVO IMPORT
 
 const AppLayout: React.FC = () => {
   const { user, session } = useAuth();
-  const { profile, isLoading, isSuperAdmin } = useProfile();
+  const { profile, isLoading, isSuperAdmin, isTenantSuspended } = useProfile(); // Usando isTenantSuspended
   const [isSheetOpen, setIsSheetOpen] = useState(false);
   const navigate = useNavigate();
 
@@ -65,6 +66,12 @@ const AppLayout: React.FC = () => {
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
     );
+  }
+
+  // BLOQUEIO DE ACESSO PARA TENANTS SUSPENSOS
+  if (isTenantSuspended && !isSuperAdmin) {
+    // Super Admins podem ver o layout, mas usuários normais são bloqueados
+    return <SuspendedAccessOverlay />;
   }
 
   const displayName = profile?.first_name || user?.email || 'Usuário';

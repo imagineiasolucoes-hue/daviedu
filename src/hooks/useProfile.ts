@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/components/auth/SessionContextProvider";
 
 export type UserRole = 'super_admin' | 'admin' | 'secretary' | 'teacher' | 'student';
+export type TenantStatus = 'trial' | 'active' | 'suspended';
 
 export interface Profile {
   id: string; // auth.users.id
@@ -15,13 +16,14 @@ export interface Profile {
   phone: string | null;
   email: string | null; 
   employee_id?: string | null; // ID do funcionário, se o perfil for de um professor
+  tenant_status?: TenantStatus; // NOVO CAMPO
 }
 
 const fetchProfile = async (userId: string): Promise<Profile | null> => {
   // 1. Busca o perfil existente, incluindo o employee_id
   const { data: profileData, error: profileError } = await supabase
     .from('profiles')
-    .select('*')
+    .select('*, tenants(status)') // Busca o status do tenant
     .eq('id', userId)
     .maybeSingle();
 
@@ -41,6 +43,13 @@ const fetchProfile = async (userId: string): Promise<Profile | null> => {
   }
 
   let profile: Profile = profileData as Profile;
+  
+  // Extrai o status do tenant da relação
+  const rawProfile = profileData as any;
+  if (rawProfile.tenants && rawProfile.tenants.status) {
+      profile.tenant_status = rawProfile.tenants.status as TenantStatus;
+  }
+  delete (profile as any).tenants; // Remove a propriedade aninhada
 
   // 3. Se o perfil é de um professor/admin e o employee_id está faltando, tenta preencher
   if ((profile.role === 'teacher' || profile.role === 'admin') && !profile.employee_id) {
@@ -91,6 +100,7 @@ export const useProfile = () => {
   const isAdmin = profile?.role === 'admin';
   const isTeacher = profile?.role === 'teacher'; 
   const isSchoolUser = profile?.tenant_id !== null;
+  const isTenantSuspended = profile?.tenant_status === 'suspended'; // NOVO STATUS
 
   return {
     profile,
@@ -101,5 +111,6 @@ export const useProfile = () => {
     isAdmin,
     isTeacher, 
     isSchoolUser,
+    isTenantSuspended, // EXPOSTO
   };
 };
