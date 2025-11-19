@@ -89,14 +89,33 @@ serve(async (req) => {
     
     // 3. Atualizar Perfil (profiles) com o employee_id E a role 'teacher', se user_id estiver presente
     if (user_id) {
+        // Buscar a role atual do usuário
+        const { data: profileData, error: fetchProfileError } = await supabaseAdmin
+            .from('profiles')
+            .select('role')
+            .eq('id', user_id)
+            .single();
+
+        if (fetchProfileError) {
+            console.error("create-teacher: Supabase Profile Fetch Error:", fetchProfileError);
+            // Continuar, mas logar o erro
+        }
+
+        const currentRole = profileData?.role;
+        let roleToSet = 'teacher';
+
+        // Se o usuário já for admin ou super_admin, MANTEMOS a role original.
+        if (currentRole === 'admin' || currentRole === 'super_admin') {
+            roleToSet = currentRole;
+        }
+
         const { error: profileUpdateError } = await supabaseAdmin
             .from("profiles")
-            .update({ employee_id: employeeId, role: 'teacher' }) // Define a role como 'teacher'
+            .update({ employee_id: employeeId, role: roleToSet }) // Define a role (condicionalmente)
             .eq("id", user_id);
 
         if (profileUpdateError) {
             console.error("create-teacher: Supabase Profile Update Error:", JSON.stringify(profileUpdateError, null, 2));
-            // Não lançamos erro fatal aqui, pois o professor foi criado, mas logamos o problema de sincronização.
         }
     }
 

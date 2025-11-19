@@ -91,9 +91,29 @@ serve(async (req) => {
     
     // 4. Atualizar Perfil (profiles) com o employee_id E a role 'teacher', se user_id estiver presente
     if (user_id) {
+        // Buscar a role atual do usuário
+        const { data: profileData, error: fetchProfileError } = await supabaseAdmin
+            .from('profiles')
+            .select('role')
+            .eq('id', user_id)
+            .single();
+
+        if (fetchProfileError) {
+            console.error("update-teacher: Supabase Profile Fetch Error:", fetchProfileError);
+            // Continuar, mas logar o erro
+        }
+
+        const currentRole = profileData?.role;
+        let roleToSet = 'teacher';
+
+        // Se o usuário já for admin ou super_admin, MANTEMOS a role original.
+        if (currentRole === 'admin' || currentRole === 'super_admin') {
+            roleToSet = currentRole;
+        }
+
         const { error: profileUpdateError } = await supabaseAdmin
             .from("profiles")
-            .update({ employee_id: employee_id, role: 'teacher' }) // Define a role como 'teacher'
+            .update({ employee_id: employee_id, role: roleToSet }) // Define a role (condicionalmente)
             .eq("id", user_id);
 
         if (profileUpdateError) {
