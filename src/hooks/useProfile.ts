@@ -100,9 +100,11 @@ export const useProfile = () => {
   const isLoading = isAuthLoading || isProfileLoading;
   const isSuperAdmin = profile?.role === 'super_admin';
   const isAdmin = profile?.role === 'admin';
+  const isSecretary = profile?.role === 'secretary'; // Adicionado
   const isTeacher = profile?.role === 'teacher'; 
+  const isStudent = profile?.role === 'student'; // NOVO: Flag para estudante
   const isSchoolUser = profile?.tenant_id !== null;
-  const isTenantSuspended = profile?.tenant_status === 'suspended'; // NOVO STATUS
+  const isTenantSuspended = profile?.tenant_status === 'suspended'; 
 
   return {
     profile,
@@ -111,8 +113,10 @@ export const useProfile = () => {
     refetch,
     isSuperAdmin,
     isAdmin,
+    isSecretary, // Exposto
     isTeacher, 
+    isStudent, // Exposto
     isSchoolUser,
-    isTenantSuspended, // EXPOSTO
+    isTenantSuspended, 
   };
 };

@@ -37,7 +37,8 @@ import ReportCard from "./components/documents/templates/ReportCard";
 import StudentTranscript from "./components/documents/templates/StudentTranscript";
 import MonthlyFeeCollection from "./components/documents/templates/MonthlyFeeCollection";
 import SecretariaPage from "./pages/SecretariaPage";
-import VerifyDocumentPage from "./pages/VerifyDocumentPage"; // NOVO IMPORT
+import VerifyDocumentPage from "./pages/VerifyDocumentPage";
+import StudentPage from "./pages/StudentPage"; // NOVO IMPORT
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -68,10 +69,15 @@ const App = () => {
               <Route path="/pre-matricula" element={<PreEnrollmentInfoPage />} />
               <Route path="/pre-matricula/:tenantId" element={<PreEnrollment />} />
               <Route path="/faq" element={<FAQPage />} />
-              <Route path="/verify-document/:token" element={<VerifyDocumentPage />} /> {/* NOVA ROTA DE VERIFICAÇÃO */}
+              <Route path="/verify-document/:token" element={<VerifyDocumentPage />} />
 
-              {/* Protected Routes using AppLayout */}
+              {/* Protected Routes */}
               <Route element={<ProtectedRoute />}>
+                
+                {/* Student Portal Route (No AppLayout) */}
+                <Route path="/student-portal" element={<StudentPage />} />
+
+                {/* AppLayout Routes (Admin, Secretary, Teacher, SuperAdmin) */}
                 <Route element={<AppLayout />}>
                   <Route path="/dashboard" element={<Dashboard />} />
                   <Route path="/secretaria" element={<SecretariaPage />} />
@@ -100,8 +106,6 @@ const App = () => {
                     <Route path="/teacher/grade-entry" element={<GradeEntryPage />} />
                     <Route path="/teacher/class-diary" element={<ClassDiaryPage />} />
                   </Route>
-                  
-                  {/* Add other protected routes here later */}
                 </Route>
 
                 {/* Document Generation Routes (using DocumentLayout for print-friendly view) */}
