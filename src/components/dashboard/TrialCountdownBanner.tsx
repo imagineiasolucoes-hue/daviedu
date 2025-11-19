@@ -16,10 +16,58 @@ const TrialCountdownBanner: React.FC = () => {
     return null;
   }
 
+  // isCritical é true quando faltam menos de 24 horas (days < 1)
   const isCritical = days < 1;
-  const bgColor = isExpired ? 'bg-destructive/10 border-destructive' : (isCritical ? 'bg-yellow-500/10 border-yellow-500' : 'bg-primary/10 border-primary');
-  const textColor = isExpired ? 'text-destructive' : (isCritical ? 'text-yellow-600 dark:text-yellow-400' : 'text-primary dark:text-primary');
-  const Icon = isExpired ? AlertTriangle : Clock;
+  
+  // Define cores e ícones
+  let bgColor = 'bg-primary/10 border-primary';
+  let textColor = 'text-primary dark:text-primary';
+  let Icon = Clock;
+  let message = `Seu teste grátis expira em:`;
+  let subMessage = `Tempo restante: ${timeRemainingString}`;
+  let actionButton;
+
+  if (isExpired) {
+    // Estado 1: Expirado (timeRemaining <= 0)
+    bgColor = 'bg-destructive/10 border-destructive';
+    textColor = 'text-destructive';
+    Icon = AlertTriangle;
+    message = 'PERÍODO DE TESTE EXPIRADO!';
+    subMessage = 'Seu acesso será suspenso em breve. Regularize sua situação.';
+    actionButton = (
+      <Button asChild variant="destructive" className="w-full md:w-auto">
+        <a href="https://pay.kiwify.com.br/2TGijY8" target="_blank" rel="noopener noreferrer">
+          <AlertTriangle className="mr-2 h-4 w-4" />
+          Regularizar Agora
+        </a>
+      </Button>
+    );
+  } else if (isCritical) {
+    // Estado 2: Último dia (days < 1, mas não expirado)
+    bgColor = 'bg-yellow-500/10 border-yellow-500';
+    textColor = 'text-yellow-600 dark:text-yellow-400';
+    Icon = AlertTriangle;
+    message = 'ATENÇÃO: Seu teste grátis expira HOJE!';
+    subMessage = `Tempo restante: ${timeRemainingString}. Não perca seu acesso.`;
+    actionButton = (
+      <Button asChild className="w-full sm:w-auto bg-kiwify hover:bg-kiwify/90 text-white">
+        <a href="https://pay.kiwify.com.br/2TGijY8" target="_blank" rel="noopener noreferrer">
+          Assinar Agora
+          <ArrowRight className="ml-2 h-4 w-4" />
+        </a>
+      </Button>
+    );
+  } else {
+    // Estado 3: Contagem normal (days >= 1)
+    actionButton = (
+      <Button asChild className="w-full sm:w-auto bg-kiwify hover:bg-kiwify/90 text-white">
+        <a href="https://pay.kiwify.com.br/2TGijY8" target="_blank" rel="noopener noreferrer">
+          Assinar Agora
+          <ArrowRight className="ml-2 h-4 w-4" />
+        </a>
+      </Button>
+    );
+  }
 
   const countdownDisplay = (
     <div className="flex items-center space-x-4 font-mono text-lg font-bold">
@@ -51,37 +99,17 @@ const TrialCountdownBanner: React.FC = () => {
         <div className="flex items-center gap-3">
           <Icon className={cn("h-6 w-6 flex-shrink-0", textColor)} />
           <div className="text-sm">
-            {isExpired ? (
-              <p className="font-bold text-destructive">PERÍODO DE TESTE EXPIRADO!</p>
-            ) : (
-              <p className="font-semibold">
-                Seu teste grátis expira em:
-              </p>
-            )}
+            <p className={cn("font-bold", textColor)}>{message}</p>
             <p className="text-xs text-muted-foreground">
-                {isExpired ? 'Seu acesso será suspenso em breve. Regularize sua situação.' : `Tempo restante: ${timeRemainingString}`}
+                {subMessage}
             </p>
           </div>
         </div>
 
-        {isExpired ? (
-            <Button asChild variant="destructive" className="w-full md:w-auto">
-                <a href="https://pay.kiwify.com.br/2TGijY8" target="_blank" rel="noopener noreferrer">
-                    <AlertTriangle className="mr-2 h-4 w-4" />
-                    Regularizar Agora
-                </a>
-            </Button>
-        ) : (
-            <div className="flex flex-col sm:flex-row items-center gap-4 w-full md:w-auto">
-                {countdownDisplay}
-                <Button asChild className="w-full sm:w-auto bg-kiwify hover:bg-kiwify/90 text-white">
-                    <a href="https://pay.kiwify.com.br/2TGijY8" target="_blank" rel="noopener noreferrer">
-                        Assinar Agora
-                        <ArrowRight className="ml-2 h-4 w-4" />
-                    </a>
-                </Button>
-            </div>
-        )}
+        <div className="flex flex-col sm:flex-row items-center gap-4 w-full md:w-auto">
+            {countdownDisplay}
+            {actionButton}
+        </div>
       </CardContent>
     </Card>
   );
