@@ -36,7 +36,7 @@ const TrialCountdownBanner: React.FC = () => {
     subMessage = 'Seu acesso será suspenso em breve. Regularize sua situação.';
     actionButton = (
       <Button asChild variant="destructive" className="w-full md:w-auto">
-        <a href="https://pay.kiwify.com.br/2TGijY8" target="_blank" rel="noopener noreferrer">
+        <a href="https://pay.kiwify.com.br/TCQFp8O" target="_blank" rel="noopener noreferrer">
           <AlertTriangle className="mr-2 h-4 w-4" />
           Regularizar Agora
         </a>
@@ -51,7 +51,7 @@ const TrialCountdownBanner: React.FC = () => {
     subMessage = `Tempo restante: ${timeRemainingString}. Não perca seu acesso.`;
     actionButton = (
       <Button asChild className="w-full sm:w-auto bg-kiwify hover:bg-kiwify/90 text-white">
-        <a href="https://pay.kiwify.com.br/2TGijY8" target="_blank" rel="noopener noreferrer">
+        <a href="https://pay.kiwify.com.br/TCQFp8O" target="_blank" rel="noopener noreferrer">
           Assinar Agora
           <ArrowRight className="ml-2 h-4 w-4" />
         </a>
@@ -61,7 +61,7 @@ const TrialCountdownBanner: React.FC = () => {
     // Estado 3: Contagem normal (days >= 1)
     actionButton = (
       <Button asChild className="w-full sm:w-auto bg-kiwify hover:bg-kiwify/90 text-white">
-        <a href="https://pay.kiwify.com.br/2TGijY8" target="_blank" rel="noopener noreferrer">
+        <a href="https://pay.kiwify.com.br/TCQFp8O" target="_blank" rel="noopener noreferrer">
           Assinar Agora
           <ArrowRight className="ml-2 h-4 w-4" />
         </a>

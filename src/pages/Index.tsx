@@ -237,7 +237,7 @@ const Index = () => {
                 </ul>
                 <div className="space-y-3 pt-2">
                   <Button asChild size="lg" className="w-full text-lg bg-kiwify hover:bg-kiwify/90 text-white">
-                    <a href="https://pay.kiwify.com.br/r3Ur8To" target="_blank" rel="noopener noreferrer">
+                    <a href="https://pay.kiwify.com.br/TCQFp8O" target="_blank" rel="noopener noreferrer">
                       Assinar Agora
                     </a>
                   </Button>
