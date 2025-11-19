@@ -21,6 +21,7 @@ serve(async (req) => {
 
   try {
     const { tenant_id, new_status } = await req.json();
+    console.log("update-tenant-status: Incoming payload:", { tenant_id, new_status }); // Log adicionado
 
     if (!tenant_id || !new_status) {
       throw new Error("ID da escola e novo status são obrigatórios.");
@@ -48,9 +49,10 @@ serve(async (req) => {
       .single();
 
     if (error) {
-      console.error("Supabase update error:", error);
+      console.error("update-tenant-status: Supabase update error:", error); // Log mais específico
       throw new Error(`Erro ao atualizar o status da escola: ${error.message}`);
     }
+    console.log("update-tenant-status: Supabase update successful, data:", data); // Log adicionado
 
     return new Response(JSON.stringify({ success: true, updatedTenant: data }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -59,6 +61,7 @@ serve(async (req) => {
 
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : "Ocorreu um erro inesperado.";
+    console.error("update-tenant-status: Edge Function CATCH block error:", errorMessage); // Log mais específico
     return new Response(JSON.stringify({ error: errorMessage }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 400,

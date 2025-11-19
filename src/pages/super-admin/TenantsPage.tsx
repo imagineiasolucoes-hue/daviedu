@@ -51,16 +51,30 @@ const TenantsPage: React.FC = () => {
 
   const updateStatusMutation = useMutation({
     mutationFn: async ({ tenantId, newStatus }: { tenantId: string, newStatus: Tenant['status'] }) => {
-      const { error } = await supabase.functions.invoke('update-tenant-status', {
+      const { data, error: edgeFunctionError } = await supabase.functions.invoke('update-tenant-status', {
         body: JSON.stringify({ tenant_id: tenantId, new_status: newStatus }),
       });
-      if (error) throw new Error(error.message);
+
+      if (edgeFunctionError) {
+        // Tenta extrair uma mensagem de erro mais específica da resposta da Edge Function
+        // A Edge Function retorna { error: errorMessage } em caso de falha
+        if (edgeFunctionError.context?.data?.error) {
+          throw new Error(edgeFunctionError.context.data.error);
+        }
+        // Fallback para mensagem genérica se o erro específico não for encontrado
+        throw new Error(edgeFunctionError.message || "Erro desconhecido da Edge Function.");
+      }
+      // Verifica se o próprio 'data' contém uma propriedade de erro (menos comum para este padrão)
+      if (data && data.error) {
+        throw new Error(data.error);
+      }
     },
     onSuccess: () => {
       toast.success("Status da escola atualizado com sucesso!");
       queryClient.invalidateQueries({ queryKey: ['tenants'] });
     },
     onError: (error) => {
+      // Esta error.message agora conterá a mensagem mais específica do mutationFn
       toast.error("Erro ao atualizar status", { description: error.message });
     },
     onSettled: () => {
