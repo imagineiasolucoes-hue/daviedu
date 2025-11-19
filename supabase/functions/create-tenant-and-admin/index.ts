@@ -1,3 +1,9 @@
+declare const Deno: {
+  env: {
+    get(key: string): string | undefined;
+  };
+};
+
 // @ts-ignore
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 // @ts-ignore
@@ -40,11 +46,19 @@ serve(async (req) => {
     if (existingTenant) {
         throw new Error("A escola com este nome já está cadastrada.");
     }
+    
+    // --- CALCULAR DATA DE EXPIRAÇÃO (7 dias no futuro) ---
+    const trialExpiresAt = new Date();
+    trialExpiresAt.setDate(trialExpiresAt.getDate() + 7);
+    const trialExpiresAtISO = trialExpiresAt.toISOString();
 
     // 2. Create the tenant (school)
     const { data: tenant, error: tenantError } = await supabaseAdmin
       .from("tenants")
-      .insert({ name: schoolName })
+      .insert({ 
+        name: schoolName,
+        trial_expires_at: trialExpiresAtISO, // INSERINDO A DATA DE EXPIRAÇÃO
+      })
       .select()
       .single();
 
