@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -10,7 +10,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, SheetFo
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Loader2, PlusCircle, X } from 'lucide-react';
+import { Loader2, PlusCircle, X, User } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
@@ -37,21 +37,40 @@ const teacherSchema = z.object({
   address_neighborhood: z.string().optional().nullable(),
   address_city: z.string().optional().nullable(),
   address_state: z.string().optional().nullable(),
+  
+  // Campo para vincular o usuário de login
+  user_id: z.string().uuid("Selecione um usuário para login.").optional().nullable(),
 });
 
 type TeacherFormData = z.infer<typeof teacherSchema>;
+
+interface Course {
+  id: string;
+  name: string;
+}
 
 interface Class {
   id: string;
   name: string;
   school_year: number;
   period: string; // Período padrão da turma
-  courses: { name: string } | null; // Adicionado o nome do curso
+  // CORREÇÃO: Adicionando a estrutura de relação N:M
+  class_courses: {
+    course_id: string;
+    courses: { name: string } | null;
+  }[];
 }
 
 interface Subject { // Interface para matérias
   id: string;
   name: string;
+}
+
+interface AvailableUser {
+  id: string;
+  email: string;
+  first_name: string | null;
+  last_name: string | null;
 }
 
 interface ClassAssignment extends z.infer<typeof classAssignmentSchema> {
@@ -62,7 +81,7 @@ interface ClassAssignment extends z.infer<typeof classAssignmentSchema> {
 const fetchClasses = async (tenantId: string): Promise<Class[]> => {
   const { data, error } = await supabase
     .from('classes')
-    .select('id, name, school_year, period, courses (name)') // Incluindo courses(name)
+    .select('id, name, school_year, period, class_courses(courses(name))') // Incluindo courses(name)
     .eq('tenant_id', tenantId)
     .order('name');
   if (error) throw new Error(error.message);
@@ -79,10 +98,23 @@ const fetchSubjects = async (tenantId: string): Promise<Subject[]> => { // Nova 
   return data;
 };
 
+// Nova função para buscar usuários que não são funcionários/professores
+const fetchAvailableUsers = async (tenantId: string): Promise<AvailableUser[]> => {
+  const { data, error } = await supabase
+    .from('profiles')
+    .select('id, email, first_name, last_name')
+    .eq('tenant_id', tenantId)
+    .is('employee_id', null) // Usuários que não estão vinculados a um funcionário
+    .neq('role', 'student') // Excluir alunos (opcional, mas geralmente professores não são alunos)
+    .order('email');
+  
+  if (error) throw new Error(error.message);
+  return data as AvailableUser[];
+};
+
 const AddTeacherSheet: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
   const { profile } = useProfile();
-  const { user } = useAuth(); // Obter o usuário autenticado
   const queryClient = useQueryClient();
   const tenantId = profile?.tenant_id;
   const [classesToTeach, setClassesToTeach] = useState<ClassAssignment[]>([]);
@@ -98,6 +130,12 @@ const AddTeacherSheet: React.FC = () => {
   const { data: subjects, isLoading: isLoadingSubjects } = useQuery<Subject[], Error>({ // Nova query para matérias
     queryKey: ['subjects', tenantId],
     queryFn: () => fetchSubjects(tenantId!),
+    enabled: !!tenantId && isOpen,
+  });
+  
+  const { data: availableUsers, isLoading: isLoadingAvailableUsers } = useQuery<AvailableUser[], Error>({
+    queryKey: ['availableUsers', tenantId],
+    queryFn: () => fetchAvailableUsers(tenantId!),
     enabled: !!tenantId && isOpen,
   });
 
@@ -121,6 +159,7 @@ const AddTeacherSheet: React.FC = () => {
       address_neighborhood: null,
       address_city: null,
       address_state: null,
+      user_id: null, // Novo campo
     },
   });
 
@@ -128,7 +167,8 @@ const AddTeacherSheet: React.FC = () => {
     if (selectedClassId && selectedPeriod) {
       const classDetails = allClasses?.find(c => c.id === selectedClassId);
       if (classDetails) {
-        const courseName = classDetails.courses?.name ? ` - ${classDetails.courses.name}` : '';
+        // Acessando o nome do curso através da relação class_courses
+        const courseName = classDetails.class_courses?.[0]?.courses?.name ? ` - ${classDetails.class_courses[0].courses.name}` : '';
         setClassesToTeach(prev => [
           ...prev,
           {
@@ -152,10 +192,6 @@ const AddTeacherSheet: React.FC = () => {
       toast.error("Erro", { description: "ID da escola não encontrado." });
       return;
     }
-    if (!user?.id) {
-      toast.error("Erro", { description: "ID do usuário autenticado não encontrado." });
-      return;
-    }
 
     const classesPayload = classesToTeach.map(c => ({
         class_id: c.class_id,
@@ -166,7 +202,7 @@ const AddTeacherSheet: React.FC = () => {
       const payload = { 
         ...data, 
         tenant_id: tenantId,
-        user_id: user.id, // Enviando o user_id
+        user_id: data.user_id || null, // Enviando o user_id selecionado
         classes_to_teach: classesPayload,
         email: data.email || null,
         phone: data.phone || null,
@@ -179,8 +215,6 @@ const AddTeacherSheet: React.FC = () => {
         main_subject: data.main_subject || null,
       };
 
-      console.log("AddTeacherSheet: Payload sent to create-teacher Edge Function:", JSON.stringify(payload, null, 2)); // Log do payload
-
       const { error } = await supabase.functions.invoke('create-teacher', {
         body: JSON.stringify(payload),
       });
@@ -189,6 +223,7 @@ const AddTeacherSheet: React.FC = () => {
 
       toast.success("Professor cadastrado com sucesso.");
       queryClient.invalidateQueries({ queryKey: ['teachers', tenantId] });
+      queryClient.invalidateQueries({ queryKey: ['availableUsers', tenantId] }); // Invalida a lista de usuários disponíveis
       form.reset();
       setClassesToTeach([]);
       setIsOpen(false);
@@ -198,7 +233,7 @@ const AddTeacherSheet: React.FC = () => {
     }
   };
 
-  const isLoading = isLoadingClasses || isLoadingSubjects; // Inclui o carregamento de matérias
+  const isLoading = isLoadingClasses || isLoadingSubjects || isLoadingAvailableUsers;
 
   return (
     <Sheet open={isOpen} onOpenChange={setIsOpen}>
@@ -259,6 +294,42 @@ const AddTeacherSheet: React.FC = () => {
                 <Input id="base_salary" type="number" step="0.01" {...form.register("base_salary")} />
                 {form.formState.errors.base_salary && <p className="text-sm text-destructive">{form.formState.errors.base_salary.message}</p>}
               </div>
+            </div>
+          </div>
+
+          <Separator />
+          
+          {/* Vínculo de Usuário para Login */}
+          <div className="space-y-4">
+            <h3 className="text-lg font-semibold flex items-center gap-2">
+                <User className="h-5 w-5 text-primary" />
+                Vincular Conta de Login (Opcional)
+            </h3>
+            <div className="space-y-2">
+              <Label htmlFor="user_id">Usuário de Login</Label>
+              <Select 
+                onValueChange={(value) => form.setValue('user_id', value === "none" ? null : value)} 
+                value={form.watch('user_id') || 'none'}
+                disabled={isLoadingAvailableUsers}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder={isLoadingAvailableUsers ? "Carregando usuários..." : "Selecione um usuário para login"} />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">Nenhum Usuário (Acesso apenas administrativo)</SelectItem>
+                  {availableUsers?.map((u) => (
+                    <SelectItem key={u.id} value={u.id}>
+                      {u.email} ({u.first_name} {u.last_name})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {form.formState.errors.user_id && <p className="text-sm text-destructive">{form.formState.errors.user_id.message}</p>}
+              {(!availableUsers || availableUsers.length === 0) && !isLoadingAvailableUsers && (
+                <p className="text-xs text-muted-foreground mt-1">
+                    Nenhum usuário disponível para vincular. Peça ao professor para se cadastrar primeiro.
+                </p>
+              )}
             </div>
           </div>
 
@@ -336,7 +407,7 @@ const AddTeacherSheet: React.FC = () => {
                   <SelectContent>
                     {availableClasses.map((c) => (
                       <SelectItem key={c.id} value={c.id}>
-                        {c.name} ({c.school_year}) {c.courses?.name ? ` - ${c.courses.name}` : ''}
+                        {c.name} ({c.school_year}) {c.class_courses?.[0]?.courses?.name ? ` - ${c.class_courses[0].courses.name}` : ''}
                       </SelectItem>
                     ))}
                   </SelectContent>

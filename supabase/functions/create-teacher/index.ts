@@ -87,11 +87,11 @@ serve(async (req) => {
         }
     }
     
-    // 3. Atualizar Perfil (profiles) com o employee_id, se user_id estiver presente
+    // 3. Atualizar Perfil (profiles) com o employee_id E a role 'teacher', se user_id estiver presente
     if (user_id) {
         const { error: profileUpdateError } = await supabaseAdmin
             .from("profiles")
-            .update({ employee_id: employeeId })
+            .update({ employee_id: employeeId, role: 'teacher' }) // Define a role como 'teacher'
             .eq("id", user_id);
 
         if (profileUpdateError) {

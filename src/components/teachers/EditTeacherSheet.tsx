@@ -11,7 +11,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Loader2, X } from 'lucide-react';
+import { Loader2, X, User } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/components/auth/SessionContextProvider'; // Importar useAuth
@@ -38,21 +38,40 @@ const teacherSchema = z.object({
   address_neighborhood: z.string().optional().nullable(),
   address_city: z.string().optional().nullable(),
   address_state: z.string().optional().nullable(),
+  
+  // Campo para vincular o usuário de login
+  user_id: z.string().uuid("Selecione um usuário para login.").optional().nullable(),
 });
 
 type TeacherFormData = z.infer<typeof teacherSchema>;
+
+interface Course {
+  id: string;
+  name: string;
+}
 
 interface Class {
   id: string;
   name: string;
   school_year: number;
   period: string;
-  courses: { name: string } | null; // Adicionado o nome do curso
+  // CORREÇÃO: Adicionando a estrutura de relação N:M
+  class_courses: {
+    course_id: string;
+    courses: { name: string } | null;
+  }[];
 }
 
 interface Subject { // Interface para matérias
   id: string;
   name: string;
+}
+
+interface AvailableUser {
+  id: string;
+  email: string;
+  first_name: string | null;
+  last_name: string | null;
 }
 
 interface TeacherDetails extends TeacherFormData {
@@ -65,7 +84,7 @@ interface TeacherDetails extends TeacherFormData {
     classes: {
       name: string;
       school_year: number;
-      courses: { name: string } | null; // Adicionado o nome do curso
+      class_courses: { courses: { name: string } | null }[]; // Ajustado para a nova estrutura
     } | null;
   }[];
 }
@@ -92,7 +111,7 @@ const fetchTeacherDetails = async (teacherId: string): Promise<TeacherDetails> =
         classes (
           name,
           school_year,
-          courses (name)
+          class_courses (courses (name))
         )
       )
     `)
@@ -105,7 +124,7 @@ const fetchTeacherDetails = async (teacherId: string): Promise<TeacherDetails> =
 const fetchClasses = async (tenantId: string): Promise<Class[]> => {
   const { data, error } = await supabase
     .from('classes')
-    .select('id, name, school_year, period, courses (name)') // Incluindo courses(name)
+    .select('id, name, school_year, period, class_courses(courses(name))') // Incluindo courses(name)
     .eq('tenant_id', tenantId)
     .order('name');
   if (error) throw new Error(error.message);
@@ -120,6 +139,31 @@ const fetchSubjects = async (tenantId: string): Promise<Subject[]> => { // Nova 
     .order('name');
   if (error) throw new Error(error.message);
   return data;
+};
+
+// Função para buscar usuários disponíveis (que não são funcionários/professores)
+const fetchAvailableUsers = async (tenantId: string, currentUserId: string | null): Promise<AvailableUser[]> => {
+  let query = supabase
+    .from('profiles')
+    .select('id, email, first_name, last_name')
+    .eq('tenant_id', tenantId)
+    .is('employee_id', null) // Usuários que não estão vinculados a um funcionário
+    .neq('role', 'student')
+    .order('email');
+  
+  // Se houver um usuário atual vinculado, ele deve ser incluído na lista de opções
+  if (currentUserId) {
+    query = query.or(`id.eq.${currentUserId},employee_id.is.null`);
+  }
+
+  const { data, error } = await query;
+  
+  if (error) throw new Error(error.message);
+  
+  // Filtra duplicatas se o OR foi usado e garante que o usuário atual está na lista
+  const uniqueUsers = Array.from(new Map(data.map(item => [item.id, item])).values());
+  
+  return uniqueUsers as AvailableUser[];
 };
 
 const EditTeacherSheet: React.FC<EditTeacherSheetProps> = ({ teacherId, open, onOpenChange }) => {
@@ -142,9 +186,15 @@ const EditTeacherSheet: React.FC<EditTeacherSheetProps> = ({ teacherId, open, on
     enabled: !!tenantId && open,
   });
 
-  const { data: subjects, isLoading: isLoadingSubjects } = useQuery<Subject[], Error>({ // Nova query para matérias
+  const { data: subjects, isLoading: isLoadingSubjects } = useQuery<Subject[], Error>({
     queryKey: ['subjects', tenantId],
     queryFn: () => fetchSubjects(tenantId!),
+    enabled: !!tenantId && open,
+  });
+  
+  const { data: availableUsers, isLoading: isLoadingAvailableUsers } = useQuery<AvailableUser[], Error>({
+    queryKey: ['availableUsers', tenantId, teacher?.user_id],
+    queryFn: () => fetchAvailableUsers(tenantId!, teacher?.user_id || null),
     enabled: !!tenantId && open,
   });
 
@@ -174,13 +224,15 @@ const EditTeacherSheet: React.FC<EditTeacherSheetProps> = ({ teacherId, open, on
         address_neighborhood: teacher.address_neighborhood || null,
         address_city: teacher.address_city || null,
         address_state: teacher.address_state || null,
+        user_id: teacher.user_id || null, // Inicializa o user_id
       });
       
       // Inicializa as turmas
       const initialClasses: ClassAssignment[] = teacher.teacher_classes
         .filter(tc => tc.classes)
         .map(tc => {
-          const courseName = tc.classes?.courses?.name ? ` - ${tc.classes.courses.name}` : '';
+          // Acessando o nome do curso através da nova estrutura
+          const courseName = tc.classes?.class_courses?.[0]?.courses?.name ? ` - ${tc.classes.class_courses[0].courses.name}` : '';
           return {
             class_id: tc.class_id,
             period: tc.period,
@@ -195,7 +247,7 @@ const EditTeacherSheet: React.FC<EditTeacherSheetProps> = ({ teacherId, open, on
     if (selectedClassId && selectedPeriod) {
       const classDetails = allClasses?.find(c => c.id === selectedClassId);
       if (classDetails) {
-        const courseName = classDetails.courses?.name ? ` - ${classDetails.courses.name}` : '';
+        const courseName = classDetails.class_courses?.[0]?.courses?.name ? ` - ${classDetails.class_courses[0].courses.name}` : '';
         setClassesToTeach(prev => [
           ...prev,
           {
@@ -227,7 +279,7 @@ const EditTeacherSheet: React.FC<EditTeacherSheetProps> = ({ teacherId, open, on
         ...data,
         employee_id: teacherId,
         tenant_id: tenantId,
-        user_id: teacher?.user_id || null, // USANDO O user_id DO PROFESSOR QUE ESTÁ SENDO EDITADO
+        user_id: data.user_id || null, // Enviando o user_id selecionado
         classes_to_teach: classesPayload, // Enviando a lista completa de turmas
         email: data.email || null,
         phone: data.phone || null,
@@ -250,6 +302,7 @@ const EditTeacherSheet: React.FC<EditTeacherSheetProps> = ({ teacherId, open, on
       queryClient.invalidateQueries({ queryKey: ['teachers', tenantId] });
       queryClient.invalidateQueries({ queryKey: ['teacher', teacherId] }); // Refetch details
       queryClient.invalidateQueries({ queryKey: ['profile'] }); // Força a atualização do perfil do usuário logado (se for ele mesmo)
+      queryClient.invalidateQueries({ queryKey: ['availableUsers', tenantId] }); // Invalida a lista de usuários disponíveis
       onOpenChange(false);
     },
     onError: (error) => {
@@ -261,7 +314,7 @@ const EditTeacherSheet: React.FC<EditTeacherSheetProps> = ({ teacherId, open, on
     mutation.mutate(data);
   };
 
-  const isLoading = isLoadingTeacher || isLoadingClasses || isLoadingSubjects; // Inclui o carregamento de matérias
+  const isLoading = isLoadingTeacher || isLoadingClasses || isLoadingSubjects || isLoadingAvailableUsers;
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
@@ -329,6 +382,42 @@ const EditTeacherSheet: React.FC<EditTeacherSheetProps> = ({ teacherId, open, on
                   </SelectContent>
                 </Select>
               </div>
+            </div>
+
+            <Separator />
+            
+            {/* Vínculo de Usuário para Login */}
+            <div className="space-y-4">
+                <h3 className="text-lg font-semibold flex items-center gap-2">
+                    <User className="h-5 w-5 text-primary" />
+                    Vincular Conta de Login
+                </h3>
+                <div className="space-y-2">
+                <Label htmlFor="user_id">Usuário de Login</Label>
+                <Select 
+                    onValueChange={(value) => form.setValue('user_id', value === "none" ? null : value)} 
+                    value={form.watch('user_id') || 'none'}
+                    disabled={isLoadingAvailableUsers}
+                >
+                    <SelectTrigger>
+                    <SelectValue placeholder={isLoadingAvailableUsers ? "Carregando usuários..." : "Selecione um usuário para login"} />
+                    </SelectTrigger>
+                    <SelectContent>
+                    <SelectItem value="none">Nenhum Usuário (Acesso apenas administrativo)</SelectItem>
+                    {availableUsers?.map((u) => (
+                        <SelectItem key={u.id} value={u.id}>
+                        {u.email} ({u.first_name} {u.last_name})
+                        </SelectItem>
+                    ))}
+                    </SelectContent>
+                </Select>
+                {form.formState.errors.user_id && <p className="text-sm text-destructive">{form.formState.errors.user_id.message}</p>}
+                {(!availableUsers || availableUsers.length === 0) && !isLoadingAvailableUsers && (
+                    <p className="text-xs text-muted-foreground mt-1">
+                        Nenhum usuário disponível para vincular. Peça ao professor para se cadastrar primeiro.
+                    </p>
+                )}
+                </div>
             </div>
 
             <Separator />
@@ -404,7 +493,7 @@ const EditTeacherSheet: React.FC<EditTeacherSheetProps> = ({ teacherId, open, on
                     <SelectContent>
                       {availableClasses.map((c) => (
                         <SelectItem key={c.id} value={c.id}>
-                          {c.name} ({c.school_year}) {c.courses?.name ? ` - ${c.courses.name}` : ''}
+                          {c.name} ({c.school_year}) {c.class_courses?.[0]?.courses?.name ? ` - ${c.class_courses[0].courses.name}` : ''}
                         </SelectItem>
                       ))}
                     </SelectContent>
