@@ -1,0 +1,24 @@
+/* Adicione estilos específicos para impressão aqui */
+@media print {
+  .print-hidden {
+    display: none !important;
+  }
+
+  body {
+    background-color: #fff;
+    color: #000;
+  }
+
+  /* Ajustes de layout para impressão */
+  .max-w-4xl.mx-auto.bg-white.p-6.shadow-lg {
+    width: 100%;
+    max-width: none;
+    margin: 0;
+    padding: 0;
+    box-shadow: none;
+  }
+
+  .page-break-inside-avoid {
+    page-break-inside: avoid;
+  }
+}
