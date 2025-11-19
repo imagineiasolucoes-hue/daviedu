@@ -66,7 +66,7 @@ const TrialCountdownBanner: React.FC = () => {
 
         {isExpired ? (
             <Button asChild variant="destructive" className="w-full md:w-auto">
-                <a href="https://pay.kiwify.com.br/r3Ur8To" target="_blank" rel="noopener noreferrer">
+                <a href="https://pay.kiwify.com.br/2TGijY8" target="_blank" rel="noopener noreferrer">
                     <AlertTriangle className="mr-2 h-4 w-4" />
                     Regularizar Agora
                 </a>
@@ -75,7 +75,7 @@ const TrialCountdownBanner: React.FC = () => {
             <div className="flex flex-col sm:flex-row items-center gap-4 w-full md:w-auto">
                 {countdownDisplay}
                 <Button asChild className="w-full sm:w-auto bg-kiwify hover:bg-kiwify/90 text-white">
-                    <a href="https://pay.kiwify.com.br/r3Ur8To" target="_blank" rel="noopener noreferrer">
+                    <a href="https://pay.kiwify.com.br/2TGijY8" target="_blank" rel="noopener noreferrer">
                         Assinar Agora
                         <ArrowRight className="ml-2 h-4 w-4" />
                     </a>
