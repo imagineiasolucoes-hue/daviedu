@@ -45,7 +45,7 @@ const fetchMonthlyEnrollments = async (tenantId: string): Promise<MonthlyEnrollm
 };
 
 const Dashboard: React.FC = () => {
-  const { profile, isLoading: isProfileLoading, isSuperAdmin, isSchoolUser, isAdmin } = useProfile(); // Adicionado isAdmin
+  const { profile, isLoading: isProfileLoading, isSuperAdmin, isSchoolUser, isAdmin, isTeacher } = useProfile(); // Adicionado isTeacher
   const tenantId = profile?.tenant_id;
 
   const fetchDashboardMetrics = async (tenantId: string) => {
@@ -91,6 +91,9 @@ const Dashboard: React.FC = () => {
     // Renderiza a nova página de visão geral do Super Admin
     return <SuperAdminOverviewPage />;
   }
+  
+  // Se for professor, o ProtectedRoute já deve ter redirecionado para /teacher/dashboard.
+  // Se ele chegou aqui, é um Admin/Secretary/Student.
   
   if (!isSchoolUser) {
     return (
