@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Loader2, School, MoreHorizontal, CheckCircle, XCircle } from 'lucide-react';
+import { Loader2, School, MoreHorizontal, CheckCircle, XCircle, Trash2 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -38,8 +38,10 @@ const fetchTenants = async (): Promise<Tenant[]> => {
 const TenantsPage: React.FC = () => {
   const { isSuperAdmin, isLoading: isProfileLoading } = useProfile();
   const queryClient = useQueryClient();
-  const [isConfirmOpen, setIsConfirmOpen] = useState(false);
+  const [isConfirmStatusChangeOpen, setIsConfirmStatusChangeOpen] = useState(false);
+  const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false); // Novo estado para exclusão
   const [selectedTenant, setSelectedTenant] = useState<Tenant | null>(null);
+  const [pendingStatus, setPendingStatus] = useState<Tenant['status'] | null>(null); // Para guardar o status pendente
 
   const { data: tenants, isLoading: isTenantsLoading, error } = useQuery<Tenant[], Error>({
     queryKey: ['tenants'],
@@ -62,24 +64,54 @@ const TenantsPage: React.FC = () => {
       toast.error("Erro ao atualizar status", { description: error.message });
     },
     onSettled: () => {
-      setIsConfirmOpen(false);
+      setIsConfirmStatusChangeOpen(false);
+      setSelectedTenant(null);
+      setPendingStatus(null);
+    },
+  });
+
+  const deleteTenantMutation = useMutation({
+    mutationFn: async (tenantId: string) => {
+      const { error } = await supabase.functions.invoke('delete-tenant', {
+        body: JSON.stringify({ tenant_id: tenantId }),
+      });
+      if (error) throw new Error(error.message);
+    },
+    onSuccess: () => {
+      toast.success("Escola excluída com sucesso!");
+      queryClient.invalidateQueries({ queryKey: ['tenants'] });
+      queryClient.invalidateQueries({ queryKey: ['globalMetrics'] }); // Atualiza métricas globais
+    },
+    onError: (error) => {
+      toast.error("Erro ao excluir escola", { description: error.message });
+    },
+    onSettled: () => {
+      setIsDeleteConfirmOpen(false);
       setSelectedTenant(null);
     },
   });
 
-  const handleSuspendClick = (tenant: Tenant) => {
+  const handleStatusChangeClick = (tenant: Tenant, status: Tenant['status']) => {
     setSelectedTenant(tenant);
-    setIsConfirmOpen(true);
+    setPendingStatus(status);
+    setIsConfirmStatusChangeOpen(true);
   };
 
-  const handleConfirmSuspend = () => {
-    if (selectedTenant) {
-      updateStatusMutation.mutate({ tenantId: selectedTenant.id, newStatus: 'suspended' });
+  const handleConfirmStatusChange = () => {
+    if (selectedTenant && pendingStatus) {
+      updateStatusMutation.mutate({ tenantId: selectedTenant.id, newStatus: pendingStatus });
     }
   };
 
-  const handleActivateClick = (tenant: Tenant) => {
-    updateStatusMutation.mutate({ tenantId: tenant.id, newStatus: 'active' });
+  const handleDeleteClick = (tenant: Tenant) => {
+    setSelectedTenant(tenant);
+    setIsDeleteConfirmOpen(true);
+  };
+
+  const handleConfirmDelete = () => {
+    if (selectedTenant) {
+      deleteTenantMutation.mutate(selectedTenant.id);
+    }
   };
 
   if (isProfileLoading) {
@@ -152,15 +184,18 @@ const TenantsPage: React.FC = () => {
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
                           {tenant.status !== 'active' && (
-                            <DropdownMenuItem onClick={() => handleActivateClick(tenant)}>
+                            <DropdownMenuItem onClick={() => handleStatusChangeClick(tenant, 'active')}>
                               <CheckCircle className="mr-2 h-4 w-4 text-green-500" /> Ativar Plano
                             </DropdownMenuItem>
                           )}
                           {tenant.status !== 'suspended' && (
-                            <DropdownMenuItem onClick={() => handleSuspendClick(tenant)} className="text-destructive">
+                            <DropdownMenuItem onClick={() => handleStatusChangeClick(tenant, 'suspended')} className="text-yellow-600">
                               <XCircle className="mr-2 h-4 w-4" /> Suspender Acesso
                             </DropdownMenuItem>
                           )}
+                          <DropdownMenuItem onClick={() => handleDeleteClick(tenant)} className="text-destructive">
+                            <Trash2 className="mr-2 h-4 w-4" /> Excluir Escola
+                          </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
                     </TableCell>
@@ -175,23 +210,54 @@ const TenantsPage: React.FC = () => {
         </CardContent>
       </Card>
 
-      <AlertDialog open={isConfirmOpen} onOpenChange={setIsConfirmOpen}>
+      {/* Diálogo de Confirmação para Alteração de Status */}
+      <AlertDialog open={isConfirmStatusChangeOpen} onOpenChange={setIsConfirmStatusChangeOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Confirmar Suspensão</AlertDialogTitle>
+            <AlertDialogTitle>Confirmar Alteração de Status</AlertDialogTitle>
             <AlertDialogDescription>
-              Tem certeza que deseja suspender o acesso da escola <strong>{selectedTenant?.name}</strong>? Os usuários não poderão mais acessar o sistema.
+              Tem certeza que deseja {pendingStatus === 'active' ? 'ativar o plano' : 'suspender o acesso'} da escola <strong>{selectedTenant?.name}</strong>?
+              {pendingStatus === 'suspended' && ' Os usuários não poderão mais acessar o sistema.'}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogCancel disabled={updateStatusMutation.isPending}>Cancelar</AlertDialogCancel>
             <Button
-              variant="destructive"
-              onClick={handleConfirmSuspend}
+              variant={pendingStatus === 'active' ? 'default' : 'destructive'}
+              onClick={handleConfirmStatusChange}
               disabled={updateStatusMutation.isPending}
             >
               {updateStatusMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Suspender
+              Confirmar {pendingStatus === 'active' ? 'Ativação' : 'Suspensão'}
+            </Button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Diálogo de Confirmação para Exclusão */}
+      <AlertDialog open={isDeleteConfirmOpen} onOpenChange={setIsDeleteConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-destructive flex items-center gap-2">
+              <Trash2 className="h-6 w-6" /> Confirmar Exclusão de Escola
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              Você está prestes a excluir a escola <strong>{selectedTenant?.name}</strong>.
+              <br /><br />
+              <strong>Esta ação é irreversível e deletará PERMANENTEMENTE todos os dados associados a esta escola, incluindo alunos, professores, turmas, documentos, dados financeiros e perfis de usuários.</strong>
+              <br /><br />
+              Tem certeza que deseja continuar?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleteTenantMutation.isPending}>Cancelar</AlertDialogCancel>
+            <Button
+              variant="destructive"
+              onClick={handleConfirmDelete}
+              disabled={deleteTenantMutation.isPending}
+            >
+              {deleteTenantMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Excluir Permanentemente
             </Button>
           </AlertDialogFooter>
         </AlertDialogContent>
