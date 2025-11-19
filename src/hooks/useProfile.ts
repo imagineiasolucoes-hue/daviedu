@@ -17,13 +17,14 @@ export interface Profile {
   email: string | null; 
   employee_id?: string | null; // ID do funcionário, se o perfil for de um professor
   tenant_status?: TenantStatus; // NOVO CAMPO
+  trial_expires_at?: string | null; // NOVO CAMPO
 }
 
 const fetchProfile = async (userId: string): Promise<Profile | null> => {
   // 1. Busca o perfil existente, incluindo o employee_id
   const { data: profileData, error: profileError } = await supabase
     .from('profiles')
-    .select('*, tenants(status)') // Busca o status do tenant
+    .select('*, tenants(status, trial_expires_at)') // Busca status E data de expiração
     .eq('id', userId)
     .maybeSingle();
 
@@ -44,10 +45,11 @@ const fetchProfile = async (userId: string): Promise<Profile | null> => {
 
   let profile: Profile = profileData as Profile;
   
-  // Extrai o status do tenant da relação
+  // Extrai o status e a data de expiração do tenant da relação
   const rawProfile = profileData as any;
-  if (rawProfile.tenants && rawProfile.tenants.status) {
+  if (rawProfile.tenants) {
       profile.tenant_status = rawProfile.tenants.status as TenantStatus;
+      profile.trial_expires_at = rawProfile.tenants.trial_expires_at; // Captura a data de expiração
   }
   delete (profile as any).tenants; // Remove a propriedade aninhada
 

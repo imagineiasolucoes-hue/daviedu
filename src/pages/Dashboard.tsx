@@ -15,7 +15,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import SchoolEvolutionIndicator from '@/components/dashboard/SchoolEvolutionIndicator';
 import MonthlyEnrollmentChart from '@/components/dashboard/MonthlyEnrollmentChart';
 import SuperAdminOverviewPage from './super-admin/SuperAdminOverviewPage';
-// import GenerateDemoStudents from '@/components/demo/GenerateDemoStudents'; // Removendo o import do componente
+import TrialCountdownBanner from '@/components/dashboard/TrialCountdownBanner'; // NOVO IMPORT
 
 const MetricCardSkeleton: React.FC = () => (
   <Card>
@@ -129,6 +129,9 @@ const Dashboard: React.FC = () => {
         </div>
       </div>
 
+      {/* NOVO: Banner de Cronômetro de Teste */}
+      <TrialCountdownBanner />
+
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         {areMetricsLoading ? Array.from({ length: 8 }).map((_, i) => <MetricCardSkeleton key={i} />) : (
           <>
@@ -165,9 +168,6 @@ const Dashboard: React.FC = () => {
       </div>
 
       <SchoolEvolutionIndicator />
-
-      {/* Adicionando o componente GenerateDemoStudents aqui, visível apenas para admins */}
-      {/* {isAdmin && <GenerateDemoStudents />} */} {/* Removido */}
     </div>
   );
 };
