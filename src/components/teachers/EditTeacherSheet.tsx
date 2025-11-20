@@ -91,6 +91,7 @@ interface TeacherDetails extends TeacherFormData {
 
 interface ClassAssignment extends z.infer<typeof classAssignmentSchema> {
   className: string;
+  courseNames: string[]; // Adicionado para armazenar os nomes dos cursos
 }
 
 interface EditTeacherSheetProps {
@@ -235,12 +236,14 @@ const EditTeacherSheet: React.FC<EditTeacherSheetProps> = ({ teacherId, open, on
       const initialClasses: ClassAssignment[] = teacher.teacher_classes
         .filter(tc => tc.classes)
         .map(tc => {
-          // Acessando o nome do curso através da nova estrutura
-          const courseName = tc.classes?.class_courses?.[0]?.courses?.name ? ` - ${tc.classes.class_courses[0].courses.name}` : '';
+          const courseNames = tc.classes?.class_courses
+            .map(cc => cc.courses?.name)
+            .filter(Boolean) as string[];
           return {
             class_id: tc.class_id,
             period: tc.period,
-            className: `${tc.classes!.name} (${tc.classes!.school_year})${courseName}`, // Adicionando o nome do curso
+            className: `${tc.classes!.name} (${tc.classes!.school_year})`,
+            courseNames: courseNames,
           };
         });
       setClassesToTeach(initialClasses);
@@ -251,13 +254,16 @@ const EditTeacherSheet: React.FC<EditTeacherSheetProps> = ({ teacherId, open, on
     if (selectedClassId && selectedPeriod) {
       const classDetails = allClasses?.find(c => c.id === selectedClassId);
       if (classDetails) {
-        const courseName = classDetails.class_courses?.[0]?.courses?.name ? ` - ${classDetails.class_courses[0].courses.name}` : '';
+        const courseNames = classDetails.class_courses
+          .map(cc => cc.courses?.name)
+          .filter(Boolean) as string[];
         setClassesToTeach(prev => [
           ...prev,
           {
             class_id: selectedClassId,
             period: selectedPeriod as ClassAssignment['period'],
-            className: `${classDetails.name} (${classDetails.school_year})${courseName}`, // Adicionando o nome do curso
+            className: `${classDetails.name} (${classDetails.school_year})`,
+            courseNames: courseNames,
           }
         ]);
         setSelectedClassId('');
@@ -485,7 +491,7 @@ const EditTeacherSheet: React.FC<EditTeacherSheetProps> = ({ teacherId, open, on
               <h3 className="text-lg font-semibold">Turmas para Lecionar</h3>
               <div className="grid grid-cols-3 gap-4">
                 <div className="space-y-2 col-span-2">
-                  <Label htmlFor="class_id">Turma</Label>
+                  <Label htmlFor="class_id">Turma e Série/Ano</Label>
                   <Select 
                     onValueChange={setSelectedClassId} 
                     value={selectedClassId}
@@ -497,7 +503,7 @@ const EditTeacherSheet: React.FC<EditTeacherSheetProps> = ({ teacherId, open, on
                     <SelectContent>
                       {availableClasses.map((c) => (
                         <SelectItem key={c.id} value={c.id}>
-                          {c.name} ({c.school_year}) {c.class_courses?.[0]?.courses?.name ? ` - ${c.class_courses[0].courses.name}` : ''}
+                          {c.name} ({c.school_year}) {c.class_courses.map(cc => cc.courses?.name).filter(Boolean).join(', ') ? ` - ${c.class_courses.map(cc => cc.courses?.name).filter(Boolean).join(', ')}` : ''}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -540,7 +546,7 @@ const EditTeacherSheet: React.FC<EditTeacherSheetProps> = ({ teacherId, open, on
                   <div className="flex flex-wrap gap-2">
                     {classesToTeach.map(c => (
                       <Badge key={c.class_id} variant="secondary" className="flex items-center gap-1 pr-1">
-                        {c.className} ({c.period})
+                        {c.className} {c.courseNames.length > 0 ? `(${c.courseNames.join(', ')})` : ''} ({c.period})
                         <button 
                           type="button" 
                           onClick={() => handleRemoveClass(c.class_id)}

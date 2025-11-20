@@ -75,6 +75,7 @@ interface AvailableUser {
 
 interface ClassAssignment extends z.infer<typeof classAssignmentSchema> {
   className: string;
+  courseNames: string[]; // Adicionado para armazenar os nomes dos cursos
 }
 
 // --- Funções de Dados ---
@@ -167,14 +168,17 @@ const AddTeacherSheet: React.FC = () => {
     if (selectedClassId && selectedPeriod) {
       const classDetails = allClasses?.find(c => c.id === selectedClassId);
       if (classDetails) {
-        // Acessando o nome do curso através da relação class_courses
-        const courseName = classDetails.class_courses?.[0]?.courses?.name ? ` - ${classDetails.class_courses[0].courses.name}` : '';
+        const courseNames = classDetails.class_courses
+          .map(cc => cc.courses?.name)
+          .filter(Boolean) as string[];
+        
         setClassesToTeach(prev => [
           ...prev,
           {
             class_id: selectedClassId,
             period: selectedPeriod as ClassAssignment['period'],
-            className: `${classDetails.name} (${classDetails.school_year})${courseName}`, // Adicionando o nome do curso
+            className: `${classDetails.name} (${classDetails.school_year})`,
+            courseNames: courseNames,
           }
         ]);
         setSelectedClassId('');
@@ -256,7 +260,7 @@ const AddTeacherSheet: React.FC = () => {
           
           {/* Informações Profissionais */}
           <div className="space-y-4">
-            <h3 className="text-lg font-semibold">Informações Profissionais</h3>
+            <h3 className="font-semibold">Informações Profissionais</h3>
             <div className="space-y-2">
               <Label htmlFor="full_name">Nome Completo</Label>
               <Input id="full_name" {...form.register("full_name")} />
@@ -397,7 +401,7 @@ const AddTeacherSheet: React.FC = () => {
             <h3 className="text-lg font-semibold">Turmas para Lecionar</h3>
             <div className="grid grid-cols-3 gap-4">
               <div className="space-y-2 col-span-2">
-                <Label htmlFor="class_id">Turma</Label>
+                <Label htmlFor="class_id">Turma e Série/Ano</Label>
                 <Select 
                   onValueChange={setSelectedClassId} 
                   value={selectedClassId}
@@ -409,7 +413,7 @@ const AddTeacherSheet: React.FC = () => {
                   <SelectContent>
                     {availableClasses.map((c) => (
                       <SelectItem key={c.id} value={c.id}>
-                        {c.name} ({c.school_year}) {c.class_courses?.[0]?.courses?.name ? ` - ${c.class_courses[0].courses.name}` : ''}
+                        {c.name} ({c.school_year}) {c.class_courses.map(cc => cc.courses?.name).filter(Boolean).join(', ') ? ` - ${c.class_courses.map(cc => cc.courses?.name).filter(Boolean).join(', ')}` : ''}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -452,7 +456,7 @@ const AddTeacherSheet: React.FC = () => {
                 <div className="flex flex-wrap gap-2">
                   {classesToTeach.map(c => (
                     <Badge key={c.class_id} variant="secondary" className="flex items-center gap-1 pr-1">
-                      {c.className} ({c.period})
+                      {c.className} {c.courseNames.length > 0 ? `(${c.courseNames.join(', ')})` : ''} ({c.period})
                       <button 
                         type="button" 
                         onClick={() => handleRemoveClass(c.class_id)}
