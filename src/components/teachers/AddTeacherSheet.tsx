@@ -19,6 +19,7 @@ import { useAuth } from '@/components/auth/SessionContextProvider'; // Importar 
 // --- Tipos e Schemas ---
 const classAssignmentSchema = z.object({
   class_id: z.string().uuid(),
+  course_id: z.string().uuid(), // Adicionado course_id
   period: z.enum(['Manhã', 'Tarde', 'Noite', 'Integral']),
 });
 
@@ -54,10 +55,9 @@ interface Class {
   name: string;
   school_year: number;
   period: string; // Período padrão da turma
-  // CORREÇÃO: Adicionando a estrutura de relação N:M
   class_courses: {
     course_id: string;
-    courses: { name: string } | null;
+    courses: { id: string; name: string } | null; // Adicionado id do curso
   }[];
 }
 
@@ -74,15 +74,15 @@ interface AvailableUser {
 }
 
 interface ClassAssignment extends z.infer<typeof classAssignmentSchema> {
-  className: string;
-  courseNames: string[]; // Adicionado para armazenar os nomes dos cursos
+  className: string; // Para exibição
+  courseName: string; // Para exibição
 }
 
 // --- Funções de Dados ---
 const fetchClasses = async (tenantId: string): Promise<Class[]> => {
   const { data, error } = await supabase
     .from('classes')
-    .select('id, name, school_year, period, class_courses(courses(name))') // Incluindo courses(name)
+    .select('id, name, school_year, period, class_courses(course_id, courses(id, name))') // Incluindo id do curso
     .eq('tenant_id', tenantId)
     .order('name');
   if (error) throw new Error(error.message);
@@ -120,6 +120,7 @@ const AddTeacherSheet: React.FC = () => {
   const tenantId = profile?.tenant_id;
   const [classesToTeach, setClassesToTeach] = useState<ClassAssignment[]>([]);
   const [selectedClassId, setSelectedClassId] = useState<string>('');
+  const [selectedCourseId, setSelectedCourseId] = useState<string>(''); // Novo estado para o curso
   const [selectedPeriod, setSelectedPeriod] = useState<string>('');
 
   const { data: allClasses, isLoading: isLoadingClasses } = useQuery<Class[], Error>({
@@ -140,10 +141,24 @@ const AddTeacherSheet: React.FC = () => {
     enabled: !!tenantId && isOpen,
   });
 
+  // Filtra os cursos disponíveis com base na turma selecionada
+  const coursesForSelectedClass = useMemo(() => {
+    const classDetail = allClasses?.find(c => c.id === selectedClassId);
+    if (!classDetail) return [];
+    return classDetail.class_courses
+      .map(cc => cc.courses)
+      .filter(c => c !== null) as Course[];
+  }, [allClasses, selectedClassId]);
+
+  // Filtra as turmas que ainda não foram atribuídas
   const availableClasses = useMemo(() => {
     if (!allClasses) return [];
-    const assignedIds = classesToTeach.map(c => c.class_id);
-    return allClasses.filter(c => !assignedIds.includes(c.id));
+    const assignedClassCoursePeriods = new Set(
+      classesToTeach.map(c => `${c.class_id}-${c.course_id}-${c.period}`)
+    );
+    
+    // Retorna todas as turmas, mas o Select de curso/período vai filtrar
+    return allClasses;
   }, [allClasses, classesToTeach]);
 
   const form = useForm<TeacherFormData>({
@@ -165,30 +180,40 @@ const AddTeacherSheet: React.FC = () => {
   });
 
   const handleAddClass = () => {
-    if (selectedClassId && selectedPeriod) {
+    if (selectedClassId && selectedCourseId && selectedPeriod) {
       const classDetails = allClasses?.find(c => c.id === selectedClassId);
-      if (classDetails) {
-        const courseNames = classDetails.class_courses
-          .map(cc => cc.courses?.name)
-          .filter(Boolean) as string[];
-        
+      const courseDetails = coursesForSelectedClass.find(c => c.id === selectedCourseId);
+
+      if (classDetails && courseDetails) {
+        const assignmentKey = `${selectedClassId}-${selectedCourseId}-${selectedPeriod}`;
+        const isAlreadyAssigned = classesToTeach.some(
+          a => a.class_id === selectedClassId && a.course_id === selectedCourseId && a.period === selectedPeriod
+        );
+
+        if (isAlreadyAssigned) {
+          toast.warning("Atribuição Duplicada", { description: "Este professor já está atribuído a esta turma, série e turno." });
+          return;
+        }
+
         setClassesToTeach(prev => [
           ...prev,
           {
             class_id: selectedClassId,
+            course_id: selectedCourseId,
             period: selectedPeriod as ClassAssignment['period'],
             className: `${classDetails.name} (${classDetails.school_year})`,
-            courseNames: courseNames,
+            courseName: courseDetails.name,
           }
         ]);
-        setSelectedClassId('');
+        // Resetar apenas a seleção de curso e período, mantendo a turma para facilitar múltiplas atribuições na mesma turma
+        setSelectedCourseId('');
         setSelectedPeriod('');
       }
     }
   };
 
-  const handleRemoveClass = (classId: string) => {
-    setClassesToTeach(prev => prev.filter(c => c.class_id !== classId));
+  const handleRemoveClass = (classId: string, courseId: string, period: string) => {
+    setClassesToTeach(prev => prev.filter(c => !(c.class_id === classId && c.course_id === courseId && c.period === period)));
   };
 
   const onSubmit = async (data: TeacherFormData) => {
@@ -199,6 +224,7 @@ const AddTeacherSheet: React.FC = () => {
 
     const classesPayload = classesToTeach.map(c => ({
         class_id: c.class_id,
+        course_id: c.course_id, // Incluído course_id
         period: c.period,
     }));
 
@@ -230,6 +256,7 @@ const AddTeacherSheet: React.FC = () => {
       toast.success("Professor cadastrado com sucesso.");
       queryClient.invalidateQueries({ queryKey: ['teachers', tenantId] });
       queryClient.invalidateQueries({ queryKey: ['availableUsers', tenantId] }); // Invalida a lista de usuários disponíveis
+      queryClient.invalidateQueries({ queryKey: ['myClasses', profile?.employee_id] }); // Invalida as turmas do professor
       form.reset();
       setClassesToTeach([]);
       setIsOpen(false);
@@ -385,11 +412,11 @@ const AddTeacherSheet: React.FC = () => {
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="address_city">Cidade (Opcional)</Label>
-                <Input id="address_city" {...form.register("address_city")} />
+                <Input id="address_city" {...form.register("config.address_city")} />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="address_state">Estado (Opcional)</Label>
-                <Input id="address_state" {...form.register("address_state")} />
+                <Input id="address_state" {...form.register("config.address_state")} />
               </div>
             </div>
           </div>
@@ -398,10 +425,11 @@ const AddTeacherSheet: React.FC = () => {
 
           {/* Turmas para Lecionar */}
           <div className="space-y-4">
-            <h3 className="text-lg font-semibold">Turmas para Lecionar</h3>
-            <div className="grid grid-cols-3 gap-4">
-              <div className="space-y-2 col-span-2">
-                <Label htmlFor="class_id">Turma e Série/Ano</Label>
+            <h3 className="text-lg font-semibold">Atribuir Turmas, Séries e Turnos</h3>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {/* Seleção de Turma */}
+              <div className="space-y-2">
+                <Label htmlFor="selectedClassId">Turma</Label>
                 <Select 
                   onValueChange={setSelectedClassId} 
                   value={selectedClassId}
@@ -413,21 +441,42 @@ const AddTeacherSheet: React.FC = () => {
                   <SelectContent>
                     {availableClasses.map((c) => (
                       <SelectItem key={c.id} value={c.id}>
-                        {c.name} ({c.school_year}) {c.class_courses.map(cc => cc.courses?.name).filter(Boolean).join(', ') ? ` - ${c.class_courses.map(cc => cc.courses?.name).filter(Boolean).join(', ')}` : ''}
+                        {c.name} ({c.school_year})
                       </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
               </div>
-              <div className="space-y-2 col-span-1">
-                <Label htmlFor="period">Turno</Label>
+
+              {/* Seleção de Série/Ano (filtrada pela turma) */}
+              <div className="space-y-2">
+                <Label htmlFor="selectedCourseId">Série / Ano</Label>
+                <Select 
+                  onValueChange={setSelectedCourseId} 
+                  value={selectedCourseId}
+                  disabled={!selectedClassId || coursesForSelectedClass.length === 0}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder={!selectedClassId ? "Selecione uma turma" : (coursesForSelectedClass.length === 0 ? "Nenhuma série/ano associada" : "Selecione a série/ano")} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {coursesForSelectedClass.map((c) => (
+                      <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Seleção de Turno */}
+              <div className="space-y-2">
+                <Label htmlFor="selectedPeriod">Turno</Label>
                 <Select 
                   onValueChange={setSelectedPeriod} 
                   value={selectedPeriod}
-                  disabled={!selectedClassId}
+                  disabled={!selectedClassId || !selectedCourseId}
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="Turno" />
+                    <SelectValue placeholder="Selecione o turno" />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="Manhã">Manhã</SelectItem>
@@ -442,24 +491,24 @@ const AddTeacherSheet: React.FC = () => {
               type="button" 
               variant="outline" 
               onClick={handleAddClass} 
-              disabled={!selectedClassId || !selectedPeriod}
+              disabled={!selectedClassId || !selectedCourseId || !selectedPeriod}
               className="w-full"
             >
-              Adicionar Turma
+              Adicionar Atribuição
             </Button>
 
             {/* Lista de Turmas Adicionadas */}
             <div className="space-y-2 pt-2">
               {classesToTeach.length === 0 ? (
-                <p className="text-sm text-muted-foreground">Nenhuma turma adicionada.</p>
+                <p className="text-sm text-muted-foreground">Nenhuma atribuição adicionada.</p>
               ) : (
                 <div className="flex flex-wrap gap-2">
                   {classesToTeach.map(c => (
-                    <Badge key={c.class_id} variant="secondary" className="flex items-center gap-1 pr-1">
-                      {c.className} {c.courseNames.length > 0 ? `(${c.courseNames.join(', ')})` : ''} ({c.period})
+                    <Badge key={`${c.class_id}-${c.course_id}-${c.period}`} variant="secondary" className="flex items-center gap-1 pr-1">
+                      {c.className} ({c.courseName}) - {c.period}
                       <button 
                         type="button" 
-                        onClick={() => handleRemoveClass(c.class_id)}
+                        onClick={() => handleRemoveClass(c.class_id, c.course_id, c.period)}
                         className="ml-1 p-0.5 rounded-full hover:bg-destructive/20 transition-colors"
                       >
                         <X className="h-3 w-3 text-destructive" />

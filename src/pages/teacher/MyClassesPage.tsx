@@ -25,16 +25,19 @@ interface Class {
 
 interface TeacherClassLink {
   class_id: string;
+  course_id: string; // Adicionado course_id
   period: string;
   classes: Class | null;
+  courses: { name: string } | null; // Adicionado para buscar o nome do curso diretamente
 }
 
-const fetchMyClasses = async (employeeId: string): Promise<Class[]> => {
+const fetchMyClasses = async (employeeId: string): Promise<TeacherClassLink[]> => {
   console.log("MyClassesPage: Fetching classes for employeeId:", employeeId); // Log de depuração
   const { data, error } = await supabase
     .from('teacher_classes')
     .select(`
       class_id,
+      course_id,
       period,
       classes (
         id, 
@@ -44,7 +47,8 @@ const fetchMyClasses = async (employeeId: string): Promise<Class[]> => {
         class_courses (
           courses (name)
         )
-      )
+      ),
+      courses (name)
     `)
     .eq('employee_id', employeeId)
     .order('classes(school_year)', { ascending: false });
@@ -54,19 +58,22 @@ const fetchMyClasses = async (employeeId: string): Promise<Class[]> => {
   const rawData: TeacherClassLink[] = data as unknown as TeacherClassLink[];
   console.log("MyClassesPage: Raw teacher_classes data:", rawData); // Log de depuração
   
-  // Mapeia para retornar apenas os objetos Class, adicionando o período de ensino
+  // Mapeia para retornar os objetos TeacherClassLink, que agora incluem o nome do curso
   const classes = rawData
     .map(tc => {
-      if (tc.classes) {
+      if (tc.classes && tc.courses) { // Garante que a turma e o curso existem
         return {
-          ...tc.classes,
-          period: tc.period, // Usamos o período da atribuição do professor
-          student_count: Math.floor(Math.random() * 30) + 10, // Mock de contagem de alunos
+          ...tc,
+          classes: {
+            ...tc.classes,
+            period: tc.period, // Usamos o período da atribuição do professor
+            student_count: Math.floor(Math.random() * 30) + 10, // Mock de contagem de alunos
+          },
         };
       }
       return null;
     })
-    .filter(Boolean) as Class[];
+    .filter(Boolean) as TeacherClassLink[];
 
   console.log("MyClassesPage: Processed classes for display:", classes); // Log de depuração
   return classes;
@@ -76,7 +83,7 @@ const MyClassesPage: React.FC = () => {
   const { profile, isLoading: isProfileLoading, isTeacher } = useProfile();
   const employeeId = profile?.employee_id;
 
-  const { data: classes, isLoading: isClassesLoading, error } = useQuery<Class[], Error>({
+  const { data: classes, isLoading: isClassesLoading, error } = useQuery<TeacherClassLink[], Error>({
     queryKey: ['myClasses', employeeId],
     queryFn: () => fetchMyClasses(employeeId!),
     enabled: !!employeeId && isTeacher,
@@ -127,29 +134,22 @@ const MyClassesPage: React.FC = () => {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {classes?.map((classItem) => (
-                  <TableRow key={classItem.id}>
-                    <TableCell className="font-medium">{classItem.name}</TableCell>
+                {classes?.map((assignment) => (
+                  <TableRow key={`${assignment.class_id}-${assignment.course_id}-${assignment.period}`}>
+                    <TableCell className="font-medium">{assignment.classes?.name || 'N/A'}</TableCell>
                     <TableCell>
-                      <div className="flex flex-wrap gap-1">
-                        {classItem.class_courses.map((cc, index) => (
-                          cc.courses?.name ? (
-                            <Badge key={index} variant="outline" className="text-xs">
-                              {cc.courses.name}
-                            </Badge>
-                          ) : null
-                        ))}
-                        {classItem.class_courses.length === 0 && 'N/A'}
-                      </div>
+                      <Badge variant="outline" className="text-xs">
+                        {assignment.courses?.name || 'N/A'}
+                      </Badge>
                     </TableCell>
-                    <TableCell>{classItem.school_year}</TableCell>
+                    <TableCell>{assignment.classes?.school_year || 'N/A'}</TableCell>
                     <TableCell>
-                      <Badge variant="secondary">{classItem.period}</Badge>
+                      <Badge variant="secondary">{assignment.period}</Badge>
                     </TableCell>
-                    <TableCell>{classItem.room || 'N/A'}</TableCell>
+                    <TableCell>{assignment.classes?.room || 'N/A'}</TableCell>
                     <TableCell className="text-right flex items-center justify-end gap-1">
                         <Users className="h-4 w-4 text-muted-foreground" />
-                        {classItem.student_count}
+                        {assignment.classes?.student_count}
                     </TableCell>
                   </TableRow>
                 ))}

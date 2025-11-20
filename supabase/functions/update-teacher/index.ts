@@ -73,9 +73,10 @@ serve(async (req) => {
 
     // Inserir as novas associações
     if (classes_to_teach && classes_to_teach.length > 0) {
-        const links = classes_to_teach.map((c: { class_id: string, period: string }) => ({
+        const links = classes_to_teach.map((c: { class_id: string, course_id: string, period: string }) => ({
             employee_id: employee_id,
             class_id: c.class_id,
+            course_id: c.course_id, // Incluído course_id
             period: c.period,
         }));
 

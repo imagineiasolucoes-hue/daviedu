@@ -69,11 +69,12 @@ serve(async (req) => {
     
     const employeeId = employeeResult.id;
 
-    // 2. Vincular Turmas, se houver
+    // 2. Vincular Turmas, Séries e Turnos, se houver
     if (classes_to_teach && classes_to_teach.length > 0) {
-        const links = classes_to_teach.map((c: { class_id: string, period: string }) => ({
+        const links = classes_to_teach.map((c: { class_id: string, course_id: string, period: string }) => ({
             employee_id: employeeId,
             class_id: c.class_id,
+            course_id: c.course_id, // Incluído course_id
             period: c.period,
         }));
 
