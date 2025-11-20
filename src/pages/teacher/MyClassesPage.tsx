@@ -14,7 +14,7 @@ interface Class {
   name: string;
   school_year: number;
   period: string;
-  room: string | null;
+  room: string | null; // Adicionado: A propriedade 'room' estava faltando na interface
   // Relação N:M para cursos
   class_courses: {
     courses: { name: string } | null;
@@ -30,6 +30,7 @@ interface TeacherClassLink {
 }
 
 const fetchMyClasses = async (employeeId: string): Promise<Class[]> => {
+  console.log("Fetching classes for employeeId:", employeeId); // Log de depuração
   const { data, error } = await supabase
     .from('teacher_classes')
     .select(`
@@ -51,6 +52,7 @@ const fetchMyClasses = async (employeeId: string): Promise<Class[]> => {
   if (error) throw new Error(error.message);
   
   const rawData: TeacherClassLink[] = data as unknown as TeacherClassLink[];
+  console.log("Raw teacher_classes data:", rawData); // Log de depuração
   
   // Mapeia para retornar apenas os objetos Class, adicionando o período de ensino
   const classes = rawData
@@ -66,6 +68,7 @@ const fetchMyClasses = async (employeeId: string): Promise<Class[]> => {
     })
     .filter(Boolean) as Class[];
 
+  console.log("Processed classes for display:", classes); // Log de depuração
   return classes;
 };
 
@@ -154,7 +157,13 @@ const MyClassesPage: React.FC = () => {
             </Table>
           </div>
           {classes?.length === 0 && (
-            <p className="text-center py-8 text-muted-foreground">Nenhuma turma atribuída a você.</p>
+            <div className="text-center py-8 text-muted-foreground space-y-2">
+              <p>Nenhuma turma atribuída a você.</p>
+              <p className="text-sm">
+                Para que as turmas apareçam aqui, um administrador ou secretário da escola precisa atribuí-las ao seu perfil de professor.
+                Por favor, entre em contato com a secretaria para realizar essa configuração.
+              </p>
+            </div>
           )}
         </CardContent>
       </Card>
