@@ -55,7 +55,7 @@ interface SidebarProps {
 
 const Sidebar: React.FC<SidebarProps> = ({ isSuperAdmin, displayName, roleDisplay, onLogout, onCloseSheet }) => {
   const location = useLocation();
-  const { isTeacher } = useProfile();
+  const { isTeacher, isAdmin, isSecretary } = useProfile(); // Adicionado isAdmin e isSecretary
   const [openParent, setOpenParent] = useState<string | null>(null); // Estado para controlar qual item pai está aberto
 
   // Função para alternar a abertura de um item pai
@@ -81,7 +81,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isSuperAdmin, displayName, roleDispla
         { to: "/classes", icon: <BookOpen className="h-5 w-5" />, label: "Turmas", onCloseSheet, isSubItem: true },
         { to: "/classes/courses", icon: <ListChecks className="h-5 w-5" />, label: "Séries/Anos", onCloseSheet, isSubItem: true },
         { to: "/classes/subjects", icon: <BookMarked className="h-5 w-5" />, label: "Matérias", onCloseSheet, isSubItem: true },
-        { to: "/teacher/grade-entry", icon: <GraduationCap className="h-5 w-5" />, label: "Lançar Notas", onCloseSheet, isSubItem: true }, // Adicionado aqui
+        { to: "/teacher/grade-entry", icon: <GraduationCap className="h-5 w-5" />, label: "Lançar Notas", onCloseSheet, isSubItem: true },
         { to: "/calendar", icon: <CalendarDays className="h-5 w-5" />, label: "Calendário", onCloseSheet, isSubItem: true },
         { to: "/documents", icon: <FileText className="h-5 w-5" />, label: "Documentos", onCloseSheet, isSubItem: true },
       ],
@@ -107,12 +107,13 @@ const Sidebar: React.FC<SidebarProps> = ({ isSuperAdmin, displayName, roleDispla
     { to: "/backup", icon: <HardDrive className="h-5 w-5" />, label: "Backup Global", onCloseSheet },
   ];
 
+  // Filtra os itens de navegação do professor
   const teacherNavItems: NavigationItem[] = [
     { to: "/teacher/dashboard", icon: <LayoutDashboard className="h-5 w-5" />, label: "Meu Painel", onCloseSheet },
     { to: "/teacher/grade-entry", icon: <GraduationCap className="h-5 w-5" />, label: "Lançar Notas", onCloseSheet },
     { to: "/teacher/class-diary", icon: <BookOpen className="h-5 w-5" />, label: "Diário de Classe", onCloseSheet },
-    { to: "/classes/subjects", icon: <BookMarked className="h-5 w-5" />, label: "Matérias", onCloseSheet },
-    { to: "/settings", icon: <Settings className="h-5 w-5" />, label: "Configurações", onCloseSheet },
+    // Removido: { to: "/classes/subjects", icon: <BookMarked className="h-5 w-5" />, label: "Matérias", onCloseSheet },
+    // Removido: { to: "/settings", icon: <Settings className="h-5 w-5" />, label: "Configurações", onCloseSheet },
     { to: "/faq", icon: <HelpCircle className="h-5 w-5" />, label: "Ajuda (FAQ)", variant: 'accent', onCloseSheet },
   ];
 

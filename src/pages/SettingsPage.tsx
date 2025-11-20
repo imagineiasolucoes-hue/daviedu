@@ -1,12 +1,25 @@
 import React from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Separator } from '@/components/ui/separator';
-import { User, School, Lock } from 'lucide-react';
+import { User, School, Lock, Loader2 } from 'lucide-react';
 import SchoolSettingsForm from '@/components/settings/SchoolSettingsForm';
 import ProfileSettingsForm from '@/components/settings/ProfileSettingsForm';
 import SecuritySettingsForm from '@/components/settings/SecuritySettingsForm';
+import { useProfile } from '@/hooks/useProfile';
+import { Navigate } from 'react-router-dom';
 
 const SettingsPage: React.FC = () => {
+  const { profile, isLoading, isAdmin, isSuperAdmin } = useProfile();
+
+  if (isLoading) {
+    return <div className="flex justify-center items-center h-64"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>;
+  }
+
+  // Apenas Admin e Super Admin podem acessar as configurações da escola
+  if (!isAdmin && !isSuperAdmin) {
+    return <Navigate to="/dashboard" replace />;
+  }
+
   return (
     <div className="space-y-6">
       <h1 className="text-3xl font-bold">Configurações</h1>

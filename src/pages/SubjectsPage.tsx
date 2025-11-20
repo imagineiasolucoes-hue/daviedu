@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { BookMarked, Loader2, Trash2 } from 'lucide-react';
 import SubjectSheet from '@/components/subjects/SubjectSheet';
 import AssessmentTypeSheet from '@/components/subjects/AssessmentTypeSheet';
-import AcademicPeriodSheet from '@/components/subjects/AcademicPeriodSheet'; // NOVO IMPORT
+import AcademicPeriodSheet from '@/components/subjects/AcademicPeriodSheet';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useProfile } from '@/hooks/useProfile';
@@ -20,6 +20,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { toast } from 'sonner';
+import { Navigate } from 'react-router-dom';
 
 interface Subject {
   id: string;
@@ -37,17 +38,22 @@ const fetchSubjects = async (tenantId: string): Promise<Subject[]> => {
 };
 
 const SubjectsPage: React.FC = () => {
-  const { profile, isLoading: isProfileLoading } = useProfile();
+  const { profile, isLoading: isProfileLoading, isAdmin, isSecretary } = useProfile();
   const tenantId = profile?.tenant_id;
   const queryClient = useQueryClient();
 
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [selectedSubject, setSelectedSubject] = useState<Subject | null>(null);
 
+  // Restrição de acesso: Apenas Admin e Secretary podem gerenciar matérias
+  if (!isProfileLoading && !isAdmin && !isSecretary) {
+    return <Navigate to="/dashboard" replace />;
+  }
+
   const { data: subjects, isLoading: isLoadingSubjects, error } = useQuery<Subject[], Error>({
     queryKey: ['subjects', tenantId],
     queryFn: () => fetchSubjects(tenantId!),
-    enabled: !!tenantId,
+    enabled: !!tenantId && (isAdmin || isSecretary),
   });
 
   const deleteMutation = useMutation({
@@ -97,7 +103,7 @@ const SubjectsPage: React.FC = () => {
       <div className="flex justify-between items-center">
         <h1 className="text-3xl font-bold">Gestão de Matérias</h1>
         <div className="flex gap-2">
-          <AcademicPeriodSheet /> {/* NOVO BOTÃO */}
+          <AcademicPeriodSheet />
           <AssessmentTypeSheet />
           <SubjectSheet />
         </div>
