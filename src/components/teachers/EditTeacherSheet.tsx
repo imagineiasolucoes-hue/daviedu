@@ -142,25 +142,29 @@ const fetchSubjects = async (tenantId: string): Promise<Subject[]> => { // Nova 
 };
 
 // Função para buscar usuários disponíveis (que não são funcionários/professores)
-const fetchAvailableUsers = async (tenantId: string, currentUserId: string | null): Promise<AvailableUser[]> => {
+const fetchAvailableUsers = async (tenantId: string, currentLinkedUserId: string | null): Promise<AvailableUser[]> => {
   let query = supabase
     .from('profiles')
     .select('id, email, first_name, last_name')
     .eq('tenant_id', tenantId)
-    .is('employee_id', null) // Usuários que não estão vinculados a um funcionário
-    .neq('role', 'student')
-    .order('email');
-  
-  // Se houver um usuário atual vinculado, ele deve ser incluído na lista de opções
-  if (currentUserId) {
-    query = query.or(`id.eq.${currentUserId},employee_id.is.null`);
+    .neq('role', 'student'); // Sempre exclui alunos
+
+  if (currentLinkedUserId) {
+    // Se um usuário está atualmente vinculado a este professor, inclua-o OU qualquer usuário não vinculado
+    query = query.or(`id.eq.${currentLinkedUserId},employee_id.is.null`);
+  } else {
+    // Se nenhum usuário está atualmente vinculado, mostre apenas usuários não vinculados
+    query = query.is('employee_id', null);
   }
+
+  query = query.order('email');
 
   const { data, error } = await query;
   
   if (error) throw new Error(error.message);
   
-  // Filtra duplicatas se o OR foi usado e garante que o usuário atual está na lista
+  // O .or() pode retornar duplicatas se currentLinkedUserId também tiver employee_id is null.
+  // Garante resultados únicos.
   const uniqueUsers = Array.from(new Map(data.map(item => [item.id, item])).values());
   
   return uniqueUsers as AvailableUser[];
@@ -455,7 +459,7 @@ const EditTeacherSheet: React.FC<EditTeacherSheetProps> = ({ teacherId, open, on
               <div className="grid grid-cols-3 gap-4">
                 <div className="space-y-2 col-span-1">
                   <Label htmlFor="address_number">Número (Opcional)</Label>
-                  <Input id="address_number" {...form.register("address_number")} />
+                  <Input id="address_number" {...form.register("config.address_number")} />
                 </div>
                 <div className="space-y-2 col-span-2">
                   <Label htmlFor="address_neighborhood">Bairro (Opcional)</Label>

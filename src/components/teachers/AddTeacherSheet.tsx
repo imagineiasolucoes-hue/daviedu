@@ -104,7 +104,7 @@ const fetchAvailableUsers = async (tenantId: string): Promise<AvailableUser[]> =
     .from('profiles')
     .select('id, email, first_name, last_name')
     .eq('tenant_id', tenantId)
-    .is('employee_id', null) // Usuários que não estão vinculados a um funcionário
+    .is('employee_id', null) // Usuários que NÃO estão vinculados a um funcionário
     .neq('role', 'student') // Excluir alunos (opcional, mas geralmente professores não são alunos)
     .order('email');
   
