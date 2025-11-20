@@ -14,6 +14,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Loader2, ClipboardList, GraduationCap, BookOpen } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
+import { Link } from 'react-router-dom'; // Importar Link para as sugestões
 
 // --- Tipos de Dados ---
 interface Course {
@@ -474,7 +475,19 @@ const GradeEntryPage: React.FC = () => {
                 {form.formState.errors.classId && <p className="text-sm text-destructive">{form.formState.errors.classId.message}</p>}
                 {(!allClassesForEntry || allClassesForEntry.length === 0) && !isLoadingClassesForEntry && (
                   <p className="text-xs text-muted-foreground mt-1">
-                      Nenhuma turma atribuída a você ou cadastrada para a escola.
+                    {isTeacher ? (
+                      <>
+                        Nenhuma turma atribuída a você. <br />
+                        Por favor, entre em contato com a secretaria da escola para que as turmas sejam atribuídas ao seu perfil.
+                      </>
+                    ) : isAdmin ? (
+                      <>
+                        Nenhuma turma cadastrada para a escola. <br />
+                        Vá para <Link to="/classes" className="text-primary hover:underline">Gestão de Turmas</Link> para criar novas turmas.
+                      </>
+                    ) : (
+                      "Nenhuma turma encontrada."
+                    )}
                   </p>
                 )}
               </div>
