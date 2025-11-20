@@ -130,6 +130,7 @@ const fetchStudentsByClass = async (classId: string, tenantId: string): Promise<
     .select('id, full_name, registration_code')
     .eq('class_id', classId)
     .eq('tenant_id', tenantId)
+    .eq('status', 'active') // Apenas alunos ativos
     .order('full_name');
   if (error) throw new Error(error.message);
   return data;
@@ -252,8 +253,9 @@ const GradeEntryPage: React.FC = () => {
   }, [students, form]);
 
   const onSubmit = async (data: GradeEntryFormData) => {
-    if (!tenantId || !teacherEmployeeId) { // Usar teacherEmployeeId
-      toast.error("Erro", { description: "Dados do usuário ou da escola ausentes. Certifique-se de que seu perfil de professor está completo." });
+    // Validação de segurança: O usuário deve ser um professor/funcionário para lançar notas
+    if (!tenantId || !teacherEmployeeId) { 
+      toast.error("Erro de Permissão", { description: "Seu perfil não está vinculado a um funcionário/professor. Apenas administradores e professores cadastrados podem lançar notas." });
       return;
     }
 
@@ -351,6 +353,51 @@ const GradeEntryPage: React.FC = () => {
     );
   }
 
+  // Função auxiliar para renderizar o Select com feedback de dados ausentes
+  const renderSelectWithFeedback = (
+    id: string,
+    label: string,
+    data: { id: string; name: string }[] | undefined,
+    isLoading: boolean,
+    placeholder: string,
+    onValueChange: (value: string) => void,
+    currentValue: string | null | undefined,
+    error: any,
+    emptyMessage: string,
+    isOptional: boolean = false
+  ) => {
+    const isDataEmpty = !data || data.length === 0;
+    const isDisabled = isLoading || isDataEmpty;
+    const displayValue = currentValue || (isOptional ? 'none' : '');
+
+    return (
+      <div className="space-y-2">
+        <Label htmlFor={id}>{label}</Label>
+        <Select 
+          onValueChange={onValueChange} 
+          value={displayValue}
+          disabled={isDisabled}
+        >
+          <SelectTrigger id={id}>
+            <SelectValue placeholder={isLoading ? "Carregando..." : placeholder} />
+          </SelectTrigger>
+          <SelectContent>
+            {isOptional && <SelectItem value="none">Nenhum</SelectItem>}
+            {data?.map(item => (
+              <SelectItem key={item.id} value={item.name}>{item.name}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        {error && <p className="text-sm text-destructive">{error.message}</p>}
+        {isDataEmpty && !isLoading && (
+          <p className="text-xs text-muted-foreground mt-1">
+              {emptyMessage}
+          </p>
+        )}
+      </div>
+    );
+  };
+
   return (
     <div className="space-y-6">
       <h1 className="text-3xl font-bold flex items-center gap-2">
@@ -422,65 +469,46 @@ const GradeEntryPage: React.FC = () => {
               </div>
 
               {/* CAMPO 3: Matéria */}
-              <div className="space-y-2">
-                <Label htmlFor="subjectName">Matéria</Label>
-                <Select 
-                  onValueChange={(value) => form.setValue('subjectName', value)} 
-                  value={form.watch('subjectName')}
-                  disabled={!selectedClassId || isLoadingSubjects || (subjects && subjects.length === 0)}
-                >
-                  <SelectTrigger id="subjectName">
-                    <SelectValue placeholder={isLoadingSubjects ? "Carregando matérias..." : "Selecione a matéria"} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {subjects?.map(subject => (
-                      <SelectItem key={subject.id} value={subject.name}>{subject.name}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                {form.formState.errors.subjectName && <p className="text-sm text-destructive">{form.formState.errors.subjectName.message}</p>}
-              </div>
+              {renderSelectWithFeedback(
+                "subjectName",
+                "Matéria",
+                subjects,
+                isLoadingSubjects,
+                "Selecione a matéria",
+                (value) => form.setValue('subjectName', value),
+                form.watch('subjectName'),
+                form.formState.errors.subjectName,
+                "Nenhuma matéria cadastrada. Cadastre em Secretaria > Matérias.",
+                false
+              )}
 
               {/* CAMPO 4: Período */}
-              <div className="space-y-2">
-                <Label htmlFor="period">Período</Label>
-                <Select 
-                  onValueChange={(value) => form.setValue('period', value)} 
-                  value={form.watch('period')}
-                  disabled={isLoadingAcademicPeriods || (academicPeriods && academicPeriods.length === 0)}
-                >
-                  <SelectTrigger id="period">
-                    <SelectValue placeholder={isLoadingAcademicPeriods ? "Carregando períodos..." : "Selecione o período"} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {academicPeriods?.map(period => (
-                      <SelectItem key={period.id} value={period.name}>{period.name}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                {form.formState.errors.period && <p className="text-sm text-destructive">{form.formState.errors.period.message}</p>}
-              </div>
+              {renderSelectWithFeedback(
+                "period",
+                "Período",
+                academicPeriods,
+                isLoadingAcademicPeriods,
+                "Selecione o período",
+                (value) => form.setValue('period', value),
+                form.watch('period'),
+                form.formState.errors.period,
+                "Nenhum período acadêmico cadastrado. Cadastre em Secretaria > Matérias.",
+                false
+              )}
 
               {/* CAMPO 5: Tipo de Avaliação */}
-              <div className="space-y-2">
-                <Label htmlFor="assessmentType">Tipo de Avaliação (Opcional)</Label>
-                <Select 
-                  onValueChange={(value) => form.setValue('assessmentType', value === "none" ? null : value)} 
-                  value={form.watch('assessmentType') || 'none'}
-                  disabled={!selectedClassId || isLoadingAssessmentTypes || (assessmentTypes && assessmentTypes.length === 0)}
-                >
-                  <SelectTrigger id="assessmentType">
-                    <SelectValue placeholder={isLoadingAssessmentTypes ? "Carregando tipos..." : "Selecione o tipo"} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="none">Nenhum</SelectItem>
-                    {assessmentTypes?.map(type => (
-                      <SelectItem key={type.id} value={type.name}>{type.name}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                {form.formState.errors.assessmentType && <p className="text-sm text-destructive">{form.formState.errors.assessmentType.message}</p>}
-              </div>
+              {renderSelectWithFeedback(
+                "assessmentType",
+                "Tipo de Avaliação (Opcional)",
+                assessmentTypes,
+                isLoadingAssessmentTypes,
+                "Selecione o tipo",
+                (value) => form.setValue('assessmentType', value === 'none' ? null : value),
+                form.watch('assessmentType'),
+                form.formState.errors.assessmentType,
+                "Nenhum tipo de avaliação cadastrado. Cadastre em Secretaria > Matérias.",
+                true
+              )}
             </div>
 
             <Separator />
@@ -528,7 +556,7 @@ const GradeEntryPage: React.FC = () => {
               </div>
             ) : (
               <p className="text-center py-8 text-muted-foreground">
-                {selectedClassId ? "Nenhum aluno encontrado nesta turma." : "Selecione uma turma para ver os alunos."}
+                {selectedClassId ? "Nenhum aluno ativo encontrado nesta turma." : "Selecione uma turma para ver os alunos."}
               </p>
             )}
             {form.formState.errors.grades && <p className="text-sm text-destructive mt-2">{form.formState.errors.grades.message}</p>}
@@ -536,7 +564,7 @@ const GradeEntryPage: React.FC = () => {
             <Button 
               type="submit" 
               className="w-full mt-6" 
-              disabled={form.formState.isSubmitting || !isFormReady} // Usando a nova variável de controle
+              disabled={form.formState.isSubmitting || !isFormReady}
             >
               {form.formState.isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Salvar Notas
