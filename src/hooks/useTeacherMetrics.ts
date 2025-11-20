@@ -10,28 +10,25 @@ interface TeacherMetrics {
 }
 
 const fetchTeacherMetrics = async (tenantId: string, employeeId: string): Promise<TeacherMetrics> => {
-  // 1. Contar Turmas
-  const { count: totalClasses, error: classesError } = await supabase
+  // 1. Contar Turmas (agora por atribuição única de turma-curso-período)
+  const { data: teacherClassesData, error: teacherClassesError } = await supabase
     .from('teacher_classes')
-    .select('*', { count: 'exact', head: true })
+    .select('class_id, course_id, period') // Select all parts of the composite PK
     .eq('employee_id', employeeId);
 
-  if (classesError) throw new Error(`Erro ao contar turmas: ${classesError.message}`);
+  if (teacherClassesError) throw new Error(`Erro ao buscar atribuições de turmas: ${teacherClassesError.message}`);
 
-  // 2. Contar Alunos nas turmas
-  // Primeiro, buscamos os IDs das turmas
-  const { data: classIdsData, error: fetchIdsError } = await supabase
-    .from('teacher_classes')
-    .select('class_id')
-    .eq('employee_id', employeeId);
+  // Count unique class-course pairs for "totalClasses"
+  const uniqueClassCoursePairs = new Set(
+    teacherClassesData.map(tc => `${tc.class_id}-${tc.course_id}`)
+  );
+  const totalClasses = uniqueClassCoursePairs.size;
 
-  if (fetchIdsError) throw new Error(`Erro ao buscar IDs das turmas: ${fetchIdsError.message}`);
-
-  const classIds = classIdsData.map(d => d.class_id);
+  // 2. Contar Alunos nas turmas atribuídas (alunos únicos por class_id)
+  const classIds = [...new Set(teacherClassesData.map(d => d.class_id))]; // Get unique class_ids
 
   let totalStudents = 0;
   if (classIds.length > 0) {
-    // Contamos os alunos que pertencem a qualquer uma dessas turmas
     const { count: studentsCount, error: studentsError } = await supabase
       .from('students')
       .select('*', { count: 'exact', head: true })
@@ -44,7 +41,7 @@ const fetchTeacherMetrics = async (tenantId: string, employeeId: string): Promis
   }
 
   return {
-    totalClasses: totalClasses ?? 0,
+    totalClasses: totalClasses, // Updated to count unique class-course pairs
     totalStudents: totalStudents,
     pendingGrades: Math.floor(Math.random() * 10) + 1, // Mock: 1 a 10 notas pendentes
   };

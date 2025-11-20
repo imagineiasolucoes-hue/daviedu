@@ -62,7 +62,7 @@ interface AcademicPeriod {
 
 // --- Schemas de Validação ---
 const gradeEntrySchema = z.object({
-  courseId: z.string().optional().nullable(), // Mantido opcional no schema, a obrigatoriedade é tratada no onSubmit
+  courseId: z.string().uuid("Selecione uma Série/Ano.").optional().nullable(), // Mantido opcional no schema, a obrigatoriedade é tratada no onSubmit
   classId: z.string().uuid("Selecione uma turma."),
   subjectName: z.string().min(1, "Selecione uma matéria."),
   assessmentType: z.string().optional().nullable(), 

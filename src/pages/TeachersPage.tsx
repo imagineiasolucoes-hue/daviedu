@@ -22,13 +22,16 @@ interface Teacher {
   // Novos campos
   email: string | null;
   phone: string | null;
-  // Relacionamento com turmas
+  // Relacionamento com turmas, agora incluindo o curso
   teacher_classes: {
+    period: string;
     classes: {
       name: string;
       school_year: number;
     } | null;
-    period: string;
+    courses: { // NOVO: Adicionado para buscar o nome do curso
+      name: string;
+    } | null;
   }[];
 }
 
@@ -48,7 +51,8 @@ const fetchTeachers = async (tenantId: string): Promise<Teacher[]> => {
         classes (
           name,
           school_year
-        )
+        ),
+        courses (name)
       )
     `)
     .eq('tenant_id', tenantId)
@@ -133,7 +137,7 @@ const TeachersPage: React.FC = () => {
                         {teacher.teacher_classes.length > 0 ? (
                           teacher.teacher_classes.map((tc, index) => (
                             <Badge key={index} variant="outline" className="text-xs">
-                              {tc.classes?.name} ({tc.period})
+                              {tc.classes?.name} ({tc.courses?.name}) ({tc.period})
                             </Badge>
                           ))
                         ) : (
