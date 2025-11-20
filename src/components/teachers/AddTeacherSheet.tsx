@@ -412,11 +412,11 @@ const AddTeacherSheet: React.FC = () => {
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="address_city">Cidade (Opcional)</Label>
-                <Input id="address_city" {...form.register("config.address_city")} />
+                <Input id="address_city" {...form.register("address_city")} />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="address_state">Estado (Opcional)</Label>
-                <Input id="address_state" {...form.register("config.address_state")} />
+                <Input id="address_state" {...form.register("address_state")} />
               </div>
             </div>
           </div>
