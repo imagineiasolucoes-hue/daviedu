@@ -21,6 +21,7 @@ export interface Profile {
 }
 
 const fetchProfile = async (userId: string): Promise<Profile | null> => {
+  console.log(`[useProfile] Fetching profile for userId: ${userId}`); // DEBUG
   // 1. Busca o perfil existente, incluindo o employee_id
   const { data: profileData, error: profileError } = await supabase
     .from('profiles')
@@ -29,12 +30,12 @@ const fetchProfile = async (userId: string): Promise<Profile | null> => {
     .maybeSingle();
 
   if (profileError) {
-    console.error("Supabase fetchProfile error:", profileError);
+    console.error("[useProfile] Supabase fetchProfile error:", profileError); // DEBUG
     throw new Error(profileError.message);
   }
   
   if (!profileData) {
-    console.warn(`Profile missing for user ${userId}. Returning null.`);
+    console.warn(`[useProfile] Profile missing for user ${userId}. Returning null.`); // DEBUG
     return null;
   }
 
@@ -55,7 +56,7 @@ const fetchProfile = async (userId: string): Promise<Profile | null> => {
 
   // 3. Se o perfil é de um professor/admin e o employee_id está faltando, tenta preencher
   if ((profile.role === 'teacher' || profile.role === 'admin') && !profile.employee_id) {
-    console.log(`Attempting to link employee_id for user ${userId} with role ${profile.role}`);
+    console.log(`[useProfile] Attempting to link employee_id for user ${userId} with role ${profile.role}`); // DEBUG
     const { data: employeeData, error: employeeError } = await supabase
       .from('employees')
       .select('id')
@@ -64,9 +65,9 @@ const fetchProfile = async (userId: string): Promise<Profile | null> => {
       .maybeSingle();
 
     if (employeeError) {
-      console.error("Error finding employee for profile linking:", employeeError);
+      console.error("[useProfile] Error finding employee for profile linking:", employeeError); // DEBUG
     } else if (employeeData) {
-      console.log(`Found employee_id ${employeeData.id} for user ${userId}. Updating profile.`);
+      console.log(`[useProfile] Found employee_id ${employeeData.id} for user ${userId}. Updating profile.`); // DEBUG
       // Atualiza o perfil no banco de dados
       const { error: updateError } = await supabase
         .from('profiles')
@@ -74,16 +75,17 @@ const fetchProfile = async (userId: string): Promise<Profile | null> => {
         .eq('id', userId);
 
       if (updateError) {
-        console.error("Error updating profile with employee_id:", updateError);
+        console.error("[useProfile] Error updating profile with employee_id:", updateError); // DEBUG
       } else {
         // Atualiza o objeto profile em memória para a sessão atual
         profile = { ...profile, employee_id: employeeData.id };
       }
     } else {
-      console.warn(`No employee record found for user ${userId} with role ${profile.role}.`);
+      console.warn(`[useProfile] No employee record found for user ${userId} with role ${profile.role}.`); // DEBUG
     }
   }
   
+  console.log(`[useProfile] Final profile for ${userId}:`, profile); // DEBUG
   return profile;
 };
 
