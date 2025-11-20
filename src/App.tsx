@@ -6,7 +6,7 @@ import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
-import UserSignup from "./pages/UserSignup"; // NOVO IMPORT
+import UserSignup from "./pages/UserSignup";
 import PreEnrollment from "./pages/PreEnrollment";
 import PreEnrollmentInfoPage from "./pages/PreEnrollmentInfoPage";
 import { SessionContextProvider } from "./components/auth/SessionContextProvider";
@@ -34,6 +34,7 @@ import FAQPage from "./pages/FAQPage";
 import TeacherDashboard from "./pages/teacher/TeacherDashboard";
 import GradeEntryPage from "./pages/teacher/GradeEntryPage";
 import ClassDiaryPage from "./pages/teacher/ClassDiaryPage";
+import MyClassesPage from "./pages/teacher/MyClassesPage"; // NOVO IMPORT
 import ReportCard from "./components/documents/templates/ReportCard";
 import StudentTranscript from "./components/documents/templates/StudentTranscript";
 import MonthlyFeeCollection from "./components/documents/templates/MonthlyFeeCollection";
@@ -67,7 +68,7 @@ const App = () => {
               <Route path="/" element={<Index />} />
               <Route path="/login" element={<Login />} />
               <Route path="/register" element={<Register />} />
-              <Route path="/user-signup" element={<UserSignup />} /> {/* NOVA ROTA */}
+              <Route path="/user-signup" element={<UserSignup />} />
               <Route path="/pre-matricula" element={<PreEnrollmentInfoPage />} />
               <Route path="/pre-matricula/:tenantId" element={<PreEnrollment />} />
               <Route path="/faq" element={<FAQPage />} />
@@ -107,6 +108,7 @@ const App = () => {
                     <Route path="/teacher/dashboard" element={<TeacherDashboard />} />
                     <Route path="/teacher/grade-entry" element={<GradeEntryPage />} />
                     <Route path="/teacher/class-diary" element={<ClassDiaryPage />} />
+                    <Route path="/teacher/my-classes" element={<MyClassesPage />} /> {/* NOVA ROTA */}
                   </Route>
                 </Route>
 

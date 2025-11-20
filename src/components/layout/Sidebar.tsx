@@ -112,8 +112,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isSuperAdmin, displayName, roleDispla
     { to: "/teacher/dashboard", icon: <LayoutDashboard className="h-5 w-5" />, label: "Meu Painel", onCloseSheet },
     { to: "/teacher/grade-entry", icon: <GraduationCap className="h-5 w-5" />, label: "Lançar Notas", onCloseSheet },
     { to: "/teacher/class-diary", icon: <BookOpen className="h-5 w-5" />, label: "Diário de Classe", onCloseSheet },
-    // Removido: { to: "/classes/subjects", icon: <BookMarked className="h-5 w-5" />, label: "Matérias", onCloseSheet },
-    // Removido: { to: "/settings", icon: <Settings className="h-5 w-5" />, label: "Configurações", onCloseSheet },
+    { to: "/teacher/my-classes", icon: <School className="h-5 w-5" />, label: "Minhas Turmas", onCloseSheet }, // NOVO ITEM
     { to: "/faq", icon: <HelpCircle className="h-5 w-5" />, label: "Ajuda (FAQ)", variant: 'accent', onCloseSheet },
   ];
 

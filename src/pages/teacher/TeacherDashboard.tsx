@@ -140,7 +140,7 @@ const TeacherDashboard: React.FC = () => {
                   Visualize a lista de todas as turmas que você leciona.
                 </CardDescription>
                 <Button asChild variant="outline" className="w-full">
-                  <Link to="/teachers">
+                  <Link to="/teacher/my-classes"> {/* Rota corrigida */}
                     <Users className="mr-2 h-4 w-4" />
                     Ver Turmas
                   </Link>
