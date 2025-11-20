@@ -198,6 +198,8 @@ const AddTeacherSheet: React.FC = () => {
         period: c.period,
     }));
 
+    console.log("AddTeacherSheet: Classes to teach payload:", classesPayload); // Log de depuração
+
     try {
       const payload = { 
         ...data, 

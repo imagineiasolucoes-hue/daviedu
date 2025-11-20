@@ -14,7 +14,7 @@ interface Class {
   name: string;
   school_year: number;
   period: string;
-  room: string | null; // Adicionado: A propriedade 'room' estava faltando na interface
+  room: string | null; 
   // Relação N:M para cursos
   class_courses: {
     courses: { name: string } | null;
@@ -30,7 +30,7 @@ interface TeacherClassLink {
 }
 
 const fetchMyClasses = async (employeeId: string): Promise<Class[]> => {
-  console.log("Fetching classes for employeeId:", employeeId); // Log de depuração
+  console.log("MyClassesPage: Fetching classes for employeeId:", employeeId); // Log de depuração
   const { data, error } = await supabase
     .from('teacher_classes')
     .select(`
@@ -52,7 +52,7 @@ const fetchMyClasses = async (employeeId: string): Promise<Class[]> => {
   if (error) throw new Error(error.message);
   
   const rawData: TeacherClassLink[] = data as unknown as TeacherClassLink[];
-  console.log("Raw teacher_classes data:", rawData); // Log de depuração
+  console.log("MyClassesPage: Raw teacher_classes data:", rawData); // Log de depuração
   
   // Mapeia para retornar apenas os objetos Class, adicionando o período de ensino
   const classes = rawData
@@ -68,7 +68,7 @@ const fetchMyClasses = async (employeeId: string): Promise<Class[]> => {
     })
     .filter(Boolean) as Class[];
 
-  console.log("Processed classes for display:", classes); // Log de depuração
+  console.log("MyClassesPage: Processed classes for display:", classes); // Log de depuração
   return classes;
 };
 

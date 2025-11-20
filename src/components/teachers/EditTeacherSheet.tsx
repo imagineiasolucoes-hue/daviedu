@@ -279,6 +279,8 @@ const EditTeacherSheet: React.FC<EditTeacherSheetProps> = ({ teacherId, open, on
         period: c.period,
       }));
 
+      console.log("EditTeacherSheet: Classes to teach payload:", classesPayload); // Log de depuração
+
       const payload = {
         ...data,
         employee_id: teacherId,
