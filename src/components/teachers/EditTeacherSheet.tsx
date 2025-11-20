@@ -455,11 +455,9 @@ const EditTeacherSheet: React.FC<EditTeacherSheetProps> = ({ teacherId, open, on
                   <Label htmlFor="address_street">Rua (Opcional)</Label>
                   <Input id="address_street" {...form.register("address_street")} />
                 </div>
-              </div>
-              <div className="grid grid-cols-3 gap-4">
                 <div className="space-y-2 col-span-1">
                   <Label htmlFor="address_number">Número (Opcional)</Label>
-                  <Input id="address_number" {...form.register("config.address_number")} />
+                  <Input id="address_number" {...form.register("address_number")} />
                 </div>
                 <div className="space-y-2 col-span-2">
                   <Label htmlFor="address_neighborhood">Bairro (Opcional)</Label>
