@@ -62,7 +62,7 @@ interface AcademicPeriod {
 
 // --- Schemas de Validação ---
 const gradeEntrySchema = z.object({
-  courseId: z.string().uuid("Selecione uma série/ano.").optional().nullable(), // Agora é obrigatório se a turma tiver cursos
+  courseId: z.string().optional().nullable(), // Mantido opcional no schema, a obrigatoriedade é tratada no onSubmit
   classId: z.string().uuid("Selecione uma turma."),
   subjectName: z.string().min(1, "Selecione uma matéria."),
   assessmentType: z.string().optional().nullable(), 
@@ -174,7 +174,7 @@ const GradeEntryPage: React.FC = () => {
   const form = useForm<GradeEntryFormData>({
     resolver: zodResolver(gradeEntrySchema),
     defaultValues: {
-      courseId: undefined, // Deve ser undefined/null inicialmente
+      courseId: null, // Usar null para consistência com o Select
       classId: '',
       subjectName: '',
       assessmentType: null, 
@@ -185,6 +185,8 @@ const GradeEntryPage: React.FC = () => {
 
   const selectedClassId = form.watch('classId');
   const selectedCourseId = form.watch('courseId');
+  const selectedSubjectName = form.watch('subjectName');
+  const selectedPeriod = form.watch('period');
 
   const { data: allClassesForEntry, isLoading: isLoadingClassesForEntry } = useQuery<Class[], Error>({
     queryKey: ['classesForGradeEntry', tenantId, teacherEmployeeId, isTeacher, isAdmin],
@@ -231,11 +233,11 @@ const GradeEntryPage: React.FC = () => {
       .filter(c => c.id);
   }, [selectedClass]);
 
-  // Efeito para resetar o courseId se a turma mudar ou se o curso selecionado não estiver mais disponível
+  // Efeito para resetar o courseId se a turma mudar
   useEffect(() => {
     if (selectedClassId) {
       // Se a turma mudar, resetamos o curso
-      form.setValue('courseId', undefined, { shouldValidate: true });
+      form.setValue('courseId', null, { shouldValidate: true });
     }
   }, [selectedClassId, form]);
 
@@ -316,6 +318,10 @@ const GradeEntryPage: React.FC = () => {
 
   const isLoading = isProfileLoading || isLoadingClassesForEntry || isLoadingStudents || isLoadingSubjects || isLoadingAssessmentTypes || isLoadingAcademicPeriods;
 
+  // Variável de controle para o botão de submissão
+  const isFormReady = !!selectedClassId && !!selectedSubjectName && !!selectedPeriod && 
+                      (availableCoursesInClass.length === 0 || !!selectedCourseId);
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-full min-h-[50vh]">
@@ -394,7 +400,7 @@ const GradeEntryPage: React.FC = () => {
               <div className="space-y-2">
                 <Label htmlFor="courseId">Série / Ano</Label>
                 <Select 
-                  onValueChange={(value) => form.setValue('courseId', value)} 
+                  onValueChange={(value) => form.setValue('courseId', value === 'none' ? null : value)} 
                   value={form.watch('courseId') || 'none'}
                   disabled={!selectedClassId || availableCoursesInClass.length === 0}
                 >
@@ -530,7 +536,7 @@ const GradeEntryPage: React.FC = () => {
             <Button 
               type="submit" 
               className="w-full mt-6" 
-              disabled={form.formState.isSubmitting || !selectedClassId || !form.watch('subjectName') || !form.watch('period') || (availableCoursesInClass.length > 0 && !selectedCourseId)}
+              disabled={form.formState.isSubmitting || !isFormReady} // Usando a nova variável de controle
             >
               {form.formState.isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Salvar Notas
