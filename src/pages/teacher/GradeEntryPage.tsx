@@ -172,6 +172,17 @@ const GradeEntryPage: React.FC = () => {
   const tenantId = profile?.tenant_id;
   const teacherEmployeeId = profile?.employee_id; // Usar o employee_id do perfil
 
+  // LOG DE DEBUG
+  useEffect(() => {
+    if (!isProfileLoading) {
+      console.log("GradeEntryPage Debug: isTeacher:", isTeacher, "isAdmin:", isAdmin, "employeeId:", teacherEmployeeId);
+      if (!teacherEmployeeId && (isTeacher || isAdmin)) {
+        toast.warning("Atenção", { description: "Seu perfil de professor/admin não está vinculado a um registro de funcionário (employee_id). O lançamento de notas pode falhar." });
+      }
+    }
+  }, [isProfileLoading, isTeacher, isAdmin, teacherEmployeeId]);
+  // FIM LOG DE DEBUG
+
   const form = useForm<GradeEntryFormData>({
     resolver: zodResolver(gradeEntrySchema),
     defaultValues: {
