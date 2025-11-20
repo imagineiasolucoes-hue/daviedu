@@ -6,6 +6,7 @@ import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
+import UserSignup from "./pages/UserSignup"; // NOVO IMPORT
 import PreEnrollment from "./pages/PreEnrollment";
 import PreEnrollmentInfoPage from "./pages/PreEnrollmentInfoPage";
 import { SessionContextProvider } from "./components/auth/SessionContextProvider";
@@ -38,7 +39,7 @@ import StudentTranscript from "./components/documents/templates/StudentTranscrip
 import MonthlyFeeCollection from "./components/documents/templates/MonthlyFeeCollection";
 import SecretariaPage from "./pages/SecretariaPage";
 import VerifyDocumentPage from "./pages/VerifyDocumentPage";
-import StudentPage from "./pages/StudentPage"; // NOVO IMPORT
+import StudentPage from "./pages/StudentPage";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -66,6 +67,7 @@ const App = () => {
               <Route path="/" element={<Index />} />
               <Route path="/login" element={<Login />} />
               <Route path="/register" element={<Register />} />
+              <Route path="/user-signup" element={<UserSignup />} /> {/* NOVA ROTA */}
               <Route path="/pre-matricula" element={<PreEnrollmentInfoPage />} />
               <Route path="/pre-matricula/:tenantId" element={<PreEnrollment />} />
               <Route path="/faq" element={<FAQPage />} />

@@ -61,6 +61,12 @@ const Login = () => {
             }}
           />
           <div className="mt-4 text-center text-sm text-muted-foreground">
+            É aluno ou professor?{' '}
+            <Link to="/user-signup" className="text-primary hover:underline font-semibold">
+              Cadastre-se aqui
+            </Link>
+          </div>
+          <div className="mt-2 text-center text-sm text-muted-foreground">
             Não tem uma escola cadastrada?{' '}
             <Link to="/register" className="text-accent hover:underline">
               Cadastre-se aqui
