@@ -78,6 +78,8 @@ type GradeEntryFormData = z.infer<typeof gradeEntrySchema>;
 // --- Funções de Busca de Dados ---
 
 const fetchClassesForGradeEntry = async (tenantId: string, employeeId: string | undefined, isTeacher: boolean, isAdmin: boolean): Promise<Class[]> => {
+  console.log("fetchClassesForGradeEntry: tenantId:", tenantId, "employeeId:", employeeId, "isTeacher:", isTeacher, "isAdmin:", isAdmin);
+
   if (isAdmin) {
     // Admin vê todas as turmas e seus cursos associados
     const { data, error } = await supabase
@@ -93,7 +95,11 @@ const fetchClassesForGradeEntry = async (tenantId: string, employeeId: string | 
       `)
       .eq('tenant_id', tenantId)
       .order('name');
-    if (error) throw new Error(error.message);
+    if (error) {
+      console.error("fetchClassesForGradeEntry (Admin) Error:", error);
+      throw new Error(error.message);
+    }
+    console.log("fetchClassesForGradeEntry (Admin) Data:", data);
     return data as unknown as Class[];
   } else if (isTeacher && employeeId) {
     // Professor vê apenas as turmas atribuídas e seus cursos associados
@@ -114,13 +120,18 @@ const fetchClassesForGradeEntry = async (tenantId: string, employeeId: string | 
       `)
       .eq('employee_id', employeeId);
 
-    if (error) throw new Error(error.message);
+    if (error) {
+      console.error("fetchClassesForGradeEntry (Teacher) Error:", error);
+      throw new Error(error.message);
+    }
     
     const rawTeacherClasses: SupabaseTeacherClassRawItem[] = data as unknown as SupabaseTeacherClassRawItem[];
+    console.log("fetchClassesForGradeEntry (Teacher) Raw Data:", rawTeacherClasses);
 
     // Mapeia para retornar apenas os objetos Class
     return rawTeacherClasses.map(tc => tc.classes).filter(Boolean) as Class[];
   }
+  console.log("fetchClassesForGradeEntry: No classes returned (neither Admin nor Teacher conditions met).");
   return [];
 };
 
@@ -175,12 +186,13 @@ const GradeEntryPage: React.FC = () => {
   // LOG DE DEBUG
   useEffect(() => {
     if (!isProfileLoading) {
+      console.log("GradeEntryPage Debug: Profile:", profile);
       console.log("GradeEntryPage Debug: isTeacher:", isTeacher, "isAdmin:", isAdmin, "employeeId:", teacherEmployeeId);
       if (!teacherEmployeeId && (isTeacher || isAdmin)) {
         toast.warning("Atenção", { description: "Seu perfil de professor/admin não está vinculado a um registro de funcionário (employee_id). O lançamento de notas pode falhar." });
       }
     }
-  }, [isProfileLoading, isTeacher, isAdmin, teacherEmployeeId]);
+  }, [isProfileLoading, isTeacher, isAdmin, teacherEmployeeId, profile]);
   // FIM LOG DE DEBUG
 
   const form = useForm<GradeEntryFormData>({
@@ -200,11 +212,22 @@ const GradeEntryPage: React.FC = () => {
   const selectedSubjectName = form.watch('subjectName');
   const selectedPeriod = form.watch('period');
 
-  const { data: allClassesForEntry, isLoading: isLoadingClassesForEntry } = useQuery<Class[], Error>({
+  const { data: allClassesForEntry, isLoading: isLoadingClassesForEntry, error: classesForEntryError } = useQuery<Class[], Error>({
     queryKey: ['classesForGradeEntry', tenantId, teacherEmployeeId, isTeacher, isAdmin],
     queryFn: () => fetchClassesForGradeEntry(tenantId!, teacherEmployeeId, isTeacher, isAdmin),
     enabled: !!tenantId && (isTeacher || isAdmin),
   });
+  
+  useEffect(() => {
+    if (classesForEntryError) {
+      console.error("useQuery classesForGradeEntry Error:", classesForEntryError);
+      toast.error("Erro ao carregar turmas", { description: classesForEntryError.message });
+    }
+    if (!isLoadingClassesForEntry) {
+      console.log("allClassesForEntry data:", allClassesForEntry);
+    }
+  }, [classesForEntryError, isLoadingClassesForEntry, allClassesForEntry]);
+
 
   const { data: students, isLoading: isLoadingStudents } = useQuery<Student[], Error>({
     queryKey: ['studentsInClass', selectedClassId, tenantId],
@@ -237,12 +260,14 @@ const GradeEntryPage: React.FC = () => {
 
   const availableCoursesInClass = useMemo(() => {
     if (!selectedClass) return [];
-    return selectedClass.class_courses
+    const courses = selectedClass.class_courses
       .map(cc => ({
         id: cc.course_id,
         name: cc.courses?.name || 'Curso Desconhecido',
       }))
       .filter(c => c.id);
+    console.log("availableCoursesInClass for selectedClass:", selectedClass?.name, courses);
+    return courses;
   }, [selectedClass]);
 
   // Efeito para resetar o courseId se a turma mudar
