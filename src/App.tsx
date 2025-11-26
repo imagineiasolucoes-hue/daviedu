@@ -38,7 +38,7 @@ import MyClassesPage from "./pages/teacher/MyClassesPage";
 import ReportCard from "./components/documents/templates/ReportCard";
 import StudentTranscript from "./components/documents/templates/StudentTranscript";
 import MonthlyFeeCollection from "./components/documents/templates/MonthlyFeeCollection";
-import StudentContract from "./components/documents/templates/StudentContract"; // NOVO IMPORT
+import StudentContract from "./components/documents/templates/StudentContract.tsx"; // NOVO IMPORT
 import SecretariaPage from "./pages/SecretariaPage";
 import VerifyDocumentPage from "./pages/VerifyDocumentPage";
 import StudentPage from "./pages/StudentPage";
