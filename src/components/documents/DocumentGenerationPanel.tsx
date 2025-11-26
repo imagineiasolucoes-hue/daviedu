@@ -17,7 +17,7 @@ interface Student {
 }
 
 // Tipos de documentos dinâmicos que podemos gerar
-type DynamicDocumentType = 'transcript' | 'report_card' | 'monthly_fee_collection';
+type DynamicDocumentType = 'transcript' | 'report_card' | 'monthly_fee_collection' | 'contract'; // Adicionado 'contract'
 
 const fetchStudents = async (tenantId: string): Promise<Student[]> => {
   const { data, error } = await supabase
@@ -76,6 +76,7 @@ const DocumentGenerationPanel: React.FC = () => {
                 <SelectValue placeholder="Selecione o documento" />
               </SelectTrigger>
               <SelectContent>
+                <SelectItem value="contract">Contrato de Matrícula</SelectItem> {/* NOVO ITEM */}
                 <SelectItem value="transcript">Histórico Escolar</SelectItem>
                 <SelectItem value="report_card">Boletim Escolar</SelectItem>
                 <SelectItem value="monthly_fee_collection">Cobrança de Mensalidade</SelectItem>
