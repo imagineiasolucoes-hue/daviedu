@@ -1,22 +1,23 @@
 import React from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Separator } from '@/components/ui/separator';
-import { User, School, Lock, Loader2 } from 'lucide-react';
+import { User, School, Lock, FileText, Loader2 } from 'lucide-react'; // Adicionado FileText
 import SchoolSettingsForm from '@/components/settings/SchoolSettingsForm';
 import ProfileSettingsForm from '@/components/settings/ProfileSettingsForm';
 import SecuritySettingsForm from '@/components/settings/SecuritySettingsForm';
+import ContractTemplateForm from '@/components/settings/ContractTemplateForm'; // NOVO IMPORT
 import { useProfile } from '@/hooks/useProfile';
 import { Navigate } from 'react-router-dom';
 
 const SettingsPage: React.FC = () => {
-  const { profile, isLoading, isAdmin, isSuperAdmin } = useProfile();
+  const { profile, isLoading, isAdmin, isSuperAdmin, isSecretary } = useProfile(); // Adicionado isSecretary
 
   if (isLoading) {
     return <div className="flex justify-center items-center h-64"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>;
   }
 
-  // Apenas Admin e Super Admin podem acessar as configurações da escola
-  if (!isAdmin && !isSuperAdmin) {
+  // Apenas Admin, Super Admin e Secretary podem acessar as configurações da escola e contratos
+  if (!isAdmin && !isSuperAdmin && !isSecretary) {
     return <Navigate to="/dashboard" replace />;
   }
 
@@ -26,7 +27,7 @@ const SettingsPage: React.FC = () => {
       <Separator />
 
       <Tabs defaultValue="profile" className="w-full">
-        <TabsList className="grid w-full grid-cols-3 md:w-auto md:flex">
+        <TabsList className="grid w-full grid-cols-4 md:w-auto md:flex"> {/* Aumentado para 4 colunas */}
           <TabsTrigger value="profile">
             <User className="h-4 w-4 mr-2" />
             Perfil
@@ -34,6 +35,10 @@ const SettingsPage: React.FC = () => {
           <TabsTrigger value="school">
             <School className="h-4 w-4 mr-2" />
             Escola
+          </TabsTrigger>
+          <TabsTrigger value="contracts"> {/* NOVA ABA */}
+            <FileText className="h-4 w-4 mr-2" />
+            Contratos
           </TabsTrigger>
           <TabsTrigger value="security">
             <Lock className="h-4 w-4 mr-2" />
@@ -46,6 +51,9 @@ const SettingsPage: React.FC = () => {
         </TabsContent>
         <TabsContent value="school">
           <SchoolSettingsForm />
+        </TabsContent>
+        <TabsContent value="contracts"> {/* NOVO CONTEÚDO DA ABA */}
+          <ContractTemplateForm />
         </TabsContent>
         <TabsContent value="security">
           <SecuritySettingsForm />
