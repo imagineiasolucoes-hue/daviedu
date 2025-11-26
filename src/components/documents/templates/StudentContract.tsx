@@ -9,12 +9,21 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { useProfile } from '@/hooks/useProfile';
-import { useAuth } from '@/components/auth/SessionContextProvider'; // Importar useAuth
+import { useAuth } from '@/components/auth/SessionContextProvider';
 import { formatCurrency } from '@/lib/utils';
 import { toast } from 'sonner';
 import { QRCodeSVG } from 'qrcode.react';
 
 // --- Tipos de Dados ---
+interface GuardianDetails { // New interface for guardian details
+  id: string;
+  full_name: string;
+  relationship: string;
+  phone: string | null;
+  email: string | null;
+  cpf: string | null;
+}
+
 interface StudentDetails {
   id: string;
   full_name: string;
@@ -24,16 +33,10 @@ interface StudentDetails {
   class_id: string | null;
   course_id: string | null;
   created_at: string;
-  user_id: string | null; // Adicionado user_id
+  user_id: string | null;
   classes: { name: string; school_year: number } | null;
   courses: { name: string } | null;
-  guardians: {
-    full_name: string;
-    relationship: string;
-    phone: string | null;
-    email: string | null;
-    cpf: string | null;
-  }[];
+  guardians: GuardianDetails[]; // Use the new interface
 }
 
 interface TenantConfig {
@@ -65,6 +68,11 @@ interface DocumentDetails {
   id: string;
   status: 'pending' | 'signed';
   signed_at: string | null;
+  signed_by_guardian_id: string | null; // Added to fetch
+  guardians?: { // Nested guardian details if signed_by_guardian_id is present
+    full_name: string;
+    cpf: string | null;
+  } | null;
 }
 
 // --- Funções de Busca ---
@@ -88,6 +96,7 @@ const fetchStudentData = async (studentId: string): Promise<StudentDetails> => {
       courses (name),
       student_guardians (
         guardians (
+          id,  // Fetch guardian ID
           full_name,
           relationship,
           phone,
@@ -131,19 +140,25 @@ const fetchActiveTemplate = async (tenantId: string): Promise<ContractTemplate |
 const fetchDocumentStatus = async (studentId: string): Promise<DocumentDetails | null> => {
     const { data, error } = await supabase
         .from('documents')
-        .select('id, status, signed_at')
+        .select(`
+          id, 
+          status, 
+          signed_at, 
+          signed_by_guardian_id,
+          guardians (full_name, cpf)
+        `) // Added signed_by_guardian_id and nested guardian details
         .eq('related_entity_id', studentId)
         .eq('document_type', 'contract')
         .maybeSingle();
     
     if (error) throw new Error(error.message);
-    return data as DocumentDetails;
+    return data as unknown as DocumentDetails; // Cast to include nested guardian
 };
 
 const StudentContract: React.FC = () => {
   const { entityId: studentId } = useParams<{ entityId: string }>();
-  const { profile, isStudent } = useProfile();
-  const { user } = useAuth(); // Obtendo 'user' de useAuth
+  const { profile, isAdmin, isSecretary } = useProfile(); // Get isAdmin and isSecretary
+  const { user } = useAuth();
   const tenantId = profile?.tenant_id;
   const printRef = useRef<HTMLDivElement>(null);
   const queryClient = useQueryClient();
@@ -194,11 +209,16 @@ const StudentContract: React.FC = () => {
   });
 
   const signContractMutation = useMutation({
-    mutationFn: async (documentId: string) => {
+    mutationFn: async (payload: { document_id: string, guardian_id: string }) => { // Expect guardian_id
       if (!tenantId || !studentId) throw new Error("Dados ausentes.");
       
       const { error } = await supabase.functions.invoke('sign-contract', {
-        body: JSON.stringify({ document_id: documentId, tenant_id: tenantId, student_id: studentId }),
+        body: JSON.stringify({ 
+          document_id: payload.document_id, 
+          tenant_id: tenantId, 
+          student_id: studentId,
+          guardian_id: payload.guardian_id, // Pass guardian_id
+        }),
       });
       if (error) throw new Error(error.message);
     },
@@ -245,11 +265,16 @@ const StudentContract: React.FC = () => {
   };
 
   const handleSignContract = () => {
+    const primaryGuardian = student?.guardians.find(g => g.relationship === 'Pai' || g.relationship === 'Mãe' || g.relationship === 'Tutor') || student?.guardians[0];
+    
+    if (!primaryGuardian?.id) {
+        toast.error("Erro", { description: "Nenhum responsável principal encontrado para assinar o contrato." });
+        return;
+    }
+
     if (documentStatus?.id) {
-        signContractMutation.mutate(documentStatus.id);
+        signContractMutation.mutate({ document_id: documentStatus.id, guardian_id: primaryGuardian.id });
     } else {
-        // Se o documento não existe, criamos um registro antes de assinar (simulando a geração)
-        // Nota: Em um sistema real, a geração do documento (e seu ID) ocorreria antes da assinatura.
         toast.error("Erro", { description: "O registro do contrato não foi encontrado. Tente gerar o link de verificação primeiro." });
     }
   };
@@ -334,7 +359,12 @@ const StudentContract: React.FC = () => {
   }
 
   const isSigned = documentStatus?.status === 'signed';
-  const isStudentUser = isStudent && student?.user_id === user?.id; // Apenas o aluno logado pode assinar
+  // O botão agora é visível para administradores/secretários, não para alunos
+  const canSign = (isAdmin || isSecretary) && !isSigned; 
+
+  const primaryGuardian = student?.guardians.find(g => g.relationship === 'Pai' || g.relationship === 'Mãe' || g.relationship === 'Tutor') || student?.guardians[0];
+  const signedGuardianName = documentStatus?.guardians?.full_name || primaryGuardian?.full_name || 'N/A';
+  const signedGuardianCpf = documentStatus?.guardians?.cpf || primaryGuardian?.cpf || 'N/A';
 
   return (
     <React.Fragment>
@@ -416,8 +446,9 @@ const StudentContract: React.FC = () => {
             <div className="grid grid-cols-2 gap-12 w-full max-w-lg text-center text-sm">
                 <div className="space-y-2">
                     <Separator className="bg-foreground" />
-                    <p className="font-semibold">{student?.full_name}</p>
-                    <p className="text-xs text-muted-foreground">Aluno(a)</p>
+                    <p className="font-semibold">{signedGuardianName}</p> {/* Display guardian name */}
+                    <p className="text-xs text-muted-foreground">Responsável Legal</p> {/* Changed label */}
+                    {signedGuardianCpf && <p className="text-xs text-muted-foreground">CPF: {signedGuardianCpf}</p>}
                 </div>
                 <div className="space-y-2">
                     <Separator className="bg-foreground" />
@@ -426,8 +457,8 @@ const StudentContract: React.FC = () => {
                 </div>
             </div>
 
-            {/* Botão de Assinatura Digital (Visível apenas para o aluno logado e se não estiver assinado) */}
-            {!isSigned && isStudentUser && (
+            {/* Botão de Assinatura Digital (Visível apenas para Admin/Secretary e se não estiver assinado) */}
+            {canSign && (
                 <Button 
                     onClick={handleSignContract} 
                     disabled={signContractMutation.isPending}
@@ -438,7 +469,7 @@ const StudentContract: React.FC = () => {
                     ) : (
                         <Signature className="mr-2 h-4 w-4" />
                     )}
-                    Assinar Digitalmente
+                    Assinar Digitalmente (Pelo Responsável)
                 </Button>
             )}
         </div>

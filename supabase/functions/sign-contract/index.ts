@@ -20,10 +20,10 @@ serve(async (req) => {
   }
 
   try {
-    const { document_id, tenant_id, student_id } = await req.json();
+    const { document_id, tenant_id, student_id, guardian_id } = await req.json(); // Added guardian_id
 
-    if (!document_id || !tenant_id || !student_id) {
-      throw new Error("ID do documento, ID da escola e ID do aluno são obrigatórios.");
+    if (!document_id || !tenant_id || !student_id || !guardian_id) { // guardian_id is now required
+      throw new Error("ID do documento, ID da escola, ID do aluno e ID do responsável são obrigatórios.");
     }
 
     const supabaseAdmin = createClient(
@@ -51,17 +51,29 @@ serve(async (req) => {
     }
     const userId = userAuth.user.id;
 
-    // Verify that the user signing is the student related to the document
-    const { data: studentProfile, error: studentProfileError } = await supabaseAdmin
-      .from('students')
-      .select('id, user_id')
-      .eq('id', student_id)
-      .eq('tenant_id', tenant_id)
+    // Verify the role of the logged-in user
+    const { data: userProfile, error: profileError } = await supabaseAdmin
+      .from('profiles')
+      .select('role')
+      .eq('id', userId)
       .single();
 
-    if (studentProfileError || !studentProfile || studentProfile.user_id !== userId) {
-      console.error("Student Profile Error or Mismatch:", studentProfileError?.message, "Student ID:", student_id, "User ID:", userId);
-      throw new Error("Apenas o aluno relacionado pode assinar este contrato.");
+    if (profileError || !userProfile || !['admin', 'secretary'].includes(userProfile.role)) {
+      console.error("Permission Error: User role not allowed to sign contracts.", userProfile?.role);
+      throw new Error("Apenas administradores ou secretários podem assinar contratos em nome dos responsáveis.");
+    }
+
+    // Verify that the guardian_id is actually linked to the student and tenant
+    const { data: guardianLink, error: guardianLinkError } = await supabaseAdmin
+      .from('student_guardians')
+      .select('id')
+      .eq('student_id', student_id)
+      .eq('guardian_id', guardian_id)
+      .single();
+
+    if (guardianLinkError || !guardianLink) {
+      console.error("Guardian Link Error:", guardianLinkError?.message);
+      throw new Error("O responsável selecionado não está vinculado a este aluno.");
     }
 
     // Update the document status
@@ -70,7 +82,8 @@ serve(async (req) => {
       .update({ 
         status: 'signed',
         signed_at: new Date().toISOString(),
-        signed_by_profile_id: userId,
+        signed_by_profile_id: userId, // The admin/secretary who performed the action
+        signed_by_guardian_id: guardian_id, // The guardian on whose behalf it was signed
       })
       .eq('id', document_id)
       .eq('tenant_id', tenant_id) // Security check
