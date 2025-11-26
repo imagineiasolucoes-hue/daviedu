@@ -96,7 +96,7 @@ const fetchStudentData = async (studentId: string): Promise<StudentDetails> => {
       courses (name),
       student_guardians (
         guardians (
-          id,  // Fetch guardian ID
+          id,
           full_name,
           relationship,
           phone,
