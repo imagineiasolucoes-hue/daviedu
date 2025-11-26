@@ -9,6 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { useProfile } from '@/hooks/useProfile';
+import { useAuth } from '@/components/auth/SessionContextProvider'; // Importar useAuth
 import { formatCurrency } from '@/lib/utils';
 import { toast } from 'sonner';
 import { QRCodeSVG } from 'qrcode.react';
@@ -23,6 +24,7 @@ interface StudentDetails {
   class_id: string | null;
   course_id: string | null;
   created_at: string;
+  user_id: string | null; // Adicionado user_id
   classes: { name: string; school_year: number } | null;
   courses: { name: string } | null;
   guardians: {
@@ -78,6 +80,7 @@ const fetchStudentData = async (studentId: string): Promise<StudentDetails> => {
       class_id,
       course_id,
       created_at, 
+      user_id,  // Adicionado user_id aqui
       classes (
         name, 
         school_year
@@ -139,7 +142,8 @@ const fetchDocumentStatus = async (studentId: string): Promise<DocumentDetails |
 
 const StudentContract: React.FC = () => {
   const { entityId: studentId } = useParams<{ entityId: string }>();
-  const { profile, user, isStudent } = useProfile();
+  const { profile, isStudent } = useProfile();
+  const { user } = useAuth(); // Obtendo 'user' de useAuth
   const tenantId = profile?.tenant_id;
   const printRef = useRef<HTMLDivElement>(null);
   const queryClient = useQueryClient();
@@ -319,7 +323,7 @@ const StudentContract: React.FC = () => {
     return (
         <div className="p-8 text-center">
             <h1 className="text-2xl text-destructive">Template de Contrato Ausente</h1>
-            <p className="text-muted-foreground">O administrador da escola precisa configurar um template de contrato ativo em Configurações > Contratos.</p>
+            <p className="text-muted-foreground">O administrador da escola precisa configurar um template de contrato ativo em Configurações &gt; Contratos.</p>
             <Button asChild variant="link" className="mt-4 print-hidden">
                 <Link to="/documents">
                     <ArrowLeft className="mr-2 h-4 w-4" /> Voltar
