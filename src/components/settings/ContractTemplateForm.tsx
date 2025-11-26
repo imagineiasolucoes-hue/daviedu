@@ -8,6 +8,7 @@ import { useProfile } from '@/hooks/useProfile';
 import { toast } from 'sonner';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input'; // Ensure this import is present
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Loader2, FileText, Save, Info } from 'lucide-react';
