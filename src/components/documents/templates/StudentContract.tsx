@@ -15,7 +15,7 @@ import { toast } from 'sonner';
 import { QRCodeSVG } from 'qrcode.react';
 
 // --- Tipos de Dados ---
-interface GuardianDetails { // New interface for guardian details
+interface GuardianDetails {
   id: string;
   full_name: string;
   relationship: string;
@@ -36,7 +36,7 @@ interface StudentDetails {
   user_id: string | null;
   classes: { name: string; school_year: number } | null;
   courses: { name: string } | null;
-  guardians: GuardianDetails[]; // Use the new interface
+  guardians: GuardianDetails[];
 }
 
 interface TenantConfig {
@@ -68,8 +68,8 @@ interface DocumentDetails {
   id: string;
   status: 'pending' | 'signed';
   signed_at: string | null;
-  signed_by_guardian_id: string | null; // Added to fetch
-  guardians?: { // Nested guardian details if signed_by_guardian_id is present
+  signed_by_guardian_id: string | null;
+  guardians?: {
     full_name: string;
     cpf: string | null;
   } | null;
@@ -146,18 +146,18 @@ const fetchDocumentStatus = async (studentId: string): Promise<DocumentDetails |
           signed_at, 
           signed_by_guardian_id,
           guardians (full_name, cpf)
-        `) // Added signed_by_guardian_id and nested guardian details
+        `)
         .eq('related_entity_id', studentId)
         .eq('document_type', 'contract')
         .maybeSingle();
     
     if (error) throw new Error(error.message);
-    return data as unknown as DocumentDetails; // Cast to include nested guardian
+    return data as unknown as DocumentDetails;
 };
 
 const StudentContract: React.FC = () => {
   const { entityId: studentId } = useParams<{ entityId: string }>();
-  const { profile, isAdmin, isSecretary } = useProfile(); // Get isAdmin and isSecretary
+  const { profile, isAdmin, isSecretary } = useProfile();
   const { user } = useAuth();
   const tenantId = profile?.tenant_id;
   const printRef = useRef<HTMLDivElement>(null);
@@ -188,6 +188,40 @@ const StudentContract: React.FC = () => {
     enabled: !!studentId,
   });
 
+  // Helper function to ensure document exists and return its ID
+  const ensureDocumentExists = async (): Promise<string | null> => {
+    if (!studentId || !tenantId || !student) {
+      toast.error("Erro", { description: "Dados do aluno ou da escola ausentes para criar o documento." });
+      return null;
+    }
+
+    if (documentStatus?.id) {
+      return documentStatus.id;
+    }
+
+    // If no documentStatus.id, try to create one
+    const { data: newDoc, error: insertDocError } = await supabase
+      .from('documents')
+      .insert({
+        tenant_id: tenantId,
+        document_type: 'contract',
+        related_entity_id: studentId,
+        file_url: 'generated_on_demand', 
+        description: `Contrato de Matrícula de ${student?.full_name || 'Aluno'}`,
+        metadata: { generatedBy: profile?.id, studentName: student?.full_name },
+      })
+      .select('id')
+      .single();
+
+    if (insertDocError) {
+      toast.error("Erro ao criar registro do documento", { description: insertDocError.message });
+      return null;
+    }
+    // After creation, refetch document status to update the UI and cache
+    await refetchDocumentStatus();
+    return newDoc.id;
+  };
+
   const generateTokenMutation = useMutation({
     mutationFn: async (documentId: string) => {
       const { data, error } = await supabase.functions.invoke('generate-document-token', {
@@ -209,7 +243,7 @@ const StudentContract: React.FC = () => {
   });
 
   const signContractMutation = useMutation({
-    mutationFn: async (payload: { document_id: string, guardian_id: string }) => { // Expect guardian_id
+    mutationFn: async (payload: { document_id: string, guardian_id: string }) => {
       if (!tenantId || !studentId) throw new Error("Dados ausentes.");
       
       const { error } = await supabase.functions.invoke('sign-contract', {
@@ -217,7 +251,7 @@ const StudentContract: React.FC = () => {
           document_id: payload.document_id, 
           tenant_id: tenantId, 
           student_id: studentId,
-          guardian_id: payload.guardian_id, // Pass guardian_id
+          guardian_id: payload.guardian_id,
         }),
       });
       if (error) throw new Error(error.message);
@@ -233,38 +267,13 @@ const StudentContract: React.FC = () => {
   });
 
   const handleGenerateVerificationLink = async () => {
-    if (!studentId) return;
-
-    let documentIdToUse = documentStatus?.id;
-
-    if (!documentIdToUse) {
-      // Se não existir, cria um registro de documento (apenas metadados)
-      const { data: newDoc, error: insertDocError } = await supabase
-        .from('documents')
-        .insert({
-          tenant_id: tenantId,
-          document_type: 'contract',
-          related_entity_id: studentId,
-          file_url: 'generated_on_demand', 
-          description: `Contrato de Matrícula de ${student?.full_name || 'Aluno'}`,
-          metadata: { generatedBy: profile?.id, studentName: student?.full_name },
-        })
-        .select('id')
-        .single();
-
-      if (insertDocError) {
-        toast.error("Erro ao criar registro do documento", { description: insertDocError.message });
-        return;
-      }
-      documentIdToUse = newDoc.id;
-    }
-
-    if (documentIdToUse) {
-      generateTokenMutation.mutate(documentIdToUse);
+    const docId = await ensureDocumentExists();
+    if (docId) {
+      generateTokenMutation.mutate(docId);
     }
   };
 
-  const handleSignContract = () => {
+  const handleSignContract = async () => {
     const primaryGuardian = student?.guardians.find(g => g.relationship === 'Pai' || g.relationship === 'Mãe' || g.relationship === 'Tutor') || student?.guardians[0];
     
     if (!primaryGuardian?.id) {
@@ -272,10 +281,12 @@ const StudentContract: React.FC = () => {
         return;
     }
 
-    if (documentStatus?.id) {
-        signContractMutation.mutate({ document_id: documentStatus.id, guardian_id: primaryGuardian.id });
+    const docId = await ensureDocumentExists(); // Ensure document exists and get its ID
+
+    if (docId) {
+        signContractMutation.mutate({ document_id: docId, guardian_id: primaryGuardian.id });
     } else {
-        toast.error("Erro", { description: "O registro do contrato não foi encontrado. Tente gerar o link de verificação primeiro." });
+        toast.error("Erro", { description: "Não foi possível criar ou encontrar o registro do contrato para assinatura." });
     }
   };
 
@@ -359,7 +370,6 @@ const StudentContract: React.FC = () => {
   }
 
   const isSigned = documentStatus?.status === 'signed';
-  // O botão agora é visível para administradores/secretários, não para alunos
   const canSign = (isAdmin || isSecretary) && !isSigned; 
 
   const primaryGuardian = student?.guardians.find(g => g.relationship === 'Pai' || g.relationship === 'Mãe' || g.relationship === 'Tutor') || student?.guardians[0];
@@ -446,8 +456,8 @@ const StudentContract: React.FC = () => {
             <div className="grid grid-cols-2 gap-12 w-full max-w-lg text-center text-sm">
                 <div className="space-y-2">
                     <Separator className="bg-foreground" />
-                    <p className="font-semibold">{signedGuardianName}</p> {/* Display guardian name */}
-                    <p className="text-xs text-muted-foreground">Responsável Legal</p> {/* Changed label */}
+                    <p className="font-semibold">{signedGuardianName}</p>
+                    <p className="text-xs text-muted-foreground">Responsável Legal</p>
                     {signedGuardianCpf && <p className="text-xs text-muted-foreground">CPF: {signedGuardianCpf}</p>}
                 </div>
                 <div className="space-y-2">
