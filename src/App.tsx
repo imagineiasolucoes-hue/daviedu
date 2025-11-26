@@ -34,10 +34,11 @@ import FAQPage from "./pages/FAQPage";
 import TeacherDashboard from "./pages/teacher/TeacherDashboard";
 import GradeEntryPage from "./pages/teacher/GradeEntryPage";
 import ClassDiaryPage from "./pages/teacher/ClassDiaryPage";
-import MyClassesPage from "./pages/teacher/MyClassesPage"; // NOVO IMPORT
+import MyClassesPage from "./pages/teacher/MyClassesPage"; 
 import ReportCard from "./components/documents/templates/ReportCard";
 import StudentTranscript from "./components/documents/templates/StudentTranscript";
 import MonthlyFeeCollection from "./components/documents/templates/MonthlyFeeCollection";
+import StudentContract from "./components/documents/templates/StudentContract"; // NOVO IMPORT
 import SecretariaPage from "./pages/SecretariaPage";
 import VerifyDocumentPage from "./pages/VerifyDocumentPage";
 import StudentPage from "./pages/StudentPage";
@@ -108,7 +109,7 @@ const App = () => {
                     <Route path="/teacher/dashboard" element={<TeacherDashboard />} />
                     <Route path="/teacher/grade-entry" element={<GradeEntryPage />} />
                     <Route path="/teacher/class-diary" element={<ClassDiaryPage />} />
-                    <Route path="/teacher/my-classes" element={<MyClassesPage />} /> {/* NOVA ROTA */}
+                    <Route path="/teacher/my-classes" element={<MyClassesPage />} /> 
                   </Route>
                 </Route>
 
@@ -117,6 +118,7 @@ const App = () => {
                   <Route path="/documents/generate/transcript/:entityId" element={<StudentTranscript />} />
                   <Route path="/documents/generate/report_card/:entityId" element={<ReportCard />} />
                   <Route path="/documents/generate/monthly_fee_collection/:entityId" element={<MonthlyFeeCollection />} />
+                  <Route path="/documents/generate/contract/:entityId" element={<StudentContract />} /> {/* NOVA ROTA */}
                 </Route>
 
               </Route>
