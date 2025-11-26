@@ -80,7 +80,7 @@ const fetchStudentData = async (studentId: string): Promise<StudentDetails> => {
       class_id,
       course_id,
       created_at, 
-      user_id,  // Adicionado user_id aqui
+      user_id,
       classes (
         name, 
         school_year
