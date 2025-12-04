@@ -14,38 +14,42 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-async function generateNextRegistrationCode(supabaseAdmin: any, tenantId: string, schoolYear: number): Promise<string> {
+async function generateNextRegistrationCode(supabaseAdmin: any, tenantId: string, schoolYear: number, attempt: number): Promise<string> {
     const prefix = String(schoolYear); // O prefixo agora é apenas o ano letivo (ex: 2024)
+    console.log(`[generateNextRegistrationCode] Attempt ${attempt}: Generating code for tenant ${tenantId}, year ${schoolYear}`);
 
+    // Busca todos os códigos de matrícula para o ano letivo e tenant atual
     const { data, error } = await supabaseAdmin
         .from("students")
         .select("registration_code")
         .eq("tenant_id", tenantId)
-        .like("registration_code", `${prefix}%`)
-        .order("registration_code", { ascending: false })
-        .limit(1)
-        .maybeSingle();
+        .like("registration_code", `${prefix}%`); // Pega todos os códigos que começam com o prefixo do ano
 
     if (error) {
-        console.error("Error fetching last registration code:", error);
-        throw new Error(`Falha ao buscar o último código de matrícula: ${error.message}`);
+        console.error(`[generateNextRegistrationCode] Error fetching registration codes (Attempt ${attempt}):`, error);
+        throw new Error(`Falha ao buscar códigos de matrícula para geração: ${error.message}`);
     }
 
-    let nextSequence = 1;
-
-    if (data?.registration_code) {
-        const lastCode = data.registration_code;
-        // Assume que o código é YYYYSSS (Ano + Sequência de 3 dígitos)
-        const lastSequenceStr = lastCode.substring(4); 
-        const lastSequence = parseInt(lastSequenceStr, 10);
-
-        if (!isNaN(lastSequence)) {
-            nextSequence = lastSequence + 1;
-        }
+    let maxSequence = 0;
+    if (data && data.length > 0) {
+        data.forEach((row: { registration_code: string }) => {
+            const code = row.registration_code;
+            if (code.startsWith(prefix)) {
+                const sequenceStr = code.substring(prefix.length); // Pega a parte da sequência após o prefixo
+                const sequenceNum = parseInt(sequenceStr, 10);
+                if (!isNaN(sequenceNum) && sequenceNum > maxSequence) {
+                    maxSequence = sequenceNum;
+                }
+            }
+        });
     }
+    console.log(`[generateNextRegistrationCode] Attempt ${attempt}: Max sequence found: ${maxSequence}`);
 
+    const nextSequence = maxSequence + 1;
     const nextSequenceStr = String(nextSequence).padStart(3, '0');
-    return `${prefix}${nextSequenceStr}`;
+    const newRegistrationCode = `${prefix}${nextSequenceStr}`;
+    console.log(`[generateNextRegistrationCode] Attempt ${attempt}: Generated new code: ${newRegistrationCode}`);
+    return newRegistrationCode;
 }
 
 serve(async (req) => {
@@ -86,7 +90,7 @@ serve(async (req) => {
       attempts++;
       try {
         // 1. Gerar Código de Matrícula
-        registration_code = await generateNextRegistrationCode(supabaseAdmin, tenant_id, school_year);
+        registration_code = await generateNextRegistrationCode(supabaseAdmin, tenant_id, school_year, attempts);
 
         // 2. Preparar e Inserir Aluno
         const studentDataToInsert = {
@@ -106,13 +110,13 @@ serve(async (req) => {
         if (studentInsertError) {
           // Se o erro for de chave duplicada, tenta novamente
           if (studentInsertError.code === "23505") {
-            console.warn(`Tentativa ${attempts}: Código de matrícula duplicado ${registration_code}. Re-tentando...`);
+            console.warn(`[create-student-and-guardian] Tentativa ${attempts}: Código de matrícula duplicado ${registration_code}. Re-tentando...`);
             // Pequeno delay para evitar nova colisão imediata (opcional, mas útil)
             await new Promise(resolve => setTimeout(resolve, 100 * attempts)); 
             continue; // Volta para o início do loop
           } else {
             // Para outros erros, lança imediatamente
-            console.error("Supabase Student Insert Error:", JSON.stringify(studentInsertError, null, 2));
+            console.error("[create-student-and-guardian] Supabase Student Insert Error:", JSON.stringify(studentInsertError, null, 2));
             throw new Error(`Erro ao cadastrar aluno: ${studentInsertError.message}`);
           }
         }
@@ -120,11 +124,12 @@ serve(async (req) => {
         studentId = studentResult.id;
         break; // Sucesso, sai do loop
       } catch (e) {
-        // Se o erro não for de chave duplicada, ou se as re-tentativas acabaram, lança o erro
+        // Este catch block é para erros lançados por generateNextRegistrationCode ou outros erros inesperados.
+        // O `studentInsertError` é tratado no if block acima.
         if (attempts === maxRetries || !(e instanceof Error && e.message.includes("duplicate key value violates unique constraint"))) {
           throw e;
         }
-        console.warn(`Tentativa ${attempts}: Erro durante a inserção do aluno. Re-tentando...`, e.message);
+        console.warn(`[create-student-and-guardian] Tentativa ${attempts}: Erro durante a inserção do aluno. Re-tentando...`, e.message);
       }
     }
 
@@ -150,7 +155,7 @@ serve(async (req) => {
       .single();
 
     if (guardianInsertError) {
-      console.error("Supabase Guardian Insert Error:", JSON.stringify(guardianInsertError, null, 2));
+      console.error("[create-student-and-guardian] Supabase Guardian Insert Error:", JSON.stringify(guardianInsertError, null, 2));
       throw new Error(`Erro ao cadastrar responsável: ${guardianInsertError.message}`);
     }
 
@@ -166,7 +171,7 @@ serve(async (req) => {
       });
 
     if (linkError) {
-      console.error("Supabase Link Error:", JSON.stringify(linkError, null, 2));
+      console.error("[create-student-and-guardian] Supabase Link Error:", JSON.stringify(linkError, null, 2));
       throw new Error(`Erro ao vincular responsável ao aluno: ${linkError.message}`);
     }
 
