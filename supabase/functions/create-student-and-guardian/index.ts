@@ -37,7 +37,7 @@ async function generateNextRegistrationCode(supabaseAdmin: any, tenantId: string
 
     if (data?.registration_code) {
         const lastCode = data.registration_code;
-        // Assume que o código é YYYYSSS (Ano + Sequência de 3 dígitos)
+        // Assume que o código é YYYYSSSS (Ano + Sequência de 4 dígitos)
         const sequenceStr = lastCode.substring(prefix.length); 
         const lastSequence = parseInt(sequenceStr, 10);
 
@@ -46,15 +46,15 @@ async function generateNextRegistrationCode(supabaseAdmin: any, tenantId: string
         }
     }
     
-    // FORÇAR O INÍCIO DA SEQUÊNCIA SE FOR MUITO BAIXA (Ex: se o último foi 2025001, forçamos para 2025100)
-    // Isso garante que, se houver um conflito de dados antigos, pulamos para uma área segura.
-    if (nextSequence < 100) {
-        nextSequence = 100;
+    // Garante que a sequência comece em 1000 se for muito baixa (para evitar colisões com códigos antigos de 3 dígitos)
+    if (nextSequence < 1000) {
+        nextSequence = 1000;
     }
     
     console.log(`[generateNextRegistrationCode] Attempt ${attempt}: Next sequence: ${nextSequence}`);
 
-    const nextSequenceStr = String(nextSequence).padStart(3, '0');
+    // Usa 4 dígitos para a sequência
+    const nextSequenceStr = String(nextSequence).padStart(4, '0');
     const newRegistrationCode = `${prefix}${nextSequenceStr}`;
     console.log(`[generateNextRegistrationCode] Attempt ${attempt}: Generated new code: ${newRegistrationCode}`);
     return newRegistrationCode;
@@ -133,7 +133,7 @@ serve(async (req) => {
 
     let studentId: string;
     let registration_code: string = '';
-    const maxRetries = 3;
+    const maxRetries = 5; // Aumentado o número de re-tentativas para maior robustez
     let attempts = 0;
 
     // Loop de re-tentativa para geração e inserção do aluno
