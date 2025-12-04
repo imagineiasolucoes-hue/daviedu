@@ -110,10 +110,11 @@ serve(async (req) => {
             // Pequeno delay para evitar nova colisão imediata (opcional, mas útil)
             await new Promise(resolve => setTimeout(resolve, 100 * attempts)); 
             continue; // Volta para o início do loop
+          } else {
+            // Para outros erros, lança imediatamente
+            console.error("Supabase Student Insert Error:", JSON.stringify(studentInsertError, null, 2));
+            throw new Error(`Erro ao cadastrar aluno: ${studentInsertError.message}`);
           }
-          // Para outros erros, lança imediatamente
-          console.error("Supabase Student Insert Error:", JSON.stringify(studentInsertError, null, 2));
-          throw new Error(`Erro ao cadastrar aluno: ${studentInsertError.message}`);
         }
 
         studentId = studentResult.id;
