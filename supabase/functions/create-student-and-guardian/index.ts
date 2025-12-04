@@ -18,33 +18,36 @@ async function generateNextRegistrationCode(supabaseAdmin: any, tenantId: string
     const prefix = String(schoolYear);
     console.log(`[generateNextRegistrationCode] Attempt ${attempt}: Generating code for tenant ${tenantId}, year ${schoolYear}`);
 
+    // Busca o último código de matrícula para o ano atual, ordenado de forma decrescente
     const { data, error } = await supabaseAdmin
         .from("students")
         .select("registration_code")
         .eq("tenant_id", tenantId)
-        .like("registration_code", `${prefix}%`);
+        .like("registration_code", `${prefix}%`)
+        .order("registration_code", { ascending: false })
+        .limit(1)
+        .maybeSingle();
 
     if (error) {
-        console.error(`[generateNextRegistrationCode] Error fetching registration codes (Attempt ${attempt}):`, error);
-        throw new Error(`Falha ao buscar códigos de matrícula para geração: ${error.message}`);
+        console.error(`[generateNextRegistrationCode] Error fetching last registration code (Attempt ${attempt}):`, error);
+        throw new Error(`Falha ao buscar o último código de matrícula: ${error.message}`);
     }
 
-    let maxSequence = 0;
-    if (data && data.length > 0) {
-        data.forEach((row: { registration_code: string }) => {
-            const code = row.registration_code;
-            if (code.startsWith(prefix)) {
-                const sequenceStr = code.substring(prefix.length);
-                const sequenceNum = parseInt(sequenceStr, 10);
-                if (!isNaN(sequenceNum) && sequenceNum > maxSequence) {
-                    maxSequence = sequenceNum;
-                }
-            }
-        });
-    }
-    console.log(`[generateNextRegistrationCode] Attempt ${attempt}: Max sequence found: ${maxSequence}`);
+    let nextSequence = 1;
 
-    const nextSequence = maxSequence + 1;
+    if (data?.registration_code) {
+        const lastCode = data.registration_code;
+        // Assume que o código é YYYYSSS (Ano + Sequência de 3 dígitos)
+        const sequenceStr = lastCode.substring(prefix.length); 
+        const lastSequence = parseInt(sequenceStr, 10);
+
+        if (!isNaN(lastSequence)) {
+            nextSequence = lastSequence + 1;
+        }
+    }
+    
+    console.log(`[generateNextRegistrationCode] Attempt ${attempt}: Next sequence: ${nextSequence}`);
+
     const nextSequenceStr = String(nextSequence).padStart(3, '0');
     const newRegistrationCode = `${prefix}${nextSequenceStr}`;
     console.log(`[generateNextRegistrationCode] Attempt ${attempt}: Generated new code: ${newRegistrationCode}`);
