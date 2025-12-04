@@ -46,6 +46,12 @@ async function generateNextRegistrationCode(supabaseAdmin: any, tenantId: string
         }
     }
     
+    // FORÇAR O INÍCIO DA SEQUÊNCIA SE FOR MUITO BAIXA (Ex: se o último foi 2025001, forçamos para 2025100)
+    // Isso garante que, se houver um conflito de dados antigos, pulamos para uma área segura.
+    if (nextSequence < 100) {
+        nextSequence = 100;
+    }
+    
     console.log(`[generateNextRegistrationCode] Attempt ${attempt}: Next sequence: ${nextSequence}`);
 
     const nextSequenceStr = String(nextSequence).padStart(3, '0');
