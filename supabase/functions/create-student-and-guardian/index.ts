@@ -59,15 +59,51 @@ serve(async (req) => {
 
   try {
     const body = await req.json();
-    console.log("Edge Function Input Body:", JSON.stringify(body, null, 2)); // LOG DE DEBUG
-
     const { tenant_id, school_year, student: studentInfo, guardian: guardianInfo } = body;
 
-    // --- Validação ---
+    // --- 0. AUTENTICAÇÃO E VERIFICAÇÃO DE PERMISSÃO ---
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader) {
+      throw new Error("Não autorizado: Token de autenticação ausente.");
+    }
+    const token = authHeader.replace('Bearer ', '');
+    
+    const supabaseAdmin = createClient(
+      Deno.env.get("SUPABASE_URL") ?? "",
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
+    );
+
+    const { data: userAuth, error: authError } = await supabaseAdmin.auth.getUser(token);
+    if (authError || !userAuth.user) {
+      console.error("Auth Error:", authError?.message);
+      throw new Error("Não autorizado: Token inválido.");
+    }
+    const userId = userAuth.user.id;
+
+    // Verificar se o usuário tem permissão (Admin ou Secretary)
+    const { data: profileData, error: profileError } = await supabaseAdmin
+        .from('profiles')
+        .select('role, tenant_id')
+        .eq('id', userId)
+        .single();
+
+    if (profileError || !profileData || !['admin', 'secretary'].includes(profileData.role)) {
+        console.error("Permission Denied: User role not allowed to create students.", profileData?.role);
+        throw new Error("Permissão negada. Apenas administradores e secretários podem cadastrar alunos.");
+    }
+    
+    // Garantir que o tenant_id do payload corresponde ao tenant_id do usuário logado (segurança extra)
+    if (profileData.tenant_id !== tenant_id) {
+        console.error("Security Alert: Tenant ID mismatch.", { userTenant: profileData.tenant_id, payloadTenant: tenant_id });
+        throw new Error("Erro de segurança: ID da escola não corresponde ao usuário logado.");
+    }
+    // --- FIM DA VERIFICAÇÃO DE PERMISSÃO ---
+
+
+    // --- Validação do Payload ---
     if (!tenant_id || !school_year || !studentInfo || !guardianInfo) {
       throw new Error("Dados incompletos para aluno, escola ou responsável.");
     }
-    // Verificação de campos obrigatórios do aluno
     if (!studentInfo.full_name || !studentInfo.birth_date || !studentInfo.class_id || !studentInfo.course_id) { 
       throw new Error("Campos obrigatórios do aluno ausentes: nome, data de nascimento, turma e série/ano.");
     }
@@ -75,14 +111,9 @@ serve(async (req) => {
       throw new Error("Campos obrigatórios do responsável ausentes: nome e parentesco.");
     }
 
-    const supabaseAdmin = createClient(
-      Deno.env.get("SUPABASE_URL") ?? "",
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
-    );
-
     let studentId: string;
-    let registration_code: string = ''; // Inicializa para garantir que esteja definida
-    const maxRetries = 3; // Número máximo de tentativas
+    let registration_code: string = '';
+    const maxRetries = 3;
     let attempts = 0;
 
     // Loop de re-tentativa para geração e inserção do aluno
@@ -98,7 +129,7 @@ serve(async (req) => {
           tenant_id: tenant_id,
           registration_code: registration_code,
           status: "active",
-          course_id: studentInfo.course_id, // Inserindo o course_id
+          course_id: studentInfo.course_id,
         };
 
         const { data: studentResult, error: studentInsertError } = await supabaseAdmin
@@ -108,24 +139,19 @@ serve(async (req) => {
           .single();
 
         if (studentInsertError) {
-          // Se o erro for de chave duplicada, tenta novamente
           if (studentInsertError.code === "23505") {
             console.warn(`[create-student-and-guardian] Tentativa ${attempts}: Código de matrícula duplicado ${registration_code}. Re-tentando...`);
-            // Pequeno delay para evitar nova colisão imediata (opcional, mas útil)
             await new Promise(resolve => setTimeout(resolve, 100 * attempts)); 
-            continue; // Volta para o início do loop
+            continue;
           } else {
-            // Para outros erros, lança imediatamente
             console.error("[create-student-and-guardian] Supabase Student Insert Error:", JSON.stringify(studentInsertError, null, 2));
             throw new Error(`Erro ao cadastrar aluno: ${studentInsertError.message}`);
           }
         }
 
         studentId = studentResult.id;
-        break; // Sucesso, sai do loop
+        break;
       } catch (e) {
-        // Este catch block é para erros lançados por generateNextRegistrationCode ou outros erros inesperados.
-        // O `studentInsertError` é tratado no if block acima.
         if (attempts === maxRetries || !(e instanceof Error && e.message.includes("duplicate key value violates unique constraint"))) {
           throw e;
         }
@@ -133,7 +159,6 @@ serve(async (req) => {
       }
     }
 
-    // Se o loop terminou sem sucesso (studentId não foi definido), significa que todas as re-tentativas falharam
     if (!studentId) {
         throw new Error("Falha ao gerar um código de matrícula único após várias tentativas.");
     }
