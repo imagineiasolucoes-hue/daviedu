@@ -239,11 +239,19 @@ const AddStudentSheet: React.FC = () => {
     };
 
     try {
-      const { error } = await supabase.functions.invoke('create-student-and-guardian', {
+      const { error, data: edgeFunctionData } = await supabase.functions.invoke('create-student-and-guardian', {
         body: JSON.stringify(payload),
       });
 
-      if (error) throw new Error(error.message);
+      if (error) {
+        // Se for um erro de Edge Function, a mensagem de erro está no objeto error
+        throw new Error(error.message);
+      }
+      
+      // Se a Edge Function retornar um objeto de erro no corpo (como fazemos), trate-o
+      if (edgeFunctionData && edgeFunctionData.error) {
+        throw new Error(edgeFunctionData.error);
+      }
 
       toast.success("Aluno e Responsável cadastrados com sucesso.");
       queryClient.invalidateQueries({ queryKey: ['students', tenantId] });
