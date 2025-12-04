@@ -55,6 +55,8 @@ serve(async (req) => {
 
   try {
     const body = await req.json();
+    console.log("Edge Function Input Body:", JSON.stringify(body, null, 2)); // LOG DE DEBUG
+
     const { tenant_id, school_year, student: studentInfo, guardian: guardianInfo } = body;
 
     // --- Validação ---
@@ -117,8 +119,6 @@ serve(async (req) => {
 
     if (guardianInsertError) {
       console.error("Supabase Guardian Insert Error:", JSON.stringify(guardianInsertError, null, 2));
-      // NOTA: Em um ambiente de produção, para garantir atomicidade, a criação do aluno
-      // também deveria ser revertida se o responsável ou o vínculo falharem.
       throw new Error(`Erro ao cadastrar responsável: ${guardianInsertError.message}`);
     }
 
@@ -135,8 +135,6 @@ serve(async (req) => {
 
     if (linkError) {
       console.error("Supabase Link Error:", JSON.stringify(linkError, null, 2));
-      // NOTA: Similarmente, se o vínculo falhar, a criação do aluno e do responsável
-      // deveria ser revertida para manter a integridade dos dados.
       throw new Error(`Erro ao vincular responsável ao aluno: ${linkError.message}`);
     }
 
