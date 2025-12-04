@@ -128,7 +128,7 @@ const AddStudentSheet: React.FC = () => {
       phone: null,
       email: null,
       class_id: undefined, 
-      course_id: undefined, 
+      course_id: null, // Alterado para null para consistência com o DB
       gender: null,
       nationality: null,
       naturality: null,
@@ -171,8 +171,8 @@ const AddStudentSheet: React.FC = () => {
   // Efeito para resetar o course_id se a turma mudar
   useEffect(() => {
     if (selectedClassId) {
-      // Se a turma mudar, resetamos o curso
-      form.setValue('course_id', undefined, { shouldValidate: true });
+      // Se a turma mudar, resetamos o curso para null
+      form.setValue('course_id', null, { shouldValidate: true });
     }
   }, [selectedClassId, form]);
 
@@ -185,6 +185,13 @@ const AddStudentSheet: React.FC = () => {
     
     if (!selectedClass) {
         toast.error("Erro", { description: "Selecione uma turma válida para continuar." });
+        return;
+    }
+    
+    // Validação adicional: Se a turma tem cursos, o curso deve ser selecionado
+    if (filteredCourses.length > 0 && !data.course_id) {
+        form.setError('course_id', { type: 'manual', message: 'Selecione a Série/Ano.' });
+        toast.error("Erro de Validação", { description: "Selecione a Série/Ano para a turma escolhida." });
         return;
     }
 
@@ -341,8 +348,8 @@ const AddStudentSheet: React.FC = () => {
               <div className="space-y-2">
                 <Label htmlFor="course_id">Série / Ano</Label>
                 <Select 
-                  onValueChange={(value) => form.setValue('course_id', value)}
-                  value={form.watch('course_id') || ''}
+                  onValueChange={(value) => form.setValue('course_id', value === 'none' ? null : value)}
+                  value={form.watch('course_id') || 'none'}
                   disabled={!selectedClassId || filteredCourses.length === 0}
                 >
                   <SelectTrigger>
@@ -453,8 +460,8 @@ const AddStudentSheet: React.FC = () => {
                 disabled={
                   form.formState.isSubmitting || 
                   isLoading || 
-                  !form.watch('course_id') || 
-                  !form.watch('class_id')
+                  !form.watch('class_id') ||
+                  (filteredCourses.length > 0 && !form.watch('course_id'))
                 }
               >
                 {form.formState.isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
