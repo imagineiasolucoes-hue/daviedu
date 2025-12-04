@@ -76,30 +76,61 @@ serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
     );
 
-    // 1. Gerar Código de Matrícula
-    const registration_code = await generateNextRegistrationCode(supabaseAdmin, tenant_id, school_year);
+    let studentId: string;
+    let registration_code: string = ''; // Inicializa para garantir que esteja definida
+    const maxRetries = 3; // Número máximo de tentativas
+    let attempts = 0;
 
-    // 2. Preparar e Inserir Aluno
-    const studentDataToInsert = {
-      ...studentInfo,
-      tenant_id: tenant_id,
-      registration_code: registration_code,
-      status: "active",
-      course_id: studentInfo.course_id, // Inserindo o course_id
-    };
+    // Loop de re-tentativa para geração e inserção do aluno
+    while (attempts < maxRetries) {
+      attempts++;
+      try {
+        // 1. Gerar Código de Matrícula
+        registration_code = await generateNextRegistrationCode(supabaseAdmin, tenant_id, school_year);
 
-    const { data: studentResult, error: studentInsertError } = await supabaseAdmin
-      .from("students")
-      .insert(studentDataToInsert)
-      .select("id")
-      .single();
+        // 2. Preparar e Inserir Aluno
+        const studentDataToInsert = {
+          ...studentInfo,
+          tenant_id: tenant_id,
+          registration_code: registration_code,
+          status: "active",
+          course_id: studentInfo.course_id, // Inserindo o course_id
+        };
 
-    if (studentInsertError) {
-      console.error("Supabase Student Insert Error:", JSON.stringify(studentInsertError, null, 2));
-      throw new Error(`Erro ao cadastrar aluno: ${studentInsertError.message}`);
+        const { data: studentResult, error: studentInsertError } = await supabaseAdmin
+          .from("students")
+          .insert(studentDataToInsert)
+          .select("id")
+          .single();
+
+        if (studentInsertError) {
+          // Se o erro for de chave duplicada, tenta novamente
+          if (studentInsertError.code === "23505") {
+            console.warn(`Tentativa ${attempts}: Código de matrícula duplicado ${registration_code}. Re-tentando...`);
+            // Pequeno delay para evitar nova colisão imediata (opcional, mas útil)
+            await new Promise(resolve => setTimeout(resolve, 100 * attempts)); 
+            continue; // Volta para o início do loop
+          }
+          // Para outros erros, lança imediatamente
+          console.error("Supabase Student Insert Error:", JSON.stringify(studentInsertError, null, 2));
+          throw new Error(`Erro ao cadastrar aluno: ${studentInsertError.message}`);
+        }
+
+        studentId = studentResult.id;
+        break; // Sucesso, sai do loop
+      } catch (e) {
+        // Se o erro não for de chave duplicada, ou se as re-tentativas acabaram, lança o erro
+        if (attempts === maxRetries || !(e instanceof Error && e.message.includes("duplicate key value violates unique constraint"))) {
+          throw e;
+        }
+        console.warn(`Tentativa ${attempts}: Erro durante a inserção do aluno. Re-tentando...`, e.message);
+      }
     }
 
-    const studentId = studentResult.id;
+    // Se o loop terminou sem sucesso (studentId não foi definido), significa que todas as re-tentativas falharam
+    if (!studentId) {
+        throw new Error("Falha ao gerar um código de matrícula único após várias tentativas.");
+    }
 
     // 3. Preparar e Inserir Responsável
     const guardianDataToInsert = {
