@@ -29,7 +29,7 @@ interface Class {
   // Incluindo a relação N:M para saber quais cursos estão nesta turma
   class_courses: {
     course_id: string;
-    courses: { name: string } | null; // Adicionando o nome do curso para facilitar a filtragem
+    courses: { id: string; name: string } | null; // Adicionando o nome do curso para facilitar a filtragem
   }[];
 }
 
@@ -191,7 +191,7 @@ const AddStudentSheet: React.FC = () => {
     // Separar dados do aluno e do responsável
     const { 
         guardian_full_name, guardian_relationship, guardian_phone, guardian_email, guardian_cpf,
-        // course_id, // Removendo course_id do studentData, pois ele não é uma coluna direta na tabela students
+        course_id, // Capturando course_id separadamente
         ...studentData 
     } = data;
 
@@ -206,7 +206,7 @@ const AddStudentSheet: React.FC = () => {
     const studentPayload = {
         ...studentData,
         class_id: studentData.class_id, 
-        course_id: data.course_id, // Incluindo o course_id no payload do aluno
+        course_id: course_id, // Incluindo o course_id no payload do aluno
         gender: studentData.gender || null,
         email: studentData.email || null,
         phone: studentData.phone || null,
@@ -314,7 +314,9 @@ const AddStudentSheet: React.FC = () => {
               <div className="space-y-2">
                 <Label htmlFor="class_id">Turma</Label>
                 <Select 
-                  onValueChange={(value) => form.setValue('class_id', value)} 
+                  onValueChange={(value) => {
+                    form.setValue('class_id', value);
+                  }} 
                   value={form.watch('class_id') || ''} 
                   disabled={isLoadingClasses}
                 >

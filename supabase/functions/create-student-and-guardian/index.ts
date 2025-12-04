@@ -61,7 +61,8 @@ serve(async (req) => {
     if (!tenant_id || !school_year || !studentInfo || !guardianInfo) {
       throw new Error("Dados incompletos para aluno, escola ou responsável.");
     }
-    if (!studentInfo.full_name || !studentInfo.birth_date || !studentInfo.class_id || !studentInfo.course_id) { // Adicionado course_id na validação
+    // Verificação de campos obrigatórios do aluno
+    if (!studentInfo.full_name || !studentInfo.birth_date || !studentInfo.class_id || !studentInfo.course_id) { 
       throw new Error("Campos obrigatórios do aluno ausentes: nome, data de nascimento, turma e série/ano.");
     }
     if (!guardianInfo.guardian_full_name || !guardianInfo.guardian_relationship) {
@@ -118,8 +119,6 @@ serve(async (req) => {
       console.error("Supabase Guardian Insert Error:", JSON.stringify(guardianInsertError, null, 2));
       // NOTA: Em um ambiente de produção, para garantir atomicidade, a criação do aluno
       // também deveria ser revertida se o responsável ou o vínculo falharem.
-      // Isso geralmente é feito com uma função de banco de dados (stored procedure)
-      // que encapsula todas as operações em uma única transação.
       throw new Error(`Erro ao cadastrar responsável: ${guardianInsertError.message}`);
     }
 
