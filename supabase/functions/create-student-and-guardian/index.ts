@@ -15,15 +15,14 @@ const corsHeaders = {
 };
 
 async function generateNextRegistrationCode(supabaseAdmin: any, tenantId: string, schoolYear: number, attempt: number): Promise<string> {
-    const prefix = String(schoolYear); // O prefixo agora é apenas o ano letivo (ex: 2024)
+    const prefix = String(schoolYear);
     console.log(`[generateNextRegistrationCode] Attempt ${attempt}: Generating code for tenant ${tenantId}, year ${schoolYear}`);
 
-    // Busca todos os códigos de matrícula para o ano letivo e tenant atual
     const { data, error } = await supabaseAdmin
         .from("students")
         .select("registration_code")
         .eq("tenant_id", tenantId)
-        .like("registration_code", `${prefix}%`); // Pega todos os códigos que começam com o prefixo do ano
+        .like("registration_code", `${prefix}%`);
 
     if (error) {
         console.error(`[generateNextRegistrationCode] Error fetching registration codes (Attempt ${attempt}):`, error);
@@ -35,7 +34,7 @@ async function generateNextRegistrationCode(supabaseAdmin: any, tenantId: string
         data.forEach((row: { registration_code: string }) => {
             const code = row.registration_code;
             if (code.startsWith(prefix)) {
-                const sequenceStr = code.substring(prefix.length); // Pega a parte da sequência após o prefixo
+                const sequenceStr = code.substring(prefix.length);
                 const sequenceNum = parseInt(sequenceStr, 10);
                 if (!isNaN(sequenceNum) && sequenceNum > maxSequence) {
                     maxSequence = sequenceNum;
@@ -64,7 +63,10 @@ serve(async (req) => {
     // --- 0. AUTENTICAÇÃO E VERIFICAÇÃO DE PERMISSÃO ---
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) {
-      throw new Error("Não autorizado: Token de autenticação ausente.");
+      return new Response(JSON.stringify({ error: "Não autorizado: Token de autenticação ausente." }), {
+        status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
     }
     const token = authHeader.replace('Bearer ', '');
     
@@ -76,7 +78,10 @@ serve(async (req) => {
     const { data: userAuth, error: authError } = await supabaseAdmin.auth.getUser(token);
     if (authError || !userAuth.user) {
       console.error("Auth Error:", authError?.message);
-      throw new Error("Não autorizado: Token inválido.");
+      return new Response(JSON.stringify({ error: "Não autorizado: Token inválido ou expirado." }), {
+        status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
     }
     const userId = userAuth.user.id;
 
@@ -89,13 +94,19 @@ serve(async (req) => {
 
     if (profileError || !profileData || !['admin', 'secretary'].includes(profileData.role)) {
         console.error("Permission Denied: User role not allowed to create students.", profileData?.role);
-        throw new Error("Permissão negada. Apenas administradores e secretários podem cadastrar alunos.");
+        return new Response(JSON.stringify({ error: "Permissão negada. Apenas administradores e secretários podem cadastrar alunos." }), {
+            status: 403, // Forbidden
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
     }
     
     // Garantir que o tenant_id do payload corresponde ao tenant_id do usuário logado (segurança extra)
     if (profileData.tenant_id !== tenant_id) {
         console.error("Security Alert: Tenant ID mismatch.", { userTenant: profileData.tenant_id, payloadTenant: tenant_id });
-        throw new Error("Erro de segurança: ID da escola não corresponde ao usuário logado.");
+        return new Response(JSON.stringify({ error: "Erro de segurança: ID da escola não corresponde ao usuário logado." }), {
+            status: 403, // Forbidden
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
     }
     // --- FIM DA VERIFICAÇÃO DE PERMISSÃO ---
 

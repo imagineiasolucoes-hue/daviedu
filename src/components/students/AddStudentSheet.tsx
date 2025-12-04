@@ -244,8 +244,9 @@ const AddStudentSheet: React.FC = () => {
       });
 
       if (error) {
-        // Se for um erro de Edge Function, a mensagem de erro está no objeto error
-        throw new Error(error.message);
+        // Tenta extrair a mensagem de erro do corpo da resposta da Edge Function
+        const detailedError = error.context?.data?.error || error.message;
+        throw new Error(detailedError);
       }
       
       // Se a Edge Function retornar um objeto de erro no corpo (como fazemos), trate-o
