@@ -213,9 +213,13 @@ const EditStudentSheet: React.FC<EditStudentSheetProps> = ({ studentId, open, on
   // Efeito para carregar dados no formulário
   useEffect(() => {
     if (student) {
-      console.log("DEBUG: Student data loaded for form reset:", student); // NOVO LOG AQUI
-      const primaryGuardian = student.student_guardians.find(sg => sg.is_primary)?.guardians;
-      console.log("DEBUG: Primary Guardian found:", primaryGuardian); // NOVO LOG AQUI
+      console.log("DEBUG: Student data for form reset:", JSON.stringify(student, null, 2)); // Log detalhado
+      
+      // Acessa student_guardians de forma mais defensiva
+      const primaryGuardianEntry = student.student_guardians?.find(sg => sg.is_primary);
+      const primaryGuardian = primaryGuardianEntry?.guardians;
+      
+      console.log("DEBUG: Primary Guardian found:", JSON.stringify(primaryGuardian, null, 2)); // Log detalhado
       
       form.reset({
         full_name: student.full_name,
@@ -241,7 +245,6 @@ const EditStudentSheet: React.FC<EditStudentSheetProps> = ({ studentId, open, on
         
         // Dados do Responsável
         guardian_full_name: primaryGuardian?.full_name || '',
-        // Inicializa como undefined se for nulo/undefined, para que o Select exiba o placeholder e o Zod valide corretamente
         guardian_relationship: primaryGuardian?.relationship as GuardianFormData['guardian_relationship'] || undefined, 
         guardian_phone: primaryGuardian?.phone || null,
         guardian_email: primaryGuardian?.email || null,
@@ -328,6 +331,9 @@ const EditStudentSheet: React.FC<EditStudentSheetProps> = ({ studentId, open, on
 
   const isLoading = isLoadingStudent || isLoadingClasses || isLoadingCourses;
 
+  // Adicionando um log para ver o estado de carregamento e o objeto student na renderização
+  console.log("DEBUG: EditStudentSheet Render - isLoading:", isLoading, "student:", student);
+
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent className="sm:max-w-lg overflow-y-auto">
@@ -354,7 +360,7 @@ const EditStudentSheet: React.FC<EditStudentSheetProps> = ({ studentId, open, on
                 <div className="space-y-4">
                   <h3 className="text-lg font-semibold">Dados Pessoais e Matrícula</h3>
                   <div className="space-y-2">
-                    <Label htmlFor="full_name">Nome Completo</Label>
+                    <Label htmlFor="full_name">Nome Complelto</Label>
                     <Input id="full_name" {...form.register("full_name")} />
                     {form.formState.errors.full_name && <p className="text-sm text-destructive">{form.formState.errors.full_name.message}</p>}
                   </div>
