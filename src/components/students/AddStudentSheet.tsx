@@ -33,6 +33,12 @@ interface Class {
   }[];
 }
 
+// Função auxiliar para pré-processar strings vazias para null
+const preprocessString = z.preprocess(
+  (value) => (value === '' ? null : value),
+  z.string().optional().nullable()
+);
+
 // --- Schema de Validação ---
 const studentSchema = z.object({
   full_name: z.string().min(5, "Nome completo é obrigatório."),
@@ -45,27 +51,30 @@ const studentSchema = z.object({
   course_id: z.string().uuid("Selecione a Série/Ano."),
   
   // Contato e Documentos do Aluno
-  phone: z.string().optional().nullable(), 
-  email: z.string().email("Email inválido.").optional().or(z.literal('')).nullable(), 
-  cpf: z.string().optional().nullable(), 
-  rg: z.string().optional().nullable(), 
+  phone: preprocessString, 
+  email: z.preprocess(
+    (value) => (value === '' ? null : value),
+    z.string().email("Email inválido.").optional().nullable()
+  ), 
+  cpf: preprocessString, 
+  rg: preprocessString, 
   
   // Dados Pessoais do Aluno
   gender: z.enum(['Masculino', 'Feminino', 'Outro']).optional().nullable(),
-  nationality: z.string().optional().nullable(),
-  naturality: z.string().optional().nullable(), 
+  nationality: preprocessString,
+  naturality: preprocessString, 
 
   // Endereço
-  zip_code: z.string().optional().nullable(),
-  address_street: z.string().optional().nullable(),
-  address_number: z.string().optional().nullable(),
-  address_neighborhood: z.string().optional().nullable(),
-  address_city: z.string().optional().nullable(),
-  address_state: z.string().optional().nullable(),
+  zip_code: preprocessString,
+  address_street: preprocessString,
+  address_number: preprocessString,
+  address_neighborhood: preprocessString,
+  address_city: preprocessString,
+  address_state: preprocessString,
 
   // Informações Adicionais do Aluno
-  special_needs: z.string().optional().nullable(),
-  medication_use: z.string().optional().nullable(),
+  special_needs: preprocessString,
+  medication_use: preprocessString,
 }).merge(guardianSchema); 
 
 type StudentFormData = z.infer<typeof studentSchema>;
