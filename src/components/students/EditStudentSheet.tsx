@@ -72,9 +72,6 @@ interface StudentDetails {
   }[];
 }
 
-// Função auxiliar para converter string vazia em null
-const emptyStringToNull = z.literal('').transform(() => null);
-
 // Função auxiliar para pré-processar strings vazias para null
 const preprocessString = z.preprocess(
   (value) => (value === '' ? null : value),
@@ -227,7 +224,8 @@ const EditStudentSheet: React.FC<EditStudentSheetProps> = ({ studentId, open, on
         
         // Dados do Responsável
         guardian_full_name: primaryGuardian?.full_name || '',
-        guardian_relationship: primaryGuardian?.relationship as GuardianFormData['guardian_relationship'] || undefined,
+        // Inicializa como string vazia se for nulo/undefined, para forçar o Select a exibir o placeholder
+        guardian_relationship: primaryGuardian?.relationship as GuardianFormData['guardian_relationship'] || '', 
         guardian_phone: primaryGuardian?.phone || null,
         guardian_email: primaryGuardian?.email || null,
         guardian_cpf: primaryGuardian?.cpf || null,
