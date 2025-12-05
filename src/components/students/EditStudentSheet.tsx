@@ -180,6 +180,22 @@ const EditStudentSheet: React.FC<EditStudentSheetProps> = ({ studentId, open, on
 
   const selectedClassId = form.watch('class_id');
 
+  // --- DEBUG: Log de Erros ---
+  useEffect(() => {
+    if (open) {
+      const subscription = form.watch((value, { name, type }) => {
+        // Tenta validar o formulário a cada mudança para capturar erros
+        form.trigger().then(isValid => {
+          if (!isValid) {
+            console.error("FORM VALIDATION ERRORS:", form.formState.errors);
+          }
+        });
+      });
+      return () => subscription.unsubscribe();
+    }
+  }, [form, open]);
+  // --- FIM DEBUG ---
+
   // Encontra a turma selecionada e seus cursos associados
   const selectedClass = useMemo(() => {
     if (!allClasses || !selectedClassId) return null;
