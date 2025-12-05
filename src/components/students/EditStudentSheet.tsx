@@ -240,8 +240,8 @@ const EditStudentSheet: React.FC<EditStudentSheetProps> = ({ studentId, open, on
         
         // Dados do Responsável
         guardian_full_name: primaryGuardian?.full_name || '',
-        // Inicializa como string vazia se for nulo/undefined, para forçar o Select a exibir o placeholder
-        guardian_relationship: primaryGuardian?.relationship as GuardianFormData['guardian_relationship'] || '', 
+        // Inicializa como undefined se for nulo/undefined, para que o Select exiba o placeholder e o Zod valide corretamente
+        guardian_relationship: primaryGuardian?.relationship as GuardianFormData['guardian_relationship'] || undefined, 
         guardian_phone: primaryGuardian?.phone || null,
         guardian_email: primaryGuardian?.email || null,
         guardian_cpf: primaryGuardian?.cpf || null,
