@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Loader2, School, MoreHorizontal, CheckCircle, XCircle, Trash2 } from 'lucide-react';
+import { Loader2, School, MoreHorizontal, CheckCircle, XCircle, Trash2, Clock } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -14,6 +14,7 @@ import { formatCurrency } from '@/lib/utils';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { toast } from 'sonner';
+import ExtendTrialDialog from '@/components/super-admin/ExtendTrialDialog'; // NOVO IMPORT
 
 interface Tenant {
   id: string;
@@ -39,9 +40,10 @@ const TenantsPage: React.FC = () => {
   const { isSuperAdmin, isLoading: isProfileLoading } = useProfile();
   const queryClient = useQueryClient();
   const [isConfirmStatusChangeOpen, setIsConfirmStatusChangeOpen] = useState(false);
-  const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false); // Novo estado para exclusão
+  const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
+  const [isExtendTrialOpen, setIsExtendTrialOpen] = useState(false); // NOVO ESTADO
   const [selectedTenant, setSelectedTenant] = useState<Tenant | null>(null);
-  const [pendingStatus, setPendingStatus] = useState<Tenant['status'] | null>(null); // Para guardar o status pendente
+  const [pendingStatus, setPendingStatus] = useState<Tenant['status'] | null>(null);
 
   const { data: tenants, isLoading: isTenantsLoading, error } = useQuery<Tenant[], Error>({
     queryKey: ['tenants'],
@@ -56,15 +58,11 @@ const TenantsPage: React.FC = () => {
       });
 
       if (edgeFunctionError) {
-        // Tenta extrair uma mensagem de erro mais específica da resposta da Edge Function
-        // A Edge Function retorna { error: errorMessage } em caso de falha
         if (edgeFunctionError.context?.data?.error) {
           throw new Error(edgeFunctionError.context.data.error);
         }
-        // Fallback para mensagem genérica se o erro específico não for encontrado
         throw new Error(edgeFunctionError.message || "Erro desconhecido da Edge Function.");
       }
-      // Verifica se o próprio 'data' contém uma propriedade de erro (menos comum para este padrão)
       if (data && data.error) {
         throw new Error(data.error);
       }
@@ -74,7 +72,6 @@ const TenantsPage: React.FC = () => {
       queryClient.invalidateQueries({ queryKey: ['tenants'] });
     },
     onError: (error) => {
-      // Esta error.message agora conterá a mensagem mais específica do mutationFn
       toast.error("Erro ao atualizar status", { description: error.message });
     },
     onSettled: () => {
@@ -94,7 +91,7 @@ const TenantsPage: React.FC = () => {
     onSuccess: () => {
       toast.success("Escola excluída com sucesso!");
       queryClient.invalidateQueries({ queryKey: ['tenants'] });
-      queryClient.invalidateQueries({ queryKey: ['globalMetrics'] }); // Atualiza métricas globais
+      queryClient.invalidateQueries({ queryKey: ['globalMetrics'] });
     },
     onError: (error) => {
       toast.error("Erro ao excluir escola", { description: error.message });
@@ -109,6 +106,12 @@ const TenantsPage: React.FC = () => {
     setSelectedTenant(tenant);
     setPendingStatus(status);
     setIsConfirmStatusChangeOpen(true);
+  };
+  
+  // NOVO HANDLER
+  const handleExtendTrialClick = (tenant: Tenant) => {
+    setSelectedTenant(tenant);
+    setIsExtendTrialOpen(true);
   };
 
   const handleConfirmStatusChange = () => {
@@ -207,6 +210,10 @@ const TenantsPage: React.FC = () => {
                               <XCircle className="mr-2 h-4 w-4" /> Suspender Acesso
                             </DropdownMenuItem>
                           )}
+                          {/* NOVO ITEM DE MENU */}
+                          <DropdownMenuItem onClick={() => handleExtendTrialClick(tenant)} disabled={tenant.status === 'active'}>
+                            <Clock className="mr-2 h-4 w-4 text-primary" /> Estender Teste
+                          </DropdownMenuItem>
                           <DropdownMenuItem onClick={() => handleDeleteClick(tenant)} className="text-destructive">
                             <Trash2 className="mr-2 h-4 w-4" /> Excluir Escola
                           </DropdownMenuItem>
@@ -276,6 +283,15 @@ const TenantsPage: React.FC = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+      
+      {/* NOVO DIÁLOGO DE EXTENSÃO DE TESTE */}
+      <ExtendTrialDialog
+        tenantId={selectedTenant?.id || null}
+        tenantName={selectedTenant?.name || null}
+        currentExpiration={selectedTenant?.trial_expires_at || null}
+        open={isExtendTrialOpen}
+        onOpenChange={setIsExtendTrialOpen}
+      />
     </div>
   );
 };
