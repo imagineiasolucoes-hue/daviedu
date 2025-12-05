@@ -176,6 +176,34 @@ const EditStudentSheet: React.FC<EditStudentSheetProps> = ({ studentId, open, on
 
   const form = useForm<StudentFormData>({
     resolver: zodResolver(studentSchema),
+    // Adicionando defaultValues seguros para evitar travamentos na primeira renderização
+    defaultValues: {
+        full_name: "",
+        birth_date: "2000-01-01", // Data placeholder
+        class_id: null,
+        course_id: null,
+        status: 'active', // Valor padrão válido
+        phone: null,
+        email: null,
+        cpf: null,
+        rg: null,
+        gender: null,
+        nationality: null,
+        naturality: null,
+        zip_code: null,
+        address_street: null,
+        address_number: null,
+        address_neighborhood: null,
+        address_city: null,
+        address_state: null,
+        special_needs: null,
+        medication_use: null,
+        guardian_full_name: "",
+        guardian_relationship: undefined, // undefined para o Select
+        guardian_phone: null,
+        guardian_email: null,
+        guardian_cpf: null,
+    },
   });
 
   const selectedClassId = form.watch('class_id');
