@@ -227,7 +227,7 @@ const EditStudentSheet: React.FC<EditStudentSheetProps> = ({ studentId, open, on
     mutationFn: async (data: StudentFormData) => {
       if (!studentId || !tenantId) throw new Error("ID do aluno ou da escola ausente.");
 
-      // Validação de Regra de Negócio: Se a turma tem cursos, o curso deve ser selecionado
+      // Validação adicional: Se a turma tem cursos, o curso deve ser selecionado
       if (data.class_id && filteredCourses.length > 0 && !data.course_id) {
           throw new Error("Selecione a Série/Ano para a turma escolhida.");
       }
@@ -361,6 +361,7 @@ const EditStudentSheet: React.FC<EditStudentSheetProps> = ({ studentId, open, on
                   <Label htmlFor="class_id">Turma</Label>
                   <Select 
                     onValueChange={(value) => {
+                      // Se o valor for 'none', define como null
                       form.setValue('class_id', value === 'none' ? null : value);
                     }} 
                     value={form.watch('class_id') || 'none'} 
