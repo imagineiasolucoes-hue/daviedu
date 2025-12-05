@@ -180,11 +180,10 @@ const EditStudentSheet: React.FC<EditStudentSheetProps> = ({ studentId, open, on
 
   const selectedClassId = form.watch('class_id');
 
-  // --- DEBUG: Log de Erros ---
+  // --- DEBUG: Log de Erros (mantido para validação de submissão) ---
   useEffect(() => {
     if (open) {
       const subscription = form.watch((value, { name, type }) => {
-        // Tenta validar o formulário a cada mudança para capturar erros
         form.trigger().then(isValid => {
           if (!isValid) {
             console.error("FORM VALIDATION ERRORS:", form.formState.errors);
@@ -214,7 +213,9 @@ const EditStudentSheet: React.FC<EditStudentSheetProps> = ({ studentId, open, on
   // Efeito para carregar dados no formulário
   useEffect(() => {
     if (student) {
+      console.log("DEBUG: Student data loaded for form reset:", student); // NOVO LOG AQUI
       const primaryGuardian = student.student_guardians.find(sg => sg.is_primary)?.guardians;
+      console.log("DEBUG: Primary Guardian found:", primaryGuardian); // NOVO LOG AQUI
       
       form.reset({
         full_name: student.full_name,
@@ -339,210 +340,218 @@ const EditStudentSheet: React.FC<EditStudentSheetProps> = ({ studentId, open, on
         {isLoading ? (
           <div className="flex justify-center items-center h-full"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>
         ) : (
-          <FormProvider {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 py-4">
-              
-              {/* Seção 1: Dados Pessoais e Matrícula */}
-              <div className="space-y-4">
-                <h3 className="text-lg font-semibold">Dados Pessoais e Matrícula</h3>
-                <div className="space-y-2">
-                  <Label htmlFor="full_name">Nome Completo</Label>
-                  <Input id="full_name" {...form.register("full_name")} />
-                  {form.formState.errors.full_name && <p className="text-sm text-destructive">{form.formState.errors.full_name.message}</p>}
-                </div>
-                <div className="grid grid-cols-2 gap-4">
+          // NEW: Add a check for 'student' data before rendering the form
+          !student ? (
+            <div className="p-4 text-center">
+              <p className="text-destructive">Não foi possível carregar os dados do aluno. Verifique o ID.</p>
+              <Button onClick={() => onOpenChange(false)} className="mt-4">Fechar</Button>
+            </div>
+          ) : (
+            <FormProvider {...form}>
+              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 py-4">
+                
+                {/* Seção 1: Dados Pessoais e Matrícula */}
+                <div className="space-y-4">
+                  <h3 className="text-lg font-semibold">Dados Pessoais e Matrícula</h3>
                   <div className="space-y-2">
-                    <Label htmlFor="birth_date">Data de Nascimento</Label>
-                    <Input id="birth_date" type="date" {...form.register("birth_date")} />
-                    {form.formState.errors.birth_date && <p className="text-sm text-destructive">{form.formState.errors.birth_date.message}</p>}
+                    <Label htmlFor="full_name">Nome Completo</Label>
+                    <Input id="full_name" {...form.register("full_name")} />
+                    {form.formState.errors.full_name && <p className="text-sm text-destructive">{form.formState.errors.full_name.message}</p>}
                   </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="birth_date">Data de Nascimento</Label>
+                      <Input id="birth_date" type="date" {...form.register("birth_date")} />
+                      {form.formState.errors.birth_date && <p className="text-sm text-destructive">{form.formState.errors.birth_date.message}</p>}
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="gender">Gênero</Label>
+                      <Select onValueChange={(value) => form.setValue('gender', value === "none" ? null : value as any)} value={form.watch('gender') || 'none'}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Selecione" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="none">Não Informar</SelectItem>
+                          <SelectItem value="Masculino">Masculino</SelectItem>
+                          <SelectItem value="Feminino">Feminino</SelectItem>
+                          <SelectItem value="Outro">Outro</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="nationality">Nacionalidade</Label>
+                      <Input id="nationality" placeholder="Ex: Brasileira" {...form.register("nationality")} />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="naturality">Naturalidade (Cidade)</Label>
+                      <Input id="naturality" placeholder="Ex: Salvador" {...form.register("naturality")} />
+                    </div>
+                  </div>
+
+                  {/* CAMPO 1: Turma (Selecionada primeiro) */}
                   <div className="space-y-2">
-                    <Label htmlFor="gender">Gênero</Label>
-                    <Select onValueChange={(value) => form.setValue('gender', value === "none" ? null : value as any)} value={form.watch('gender') || 'none'}>
+                    <Label htmlFor="class_id">Turma</Label>
+                    <Select 
+                      onValueChange={(value) => {
+                        // Se o valor for 'none', define como null
+                        form.setValue('class_id', value === 'none' ? null : value);
+                      }} 
+                      value={form.watch('class_id') || 'none'} 
+                      disabled={isLoadingClasses}
+                    >
                       <SelectTrigger>
-                        <SelectValue placeholder="Selecione" />
+                        <SelectValue placeholder={isLoadingClasses ? "Carregando Turmas..." : "Selecione a turma"} />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="none">Não Informar</SelectItem>
-                        <SelectItem value="Masculino">Masculino</SelectItem>
-                        <SelectItem value="Feminino">Feminino</SelectItem>
-                        <SelectItem value="Outro">Outro</SelectItem>
+                        <SelectItem value="none">Nenhuma Turma (Desvincular)</SelectItem>
+                        {allClasses?.map((c) => (
+                          <SelectItem key={c.id} value={c.id}>{c.name} ({c.school_year})</SelectItem>
+                        ))}
                       </SelectContent>
                     </Select>
+                    {form.formState.errors.class_id && <p className="text-sm text-destructive">{form.formState.errors.class_id.message}</p>}
                   </div>
-                </div>
-                <div className="grid grid-cols-2 gap-4">
+
+                  {/* CAMPO 2: Série/Ano (Course) (Filtrado pela Turma) */}
                   <div className="space-y-2">
-                    <Label htmlFor="nationality">Nacionalidade</Label>
-                    <Input id="nationality" placeholder="Ex: Brasileira" {...form.register("nationality")} />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="naturality">Naturalidade (Cidade)</Label>
-                    <Input id="naturality" placeholder="Ex: Salvador" {...form.register("naturality")} />
+                    <Label htmlFor="course_id">Série / Ano</Label>
+                    <Select 
+                      onValueChange={(value) => form.setValue('course_id', value === 'none' ? null : value)}
+                      value={form.watch('course_id') || 'none'}
+                      disabled={!selectedClassId || filteredCourses.length === 0}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder={!selectedClassId ? "Selecione a Turma primeiro" : (filteredCourses.length === 0 ? "Nenhuma Série/Ano associada" : "Selecione a Série/Ano")} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none">Nenhuma Série/Ano (Desvincular)</SelectItem>
+                        {filteredCourses.map((c) => (
+                          <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    {form.formState.errors.course_id && <p className="text-sm text-destructive">{form.formState.errors.course_id.message}</p>}
+                    {selectedClassId && filteredCourses.length === 0 && (
+                      <p className="text-xs text-muted-foreground mt-1">
+                          Nenhuma Série/Ano compatível com a turma selecionada.
+                      </p>
+                    )}
                   </div>
                 </div>
 
-                {/* CAMPO 1: Turma (Selecionada primeiro) */}
+                {/* Status */}
                 <div className="space-y-2">
-                  <Label htmlFor="class_id">Turma</Label>
-                  <Select 
-                    onValueChange={(value) => {
-                      // Se o valor for 'none', define como null
-                      form.setValue('class_id', value === 'none' ? null : value);
-                    }} 
-                    value={form.watch('class_id') || 'none'} 
-                    disabled={isLoadingClasses}
-                  >
+                  <Label htmlFor="status">Status</Label>
+                  <Select onValueChange={(value) => form.setValue('status', value as any)} defaultValue={form.getValues('status')}>
                     <SelectTrigger>
-                      <SelectValue placeholder={isLoadingClasses ? "Carregando Turmas..." : "Selecione a turma"} />
+                      <SelectValue placeholder="Selecione o status" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="none">Nenhuma Turma (Desvincular)</SelectItem>
-                      {allClasses?.map((c) => (
-                        <SelectItem key={c.id} value={c.id}>{c.name} ({c.school_year})</SelectItem>
-                      ))}
+                      <SelectItem value="active">Ativo</SelectItem>
+                      <SelectItem value="pre-enrolled">Pré-Matriculado</SelectItem>
+                      <SelectItem value="inactive">Inativo</SelectItem>
                     </SelectContent>
                   </Select>
-                  {form.formState.errors.class_id && <p className="text-sm text-destructive">{form.formState.errors.class_id.message}</p>}
                 </div>
 
-                {/* CAMPO 2: Série/Ano (Course) (Filtrado pela Turma) */}
-                <div className="space-y-2">
-                  <Label htmlFor="course_id">Série / Ano</Label>
-                  <Select 
-                    onValueChange={(value) => form.setValue('course_id', value === 'none' ? null : value)}
-                    value={form.watch('course_id') || 'none'}
-                    disabled={!selectedClassId || filteredCourses.length === 0}
+                <Separator />
+
+                {/* Seção 2: Contato e Documentos do Aluno */}
+                <div className="space-y-4">
+                  <h3 className="text-lg font-semibold">Contato e Documentos do Aluno</h3>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="phone">Telefone</Label>
+                      <Input id="phone" type="tel" {...form.register("phone")} />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="email">Email</Label>
+                      <Input id="email" type="email" {...form.register("email")} />
+                      {form.formState.errors.email && <p className="text-sm text-destructive">{form.formState.errors.email.message}</p>}
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="cpf">CPF</Label>
+                      <Input id="cpf" {...form.register("cpf")} />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="rg">RG</Label>
+                      <Input id="rg" {...form.register("rg")} />
+                    
+                    </div>
+                  </div>
+                </div>
+
+                <Separator />
+
+                {/* Seção 3: Responsável Legal */}
+                <GuardianForm />
+
+                {/* Seção 4: Endereço */}
+                <div className="space-y-4">
+                  <h3 className="text-lg font-semibold">Endereço</h3>
+                  <div className="grid grid-cols-3 gap-4">
+                    <div className="space-y-2 col-span-1">
+                      <Label htmlFor="zip_code">CEP</Label>
+                      <Input id="zip_code" {...form.register("zip_code")} />
+                    </div>
+                    <div className="space-y-2 col-span-2">
+                      <Label htmlFor="address_street">Rua</Label>
+                      <Input id="address_street" {...form.register("address_street")} />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-3 gap-4">
+                    <div className="space-y-2 col-span-1">
+                      <Label htmlFor="address_number">Número</Label>
+                      <Input id="address_number" {...form.register("address_number")} />
+                    </div>
+                    <div className="space-y-2 col-span-2">
+                      <Label htmlFor="address_neighborhood">Bairro</Label>
+                      <Input id="address_neighborhood" {...form.register("address_neighborhood")} />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="address_city">Cidade</Label>
+                      <Input id="address_city" {...form.register("address_city")} />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="address_state">Estado</Label>
+                      <Input id="address_state" {...form.register("address_state")} />
+                    </div>
+                  </div>
+                </div>
+
+                <Separator />
+
+                {/* Seção 5: Informações de Saúde e Necessidades */}
+                <div className="space-y-4">
+                  <h3 className="text-lg font-semibold">Informações Adicionais</h3>
+                  <div className="space-y-2">
+                    <Label htmlFor="special_needs">Necessidades Especiais (Opcional)</Label>
+                    <Textarea id="special_needs" placeholder="Descreva quaisquer necessidades especiais ou adaptações necessárias." {...form.register("special_needs")} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="medication_use">Uso de Medicamentos (Opcional)</Label>
+                    <Textarea id="medication_use" placeholder="Liste medicamentos de uso contínuo e instruções." {...form.register("medication_use")} />
+                  </div>
+                </div>
+
+                <SheetFooter className="pt-4">
+                  <Button 
+                    type="submit" 
+                    disabled={mutation.isPending || isLoading}
                   >
-                    <SelectTrigger>
-                      <SelectValue placeholder={!selectedClassId ? "Selecione a Turma primeiro" : (filteredCourses.length === 0 ? "Nenhuma Série/Ano associada" : "Selecione a Série/Ano")} />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="none">Nenhuma Série/Ano (Desvincular)</SelectItem>
-                      {filteredCourses.map((c) => (
-                        <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  {form.formState.errors.course_id && <p className="text-sm text-destructive">{form.formState.errors.course_id.message}</p>}
-                  {selectedClassId && filteredCourses.length === 0 && (
-                    <p className="text-xs text-muted-foreground mt-1">
-                        Nenhuma Série/Ano compatível com a turma selecionada.
-                    </p>
-                  )}
-                </div>
-              </div>
-
-              {/* Status */}
-              <div className="space-y-2">
-                <Label htmlFor="status">Status</Label>
-                <Select onValueChange={(value) => form.setValue('status', value as any)} defaultValue={form.getValues('status')}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecione o status" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="active">Ativo</SelectItem>
-                    <SelectItem value="pre-enrolled">Pré-Matriculado</SelectItem>
-                    <SelectItem value="inactive">Inativo</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <Separator />
-
-              {/* Seção 2: Contato e Documentos do Aluno */}
-              <div className="space-y-4">
-                <h3 className="text-lg font-semibold">Contato e Documentos do Aluno</h3>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="phone">Telefone</Label>
-                    <Input id="phone" type="tel" {...form.register("phone")} />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="email">Email</Label>
-                    <Input id="email" type="email" {...form.register("email")} />
-                    {form.formState.errors.email && <p className="text-sm text-destructive">{form.formState.errors.email.message}</p>}
-                  </div>
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="cpf">CPF</Label>
-                    <Input id="cpf" {...form.register("cpf")} />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="rg">RG</Label>
-                    <Input id="rg" {...form.register("rg")} />
-                  
-                  </div>
-                </div>
-              </div>
-
-              <Separator />
-
-              {/* Seção 3: Responsável Legal */}
-              <GuardianForm />
-
-              {/* Seção 4: Endereço */}
-              <div className="space-y-4">
-                <h3 className="text-lg font-semibold">Endereço</h3>
-                <div className="grid grid-cols-3 gap-4">
-                  <div className="space-y-2 col-span-1">
-                    <Label htmlFor="zip_code">CEP</Label>
-                    <Input id="zip_code" {...form.register("zip_code")} />
-                  </div>
-                  <div className="space-y-2 col-span-2">
-                    <Label htmlFor="address_street">Rua</Label>
-                    <Input id="address_street" {...form.register("address_street")} />
-                  </div>
-                </div>
-                <div className="grid grid-cols-3 gap-4">
-                  <div className="space-y-2 col-span-1">
-                    <Label htmlFor="address_number">Número</Label>
-                    <Input id="address_number" {...form.register("address_number")} />
-                  </div>
-                  <div className="space-y-2 col-span-2">
-                    <Label htmlFor="address_neighborhood">Bairro</Label>
-                    <Input id="address_neighborhood" {...form.register("address_neighborhood")} />
-                  </div>
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="address_city">Cidade</Label>
-                    <Input id="address_city" {...form.register("address_city")} />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="address_state">Estado</Label>
-                    <Input id="address_state" {...form.register("address_state")} />
-                  </div>
-                </div>
-              </div>
-
-              <Separator />
-
-              {/* Seção 5: Informações de Saúde e Necessidades */}
-              <div className="space-y-4">
-                <h3 className="text-lg font-semibold">Informações Adicionais</h3>
-                <div className="space-y-2">
-                  <Label htmlFor="special_needs">Necessidades Especiais (Opcional)</Label>
-                  <Textarea id="special_needs" placeholder="Descreva quaisquer necessidades especiais ou adaptações necessárias." {...form.register("special_needs")} />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="medication_use">Uso de Medicamentos (Opcional)</Label>
-                  <Textarea id="medication_use" placeholder="Liste medicamentos de uso contínuo e instruções." {...form.register("medication_use")} />
-                </div>
-              </div>
-
-              <SheetFooter className="pt-4">
-                <Button 
-                  type="submit" 
-                  disabled={mutation.isPending || isLoading}
-                >
-                  {mutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                  Salvar Alterações
-                </Button>
-              </SheetFooter>
-            </form>
-          </FormProvider>
+                    {mutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    Salvar Alterações
+                  </Button>
+                </SheetFooter>
+              </form>
+            </FormProvider>
+          )
         )}
       </SheetContent>
     </Sheet>
