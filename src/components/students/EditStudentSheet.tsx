@@ -74,7 +74,13 @@ interface StudentDetails {
 
 // Função auxiliar para pré-processar strings vazias para null
 const preprocessString = z.preprocess(
-  (value) => (value === '' ? null : value),
+  (value) => {
+    if (typeof value === 'string') {
+      const trimmed = value.trim();
+      return trimmed === '' ? null : trimmed;
+    }
+    return value;
+  },
   z.string().optional().nullable()
 );
 
@@ -88,7 +94,13 @@ const studentSchema = z.object({
   
   phone: preprocessString, 
   email: z.preprocess(
-    (value) => (value === '' ? null : value),
+    (value) => {
+      if (typeof value === 'string') {
+        const trimmed = value.trim();
+        return trimmed === '' ? null : trimmed;
+      }
+      return value;
+    },
     z.string().email("Email inválido.").optional().nullable()
   ), 
   cpf: preprocessString, 

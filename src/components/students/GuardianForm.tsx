@@ -6,15 +6,36 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Separator } from '@/components/ui/separator';
 import { z } from 'zod';
 
+// Função auxiliar para pré-processar strings vazias para null (com trim)
+const preprocessStringWithTrim = z.preprocess(
+  (value) => {
+    if (typeof value === 'string') {
+      const trimmed = value.trim();
+      return trimmed === '' ? null : trimmed;
+    }
+    return value;
+  },
+  z.string().optional().nullable()
+);
+
 // Schema para o responsável (usado dentro do AddStudentSheet)
 export const guardianSchema = z.object({
   guardian_full_name: z.string().min(5, "Nome completo do responsável é obrigatório."),
   guardian_relationship: z.enum(['Pai', 'Mãe', 'Avô(ó)', 'Tutor', 'Outro'], {
     required_error: "O parentesco é obrigatório.",
   }),
-  guardian_phone: z.string().optional().nullable(),
-  guardian_email: z.string().email("Email inválido.").optional().or(z.literal('')).nullable(),
-  guardian_cpf: z.string().optional().nullable(),
+  guardian_phone: preprocessStringWithTrim,
+  guardian_email: z.preprocess(
+    (value) => {
+      if (typeof value === 'string') {
+        const trimmed = value.trim();
+        return trimmed === '' ? null : trimmed;
+      }
+      return value;
+    },
+    z.string().email("Email inválido.").optional().nullable()
+  ),
+  guardian_cpf: preprocessStringWithTrim,
 });
 
 export type GuardianFormData = z.infer<typeof guardianSchema>;

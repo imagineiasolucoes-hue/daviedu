@@ -35,7 +35,13 @@ interface Class {
 
 // Função auxiliar para pré-processar strings vazias para null
 const preprocessString = z.preprocess(
-  (value) => (value === '' ? null : value),
+  (value) => {
+    if (typeof value === 'string') {
+      const trimmed = value.trim();
+      return trimmed === '' ? null : trimmed;
+    }
+    return value;
+  },
   z.string().optional().nullable()
 );
 
@@ -48,12 +54,18 @@ const studentSchema = z.object({
   class_id: z.string().uuid("Selecione uma turma."),
   
   // Série/Ano (Course): Selecionada em segundo, filtrada pela turma
-  course_id: z.string().uuid("Selecione a Série/Ano."),
+  course_id: z.string().uuid("Selecione a Série/Ano.").optional().nullable(),
   
   // Contato e Documentos do Aluno
   phone: preprocessString, 
   email: z.preprocess(
-    (value) => (value === '' ? null : value),
+    (value) => {
+      if (typeof value === 'string') {
+        const trimmed = value.trim();
+        return trimmed === '' ? null : trimmed;
+      }
+      return value;
+    },
     z.string().email("Email inválido.").optional().nullable()
   ), 
   cpf: preprocessString, 
