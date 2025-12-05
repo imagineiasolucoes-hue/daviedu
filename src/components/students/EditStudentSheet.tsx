@@ -147,7 +147,7 @@ const EditStudentSheet: React.FC<EditStudentSheetProps> = ({ studentId, open, on
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent className="sm:max-w-lg">
+      <SheetContent className="sm:max-w-lg overflow-y-auto">
         <SheetHeader>
           <SheetTitle>Editar Aluno</SheetTitle>
           <SheetDescription>
