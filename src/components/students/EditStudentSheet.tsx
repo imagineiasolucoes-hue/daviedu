@@ -227,9 +227,14 @@ const EditStudentSheet: React.FC<EditStudentSheetProps> = ({ studentId, open, on
     mutationFn: async (data: StudentFormData) => {
       if (!studentId || !tenantId) throw new Error("ID do aluno ou da escola ausente.");
 
-      // Validação adicional: Se a turma tem cursos, o curso deve ser selecionado
-      if (selectedClass && filteredCourses.length > 0 && !data.course_id) {
+      // Validação de Regra de Negócio: Se a turma tem cursos, o curso deve ser selecionado
+      if (data.class_id && filteredCourses.length > 0 && !data.course_id) {
           throw new Error("Selecione a Série/Ano para a turma escolhida.");
+      }
+      
+      // Se a turma for desvinculada (class_id: null), o course_id também deve ser null
+      if (!data.class_id) {
+          data.course_id = null;
       }
 
       // Separar dados do aluno e do responsável
