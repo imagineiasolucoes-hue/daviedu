@@ -22,6 +22,9 @@ export type GuardianFormData = z.infer<typeof guardianSchema>;
 const GuardianForm: React.FC = () => {
   const { register, formState: { errors }, setValue, watch } = useFormContext<GuardianFormData>();
 
+  // O valor do watch pode ser undefined, mas o Select espera uma string.
+  const relationshipValue = watch('guardian_relationship') || '';
+
   return (
     <div className="space-y-4">
       <h3 className="text-lg font-semibold">Responsável Legal Principal</h3>
@@ -36,8 +39,8 @@ const GuardianForm: React.FC = () => {
         <div className="space-y-2">
           <Label htmlFor="guardian_relationship">Parentesco</Label>
           <Select 
-            onValueChange={(value) => setValue('guardian_relationship', value as any)} 
-            value={watch('guardian_relationship') || ''}
+            onValueChange={(value) => setValue('guardian_relationship', value as any, { shouldValidate: true })} 
+            value={relationshipValue}
           >
             <SelectTrigger>
               <SelectValue placeholder="Selecione o parentesco" />
