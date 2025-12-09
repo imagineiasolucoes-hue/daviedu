@@ -15,6 +15,13 @@ import { toast } from 'sonner';
 import { QRCodeSVG } from 'qrcode.react';
 
 // --- Tipos de Dados ---
+interface GuardianDetails {
+  full_name: string;
+  relationship: string;
+  phone: string | null;
+  email: string | null;
+}
+
 interface StudentDetails {
   id: string;
   full_name: string;
@@ -37,20 +44,7 @@ interface StudentDetails {
     school_year: number; 
   } | null;
   courses: { name: string } | null;
-  student_guardians?: {
-    guardians: {
-      full_name: string;
-      relationship: string;
-      phone: string | null;
-      email: string | null;
-    } | null;
-  }[];
-  guardians: { // Adicionado para facilitar o acesso aos guardiões
-    full_name: string;
-    relationship: string;
-    phone: string | null;
-    email: string | null;
-  }[];
+  guardians: GuardianDetails[];
 }
 
 interface TenantConfig {
@@ -67,20 +61,12 @@ interface TenantConfig {
   bank_name: string | null;
   bank_agency: string | null;
   bank_account: string | null;
-  authorization_act: string | null; // NOVO CAMPO
+  authorization_act: string | null;
 }
 
 interface TenantDetails {
   name: string;
   config: TenantConfig | null;
-}
-
-interface Grade {
-  subject_name: string;
-  grade_value: number;
-  assessment_type: string;
-  period: string;
-  date_recorded: string;
 }
 
 interface ProcessedSubjectGrade {
@@ -90,6 +76,11 @@ interface ProcessedSubjectGrade {
   final_average: number | null;
   absences: number | null;
   result: 'Aprovado' | 'Reprovado' | 'Recuperação' | 'N/A';
+}
+
+interface AcademicSummary {
+    subjects: ProcessedSubjectGrade[];
+    periods: string[];
 }
 
 // --- Funções de Busca ---
@@ -132,8 +123,8 @@ const fetchStudentData = async (studentId: string): Promise<StudentDetails> => {
   if (error) throw new Error(error.message);
   
   const student = data as unknown as StudentDetails;
-  student.guardians = student.student_guardians?.map((sg: any) => sg.guardians).filter(Boolean) || [];
-  delete (student as any).student_guardians; // Limpa a propriedade intermediária
+  student.guardians = (student as any).student_guardians?.map((sg: any) => sg.guardians).filter(Boolean) || [];
+  delete (student as any).student_guardians; 
   return student;
 };
 
@@ -147,16 +138,13 @@ const fetchTenantDetails = async (tenantId: string): Promise<TenantDetails> => {
   return data as TenantDetails;
 };
 
-const fetchGrades = async (studentId: string): Promise<Grade[]> => {
-  const { data, error } = await supabase
-    .from('grades')
-    .select(`subject_name, grade_value, assessment_type, period, date_recorded`)
-    .eq('student_id', studentId)
-    .order('period')
-    .order('subject_name');
-  
-  if (error) throw new Error(error.message);
-  return data as Grade[];
+const fetchAcademicSummary = async (studentId: string): Promise<AcademicSummary> => {
+    const { data, error } = await supabase.rpc(
+        'calculate_student_academic_summary', 
+        { p_student_id: studentId }
+    );
+    if (error) throw new Error(error.message);
+    return data as AcademicSummary;
 };
 
 const StudentTranscript: React.FC = () => {
@@ -164,7 +152,6 @@ const StudentTranscript: React.FC = () => {
   const { profile } = useProfile();
   const tenantId = profile?.tenant_id;
   const printRef = useRef<HTMLDivElement>(null);
-  const [verificationToken, setVerificationToken] = useState<string | null>(null);
   const [verificationLink, setVerificationLink] = useState<string | null>(null);
 
   const { data: student, isLoading: isLoadingStudent, error: studentError } = useQuery<StudentDetails, Error>({
@@ -179,9 +166,9 @@ const StudentTranscript: React.FC = () => {
     enabled: !!tenantId && !!student?.tenant_id,
   });
 
-  const { data: grades, isLoading: isLoadingGrades, error: gradesError } = useQuery<Grade[], Error>({
-    queryKey: ['studentGrades', studentId],
-    queryFn: () => fetchGrades(studentId!),
+  const { data: academicSummary, isLoading: isLoadingSummary, error: summaryError } = useQuery<AcademicSummary, Error>({
+    queryKey: ['academicSummary', studentId],
+    queryFn: () => fetchAcademicSummary(studentId!),
     enabled: !!studentId,
   });
 
@@ -197,7 +184,6 @@ const StudentTranscript: React.FC = () => {
       return data.token as string;
     },
     onSuccess: (token) => {
-      setVerificationToken(token);
       setVerificationLink(`${window.location.origin}/verify-document/${token}`);
       toast.success("Link de verificação gerado com sucesso!");
     },
@@ -212,10 +198,6 @@ const StudentTranscript: React.FC = () => {
       return;
     }
 
-    // Primeiro, precisamos do ID do documento na tabela 'documents'
-    // Para simplificar, vamos assumir que o 'entityId' (studentId) é o 'related_entity_id'
-    // e que existe um documento do tipo 'transcript' para este aluno.
-    // Em um sistema mais robusto, você criaria o registro do documento aqui se ele não existisse.
     const { data: existingDoc, error: docError } = await supabase
       .from('documents')
       .select('id')
@@ -226,14 +208,13 @@ const StudentTranscript: React.FC = () => {
     let documentIdToUse = existingDoc?.id;
 
     if (!documentIdToUse) {
-      // Se não existir, cria um registro de documento (apenas metadados)
       const { data: newDoc, error: insertDocError } = await supabase
         .from('documents')
         .insert({
           tenant_id: tenantId,
           document_type: 'transcript',
           related_entity_id: studentId,
-          file_url: 'generated_on_demand', // URL placeholder, pois o conteúdo é dinâmico
+          file_url: 'generated_on_demand',
           description: `Histórico Escolar de ${student?.full_name || 'Aluno'}`,
           metadata: { generatedBy: profile?.id, studentName: student?.full_name },
         })
@@ -256,73 +237,8 @@ const StudentTranscript: React.FC = () => {
     window.print();
   };
 
-  const isLoading = isLoadingStudent || isLoadingTenant || isLoadingGrades;
-  const error = studentError || tenantError || gradesError;
-
-  // Processar as notas para o formato do boletim
-  const processedGrades = useMemo(() => {
-    if (!grades || grades.length === 0) return [];
-
-    const subjectsMap = new Map<string, ProcessedSubjectGrade>();
-    const allPeriods = new Set<string>(); // Para coletar todos os períodos existentes
-
-    grades.forEach(grade => {
-      if (!subjectsMap.has(grade.subject_name)) {
-        subjectsMap.set(grade.subject_name, {
-          subject_name: grade.subject_name,
-          unit_grades: {},
-          total_units_grade: null,
-          final_average: null,
-          absences: 0, // Placeholder
-          result: 'N/A',
-        });
-      }
-      const subject = subjectsMap.get(grade.subject_name)!;
-
-      if (!subject.unit_grades[grade.period]) {
-        subject.unit_grades[grade.period] = grade.grade_value;
-      } else {
-        subject.unit_grades[grade.period] = grade.grade_value;
-      }
-      allPeriods.add(grade.period);
-    });
-
-    // Converter para array e calcular totais e médias
-    const result: ProcessedSubjectGrade[] = Array.from(subjectsMap.values()).map(subject => {
-      const validUnitGrades = Object.values(subject.unit_grades).filter(g => g !== null) as number[];
-      
-      if (validUnitGrades.length > 0) {
-        subject.total_units_grade = validUnitGrades.reduce((sum, g) => sum + g, 0);
-        subject.final_average = validUnitGrades.length > 0 ? subject.total_units_grade / validUnitGrades.length : null; // Corrigido aqui
-        
-        if (subject.final_average !== null && subject.final_average >= 7) {
-          subject.result = 'Aprovado';
-        } else if (subject.final_average !== null && subject.final_average >= 5) {
-          subject.result = 'Recuperação';
-        } else if (subject.final_average !== null) {
-          subject.result = 'Reprovado';
-        } else {
-          subject.result = 'N/A';
-        }
-      } else {
-        subject.result = 'N/A';
-      }
-      return subject;
-    });
-
-    return result;
-  }, [grades]);
-
-  // Ordenar os períodos para o cabeçalho da tabela (ex: 1ª Unidade, 2ª Unidade)
-  const sortedPeriods = useMemo(() => {
-    const periods = Array.from(new Set(grades?.map(g => g.period) || []));
-    return periods.sort((a, b) => {
-      const numA = parseInt(a.match(/\d+/)?.[0] || '0');
-      const numB = parseInt(b.match(/\d+/)?.[0] || '0');
-      return numA - numB;
-    });
-  }, [grades]);
-
+  const isLoading = isLoadingStudent || isLoadingTenant || isLoadingSummary;
+  const error = studentError || tenantError || summaryError;
 
   if (isLoading) {
     return (
@@ -362,9 +278,17 @@ const StudentTranscript: React.FC = () => {
     schoolConfig?.address_state,
     schoolConfig?.address_zip_code ? ` - CEP: ${schoolConfig.address_zip_code}` : '',
   ].filter(Boolean).join('');
+  
+  const processedGrades = academicSummary?.subjects || [];
+  const sortedPeriods = academicSummary?.periods.sort((a, b) => {
+      const numA = parseInt(a.match(/\d+/)?.[0] || '0');
+      const numB = parseInt(b.match(/\d+/)?.[0] || '0');
+      return numA - numB;
+  }) || [];
+
 
   return (
-    <div className="max-w-4xl mx-auto bg-white p-6 shadow-lg print:shadow-none print:p-0" ref={printRef}>
+    <div className="max-w-4xl mx-auto bg-white p-6 shadow-lg print:shadow-none print:p-0 print:w-full print:max-w-none print:mx-0" ref={printRef}>
       
       {/* Botões de Ação (Ocultos na Impressão) */}
       <div className="flex justify-between items-center mb-6 print-hidden">
@@ -402,7 +326,7 @@ const StudentTranscript: React.FC = () => {
             {schoolConfig?.cnpj && <p>CNPJ: {schoolConfig.cnpj}</p>}
             {schoolConfig?.phone && <p>Telefone: {schoolConfig.phone}</p>}
             {fullAddress && <p>Endereço: {fullAddress}</p>}
-            {schoolConfig?.authorization_act && <p>Ato de Criação/Autorização: {schoolConfig.authorization_act}</p>} {/* NOVO CAMPO */}
+            {schoolConfig?.authorization_act && <p>Ato de Criação/Autorização: {schoolConfig.authorization_act}</p>}
           </div>
         </div>
 
@@ -420,7 +344,7 @@ const StudentTranscript: React.FC = () => {
             {student.full_name}
           </CardTitle>
         </CardHeader>
-        <CardContent className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm print:text-xs"> {/* Ajustado aqui */}
+        <CardContent className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm print:text-xs">
           <div className="flex items-center gap-2">
             <User className="h-4 w-4 text-muted-foreground" />
             <span className="font-semibold">Nome:</span> {student.full_name}
@@ -469,8 +393,8 @@ const StudentTranscript: React.FC = () => {
             </div>
           )}
           {primaryGuardian && (
-            <div className="col-span-2 text-xs space-y-0.5"> {/* Ajustado aqui */}
-              <Separator className="my-1" /> {/* Ajustado aqui */}
+            <div className="col-span-2 text-xs space-y-0.5">
+              <Separator className="my-1" />
               <p className="font-semibold">Responsável Principal:</p>
               <p>{primaryGuardian.full_name} ({primaryGuardian.relationship})</p>
               {primaryGuardian.phone && <p>Telefone: {primaryGuardian.phone}</p>}
@@ -491,35 +415,35 @@ const StudentTranscript: React.FC = () => {
           <Table className="w-full">
             <TableHeader>
               <TableRow>
-                <TableHead className="min-w-[120px] text-left text-xs py-1 px-2 print:min-w-[100px] print:text-[10px] print:py-0.5 print:px-1">Disciplina</TableHead> {/* Ajustado aqui */}
+                <TableHead className="min-w-[120px] text-left text-xs py-1 px-2 print:min-w-[100px] print:text-[10px] print:py-0.5 print:px-1">Disciplina</TableHead>
                 {sortedPeriods.map(period => (
-                  <TableHead key={period} className="text-center min-w-[60px] text-xs py-1 px-2 print:min-w-[40px] print:text-[10px] print:py-0.5 print:px-1">{period}</TableHead> 
+                  <TableHead key={period} className="text-center min-w-[60px] text-xs py-1 px-2 print:min-w-[40px] print:text-[10px] print:py-0.5 print:px-1">{period}</TableHead>
                 ))}
-                <TableHead className="text-center min-w-[70px] text-xs py-1 px-2 print:min-w-[50px] print:text-[10px] print:py-0.5 print:px-1">Total</TableHead> {/* Ajustado aqui */}
-                <TableHead className="text-center min-w-[90px] text-xs py-1 px-2 print:min-w-[60px] print:text-[10px] print:py-0.5 print:px-1">Média Final</TableHead> {/* Ajustado aqui */}
-                <TableHead className="text-center min-w-[60px] text-xs py-1 px-2 print:min-w-[40px] print:text-[10px] print:py-0.5 print:px-1">Faltas</TableHead> {/* Ajustado aqui */}
-                <TableHead className="text-center min-w-[90px] text-xs py-1 px-2 print:min-w-[60px] print:text-[10px] print:py-0.5 print:px-1">Resultado</TableHead> {/* Ajustado aqui */}
+                <TableHead className="text-center min-w-[70px] text-xs py-1 px-2 print:min-w-[50px] print:text-[10px] print:py-0.5 print:px-1">Total</TableHead>
+                <TableHead className="text-center min-w-[90px] text-xs py-1 px-2 print:min-w-[60px] print:text-[10px] print:py-0.5 print:px-1">Média Final</TableHead>
+                <TableHead className="text-center min-w-[60px] text-xs py-1 px-2 print:min-w-[40px] print:text-[10px] print:py-0.5 print:px-1">Faltas</TableHead>
+                <TableHead className="text-center min-w-[90px] text-xs py-1 px-2 print:min-w-[60px] print:text-[10px] print:py-0.5 print:px-1">Resultado</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {processedGrades.map((subject) => (
-                <TableRow key={subject.subject_name}>
-                  <TableCell className="font-medium text-xs py-1 px-2 print:text-[10px] print:py-0.5 print:px-1">{subject.subject_name}</TableCell> {/* Ajustado aqui */}
+                <TableRow key={subject.subject_name} className="page-break-inside-avoid">
+                  <TableCell className="font-medium text-xs py-1 px-2 print:text-[10px] print:py-0.5 print:px-1">{subject.subject_name}</TableCell>
                   {sortedPeriods.map(period => (
-                    <TableCell key={`${subject.subject_name}-${period}`} className="text-center text-xs py-1 px-2 print:text-[10px] print:py-0.5 print:px-1"> {/* Ajustado aqui */}
+                    <TableCell key={`${subject.subject_name}-${period}`} className="text-center text-xs py-1 px-2 print:text-[10px] print:py-0.5 print:px-1">
                       {subject.unit_grades[period] !== null ? subject.unit_grades[period]?.toFixed(1) : 'N/A'}
                     </TableCell>
                   ))}
-                  <TableCell className="text-center font-bold text-xs py-1 px-2 print:text-[10px] print:py-0.5 print:px-1"> {/* Ajustado aqui */}
+                  <TableCell className="text-center font-bold text-xs py-1 px-2 print:text-[10px] print:py-0.5 print:px-1">
                     {subject.total_units_grade !== null ? subject.total_units_grade.toFixed(1) : 'N/A'}
                   </TableCell>
-                  <TableCell className="text-center font-bold text-xs py-1 px-2 print:text-[10px] print:py-0.5 print:px-1"> {/* Ajustado aqui */}
+                  <TableCell className="text-center font-bold text-xs py-1 px-2 print:text-[10px] print:py-0.5 print:px-1">
                     {subject.final_average !== null ? subject.final_average.toFixed(1) : 'N/A'}
                   </TableCell>
-                  <TableCell className="text-center text-xs py-1 px-2 print:text-[10px] print:py-0.5 print:px-1"> {/* Ajustado aqui */}
+                  <TableCell className="text-center text-xs py-1 px-2 print:text-[10px] print:py-0.5 print:px-1">
                     {subject.absences !== null ? subject.absences : 'N/A'}
                   </TableCell>
-                  <TableCell className="text-center text-xs py-1 px-2 print:text-[10px] print:py-0.5 print:px-1"> {/* Ajustado aqui */}
+                  <TableCell className="text-center text-xs py-1 px-2 print:text-[10px] print:py-0.5 print:px-1">
                     {subject.result === 'Aprovado' && <span className="text-green-600 font-semibold">Aprovado</span>}
                     {subject.result === 'Reprovado' && <span className="text-red-600 font-semibold">Reprovado</span>}
                     {subject.result === 'Recuperação' && <span className="text-yellow-600 font-semibold">Recup.</span>}
@@ -537,9 +461,9 @@ const StudentTranscript: React.FC = () => {
       <div className="mt-8 p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-md text-sm text-blue-800 dark:text-blue-200 print-hidden">
         <p className="font-semibold">Atenção:</p>
         <ul className="list-disc list-inside ml-2">
-          <li>As colunas de "Unidade" são preenchidas com a última nota registrada para o período correspondente. Para um cálculo de média mais preciso por unidade, seria necessário um sistema de pesos ou múltiplas avaliações por período.</li>
-          <li>A coluna "Faltas" é um placeholder. A funcionalidade de registro de faltas não está implementada no sistema atual e exigiria uma extensão no banco de dados.</li>
-          <li>A regra de "Resultado" é um exemplo (Média Final &gt;= 7: Aprovado; &gt;= 5: Recuperação; &lt; 5: Reprovado).</li>
+          <li>As notas por período são a última nota registrada para o período correspondente.</li>
+          <li>A coluna "Faltas" é um placeholder.</li>
+          <li>A regra de "Resultado" é calculada pelo servidor (Média Final &gt;= 7: Aprovado; &gt;= 5: Recuperação; &lt; 5: Reprovado).</li>
         </ul>
       </div>
 

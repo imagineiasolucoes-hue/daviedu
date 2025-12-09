@@ -10,7 +10,14 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
-// --- Tipos de Dados (Replicados do StudentTranscript para consistência) ---
+// --- Tipos de Dados ---
+interface GuardianDetails {
+  full_name: string;
+  relationship: string;
+  phone: string | null;
+  email: string | null;
+}
+
 interface StudentDetails {
   id: string;
   full_name: string;
@@ -33,12 +40,7 @@ interface StudentDetails {
     school_year: number; 
   } | null;
   courses: { name: string } | null;
-  guardians: {
-    full_name: string;
-    relationship: string;
-    phone: string | null;
-    email: string | null;
-  }[];
+  guardians: GuardianDetails[];
 }
 
 interface TenantConfig {
@@ -59,14 +61,6 @@ interface TenantDetails {
   config: TenantConfig | null;
 }
 
-interface Grade {
-  subject_name: string;
-  grade_value: number;
-  assessment_type: string;
-  period: string;
-  date_recorded: string;
-}
-
 interface ProcessedSubjectGrade {
   subject_name: string;
   unit_grades: { [periodName: string]: number | null };
@@ -76,11 +70,16 @@ interface ProcessedSubjectGrade {
   result: 'Aprovado' | 'Reprovado' | 'Recuperação' | 'N/A';
 }
 
+interface AcademicSummary {
+    subjects: ProcessedSubjectGrade[];
+    periods: string[];
+}
+
 interface VerificationData {
   success: boolean;
   student: StudentDetails;
   tenant: TenantDetails;
-  grades: Grade[];
+  academicSummary: AcademicSummary; // Usando o resumo pré-calculado
   documentId: string;
 }
 
@@ -101,67 +100,24 @@ const VerifyDocumentPage: React.FC = () => {
     queryKey: ['verifiedDocument', token],
     queryFn: () => fetchVerifiedDocument(token!),
     enabled: !!token,
-    retry: false, // Não tentar novamente em caso de token inválido
+    retry: false,
   });
 
   const student = data?.student;
   const tenant = data?.tenant;
-  const grades = data?.grades;
+  const academicSummary = data?.academicSummary;
 
-  // Processar as notas para o formato do boletim (lógica replicada do StudentTranscript)
-  const processedGrades = useMemo(() => {
-    if (!grades || grades.length === 0) return [];
-
-    const subjectsMap = new Map<string, ProcessedSubjectGrade>();
-    const allPeriods = new Set<string>();
-
-    grades.forEach(grade => {
-      if (!subjectsMap.has(grade.subject_name)) {
-        subjectsMap.set(grade.subject_name, {
-          subject_name: grade.subject_name,
-          unit_grades: {},
-          total_units_grade: null,
-          final_average: null,
-          absences: 0,
-          result: 'N/A',
-        });
-      }
-      const subject = subjectsMap.get(grade.subject_name)!;
-      subject.unit_grades[grade.period] = grade.grade_value;
-      allPeriods.add(grade.period);
-    });
-
-    const result: ProcessedSubjectGrade[] = Array.from(subjectsMap.values()).map(subject => {
-      const validUnitGrades = Object.values(subject.unit_grades).filter(g => g !== null) as number[];
-      
-      if (validUnitGrades.length > 0) {
-        subject.total_units_grade = validUnitGrades.reduce((sum, g) => sum + g, 0);
-        subject.final_average = subject.total_units_grade / validUnitGrades.length;
-        
-        if (subject.final_average >= 7) {
-          subject.result = 'Aprovado';
-        } else if (subject.final_average >= 5) {
-          subject.result = 'Recuperação';
-        } else {
-          subject.result = 'Reprovado';
-        }
-      } else {
-        subject.result = 'N/A';
-      }
-      return subject;
-    });
-
-    return result;
-  }, [grades]);
-
+  const processedGrades = academicSummary?.subjects || [];
+  
+  // Ordenar os períodos para o cabeçalho da tabela
   const sortedPeriods = useMemo(() => {
-    const periods = Array.from(new Set(grades?.map(g => g.period) || []));
+    const periods = academicSummary?.periods || [];
     return periods.sort((a, b) => {
       const numA = parseInt(a.match(/\d+/)?.[0] || '0');
       const numB = parseInt(b.match(/\d+/)?.[0] || '0');
       return numA - numB;
     });
-  }, [grades]);
+  }, [academicSummary]);
 
   if (isLoading) {
     return (
@@ -214,7 +170,7 @@ const VerifyDocumentPage: React.FC = () => {
       <div className="text-center mb-6 p-4 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800">
         <CheckCircle className="h-10 w-10 text-green-600 mx-auto mb-2" />
         <h2 className="text-xl font-bold text-green-700">Documento Autêntico Verificado!</h2>
-        <p className="text-sm text-green-600">Este histórico escolar é oficial e foi emitido por {tenant.name}.</p>
+        <p className="text-sm text-green-600">Este documento é oficial e foi emitido por {tenant.name}.</p>
       </div>
 
       {/* Cabeçalho do Documento */}

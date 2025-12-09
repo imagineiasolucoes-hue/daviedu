@@ -4,7 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useProfile } from '@/hooks/useProfile';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Loader2, MoreHorizontal, Pencil, Trash2, User, Search, Filter, XCircle } from 'lucide-react';
+import { Loader2, MoreHorizontal, Pencil, Trash2, User, Search, Filter, XCircle, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
@@ -37,10 +37,19 @@ interface StudentFilters {
   classId: string;
 }
 
-const fetchStudents = async (tenantId: string, filters: StudentFilters): Promise<Student[]> => {
+interface PaginatedStudents {
+  data: Student[];
+  totalCount: number;
+}
+
+const PAGE_SIZE = 10; // Tamanho fixo da página
+
+const fetchStudents = async (tenantId: string, filters: StudentFilters, page: number): Promise<PaginatedStudents> => {
+  const offset = (page - 1) * PAGE_SIZE;
+
   let query = supabase
     .from('students')
-    .select(`id, full_name, registration_code, status, phone, classes (name)`)
+    .select(`id, full_name, registration_code, status, phone, classes (name)`, { count: 'exact' })
     .eq('tenant_id', tenantId);
 
   if (filters.name) {
@@ -57,11 +66,12 @@ const fetchStudents = async (tenantId: string, filters: StudentFilters): Promise
   }
 
   query = query.order('full_name', { ascending: true });
+  query = query.range(offset, offset + PAGE_SIZE - 1);
 
-  const { data, error } = await query;
+  const { data, error, count } = await query;
 
   if (error) throw new Error(error.message);
-  return data as unknown as Student[];
+  return { data: data as unknown as Student[], totalCount: count ?? 0 };
 };
 
 const fetchClasses = async (tenantId: string): Promise<Class[]> => {
@@ -81,6 +91,7 @@ const StudentsPage: React.FC = () => {
   const [isEditSheetOpen, setIsEditSheetOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
 
   const [filters, setFilters] = useState<StudentFilters>({
     name: '',
@@ -95,14 +106,19 @@ const StudentsPage: React.FC = () => {
     enabled: !!tenantId,
   });
 
-  const { data: students, isLoading: isStudentsLoading, error } = useQuery<Student[], Error>({
-    queryKey: ['students', tenantId, filters],
-    queryFn: () => fetchStudents(tenantId!, filters),
+  const { data: paginatedStudents, isLoading: isStudentsLoading, error } = useQuery<PaginatedStudents, Error>({
+    queryKey: ['students', tenantId, filters, currentPage],
+    queryFn: () => fetchStudents(tenantId!, filters, currentPage),
     enabled: !!tenantId,
   });
+  
+  const students = paginatedStudents?.data || [];
+  const totalCount = paginatedStudents?.totalCount || 0;
+  const totalPages = Math.ceil(totalCount / PAGE_SIZE);
 
   const handleFilterChange = (key: keyof StudentFilters, value: string) => {
     setFilters(prev => ({ ...prev, [key]: value }));
+    setCurrentPage(1); // Resetar para a primeira página ao aplicar filtros
   };
 
   const handleClearFilters = () => {
@@ -112,6 +128,7 @@ const StudentsPage: React.FC = () => {
       status: 'all',
       classId: 'all',
     });
+    setCurrentPage(1);
   };
 
   const hasActiveFilters = useMemo(() => {
@@ -128,7 +145,7 @@ const StudentsPage: React.FC = () => {
     setIsDeleteDialogOpen(true);
   };
 
-  if (isProfileLoading || isStudentsLoading || isLoadingClasses) {
+  if (isProfileLoading || isLoadingClasses) {
     return <div className="flex justify-center items-center h-64"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>;
   }
 
@@ -237,55 +254,87 @@ const StudentsPage: React.FC = () => {
 
       <Card>
         <CardHeader>
-          <CardTitle>Lista de Alunos ({students?.length || 0})</CardTitle>
+          <CardTitle>Lista de Alunos ({totalCount} {totalCount === 1 ? 'aluno' : 'alunos'})</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>ID</TableHead>
-                  <TableHead>Nome Completo</TableHead>
-                  <TableHead>Matrícula</TableHead>
-                  <TableHead>Telefone</TableHead>
-                  <TableHead>Turma</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead className="text-right">Ações</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {students?.map((student) => (
-                  <TableRow key={student.id}>
-                    <TableCell className="text-xs text-muted-foreground font-mono max-w-[100px] truncate">{student.id}</TableCell>
-                    <TableCell className="font-medium">{student.full_name}</TableCell>
-                    <TableCell>{student.registration_code}</TableCell>
-                    <TableCell>{student.phone || 'N/A'}</TableCell>
-                    <TableCell>{student.classes?.name || 'N/A'}</TableCell>
-                    <TableCell>{getStatusBadge(student.status)}</TableCell>
-                    <TableCell className="text-right">
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon">
-                            <MoreHorizontal className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={() => handleEdit(student)}>
-                            <Pencil className="mr-2 h-4 w-4" /> Editar
-                          </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => handleDelete(student)} className="text-destructive">
-                            <Trash2 className="mr-2 h-4 w-4" /> Excluir
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </TableCell>
+          {isStudentsLoading ? (
+            <div className="flex justify-center items-center h-64"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>
+          ) : (
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>ID</TableHead>
+                    <TableHead>Nome Completo</TableHead>
+                    <TableHead>Matrícula</TableHead>
+                    <TableHead>Telefone</TableHead>
+                    <TableHead>Turma</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead className="text-right">Ações</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
-          {students?.length === 0 && (
+                </TableHeader>
+                <TableBody>
+                  {students.map((student) => (
+                    <TableRow key={student.id}>
+                      <TableCell className="text-xs text-muted-foreground font-mono max-w-[100px] truncate">{student.id}</TableCell>
+                      <TableCell className="font-medium">{student.full_name}</TableCell>
+                      <TableCell>{student.registration_code}</TableCell>
+                      <TableCell>{student.phone || 'N/A'}</TableCell>
+                      <TableCell>{student.classes?.name || 'N/A'}</TableCell>
+                      <TableCell>{getStatusBadge(student.status)}</TableCell>
+                      <TableCell className="text-right">
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon">
+                              <MoreHorizontal className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem onClick={() => handleEdit(student)}>
+                              <Pencil className="mr-2 h-4 w-4" /> Editar
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => handleDelete(student)} className="text-destructive">
+                              <Trash2 className="mr-2 h-4 w-4" /> Excluir
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          )}
+          
+          {students.length === 0 && !isStudentsLoading && (
             <p className="text-center py-8 text-muted-foreground">Nenhum aluno cadastrado ou encontrado com os filtros aplicados.</p>
+          )}
+
+          {/* Controles de Paginação */}
+          {totalPages > 1 && (
+            <div className="flex justify-between items-center pt-4">
+              <p className="text-sm text-muted-foreground">
+                Página {currentPage} de {totalPages}
+              </p>
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                  disabled={currentPage === 1 || isStudentsLoading}
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                  disabled={currentPage === totalPages || isStudentsLoading}
+                >
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
           )}
         </CardContent>
       </Card>

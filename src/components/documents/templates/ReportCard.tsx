@@ -14,6 +14,13 @@ import { QRCodeSVG } from 'qrcode.react';
 import { toast } from 'sonner';
 
 // --- Tipos de Dados ---
+interface GuardianDetails {
+  full_name: string;
+  relationship: string;
+  phone: string | null;
+  email: string | null;
+}
+
 interface StudentDetails {
   id: string;
   full_name: string;
@@ -22,34 +29,21 @@ interface StudentDetails {
   tenant_id: string;
   class_id: string | null;
   course_id: string | null;
-  created_at: string; // Adicionado created_at para a data de matrícula
-  gender: 'Masculino' | 'Feminino' | 'Outro' | null; // Adicionado
-  nationality: string | null; // Adicionado
-  naturality: string | null; // Adicionado
-  cpf: string | null; // Adicionado
-  rg: string | null; // Adicionado
-  phone: string | null; // Adicionado
-  email: string | null; // Adicionado
+  created_at: string;
+  gender: 'Masculino' | 'Feminino' | 'Outro' | null;
+  nationality: string | null;
+  naturality: string | null;
+  cpf: string | null;
+  rg: string | null;
+  phone: string | null;
+  email: string | null;
   classes: { 
     id: string;
     name: string; 
     school_year: number; 
   } | null;
   courses: { name: string } | null;
-  student_guardians?: { // Adicionado para buscar guardiões
-    guardians: {
-      full_name: string;
-      relationship: string;
-      phone: string | null;
-      email: string | null;
-    } | null;
-  }[];
-  guardians: { // Adicionado para facilitar o acesso aos guardiões
-    full_name: string;
-    relationship: string;
-    phone: string | null;
-    email: string | null;
-  }[];
+  guardians: GuardianDetails[];
 }
 
 interface TenantConfig {
@@ -62,20 +56,12 @@ interface TenantConfig {
   address_state: string | null;
   address_zip_code: string | null;
   logo_url: string | null;
-  authorization_act: string | null; // NOVO CAMPO
+  authorization_act: string | null;
 }
 
 interface TenantDetails {
   name: string;
   config: TenantConfig | null;
-}
-
-interface Grade {
-  subject_name: string;
-  grade_value: number;
-  assessment_type: string;
-  period: string;
-  date_recorded: string;
 }
 
 interface ProcessedSubjectGrade {
@@ -85,6 +71,11 @@ interface ProcessedSubjectGrade {
   final_average: number | null;
   absences: number | null;
   result: 'Aprovado' | 'Reprovado' | 'Recuperação' | 'N/A';
+}
+
+interface AcademicSummary {
+    subjects: ProcessedSubjectGrade[];
+    periods: string[];
 }
 
 // --- Funções de Busca ---
@@ -127,8 +118,8 @@ const fetchStudentData = async (studentId: string): Promise<StudentDetails> => {
   if (error) throw new Error(error.message);
   
   const student = data as unknown as StudentDetails;
-  student.guardians = student.student_guardians?.map((sg: any) => sg.guardians).filter(Boolean) || [];
-  delete (student as any).student_guardians; // Limpa a propriedade intermediária
+  student.guardians = (student as any).student_guardians?.map((sg: any) => sg.guardians).filter(Boolean) || [];
+  delete (student as any).student_guardians; 
   return student;
 };
 
@@ -142,16 +133,13 @@ const fetchTenantDetails = async (tenantId: string): Promise<TenantDetails> => {
   return data as TenantDetails;
 };
 
-const fetchGrades = async (studentId: string): Promise<Grade[]> => {
-  const { data, error } = await supabase
-    .from('grades')
-    .select(`subject_name, grade_value, assessment_type, period, date_recorded`)
-    .eq('student_id', studentId)
-    .order('period')
-    .order('subject_name');
-  
-  if (error) throw new Error(error.message);
-  return data as Grade[];
+const fetchAcademicSummary = async (studentId: string): Promise<AcademicSummary> => {
+    const { data, error } = await supabase.rpc(
+        'calculate_student_academic_summary', 
+        { p_student_id: studentId }
+    );
+    if (error) throw new Error(error.message);
+    return data as AcademicSummary;
 };
 
 const ReportCard: React.FC = () => {
@@ -159,7 +147,6 @@ const ReportCard: React.FC = () => {
   const { profile } = useProfile();
   const tenantId = profile?.tenant_id;
   const printRef = useRef<HTMLDivElement>(null);
-  const [verificationToken, setVerificationToken] = useState<string | null>(null);
   const [verificationLink, setVerificationLink] = useState<string | null>(null);
 
   const { data: student, isLoading: isLoadingStudent, error: studentError } = useQuery<StudentDetails, Error>({
@@ -174,9 +161,9 @@ const ReportCard: React.FC = () => {
     enabled: !!tenantId && !!student?.tenant_id,
   });
 
-  const { data: grades, isLoading: isLoadingGrades, error: gradesError } = useQuery<Grade[], Error>({
-    queryKey: ['studentGrades', studentId],
-    queryFn: () => fetchGrades(studentId!),
+  const { data: academicSummary, isLoading: isLoadingSummary, error: summaryError } = useQuery<AcademicSummary, Error>({
+    queryKey: ['academicSummary', studentId],
+    queryFn: () => fetchAcademicSummary(studentId!),
     enabled: !!studentId,
   });
 
@@ -192,7 +179,6 @@ const ReportCard: React.FC = () => {
       return data.token as string;
     },
     onSuccess: (token) => {
-      setVerificationToken(token);
       setVerificationLink(`${window.location.origin}/verify-document/${token}`);
       toast.success("Link de verificação gerado com sucesso!");
     },
@@ -207,27 +193,23 @@ const ReportCard: React.FC = () => {
       return;
     }
 
-    // Primeiro, precisamos do ID do documento na tabela 'documents'
-    // Para simplificar, vamos assumir que o 'entityId' (studentId) é o 'related_entity_id'
-    // e que existe um documento do tipo 'report_card' para este aluno.
     const { data: existingDoc, error: docError } = await supabase
       .from('documents')
       .select('id')
       .eq('related_entity_id', studentId)
-      .eq('document_type', 'report_card') // Alterado para 'report_card'
+      .eq('document_type', 'report_card')
       .maybeSingle();
 
     let documentIdToUse = existingDoc?.id;
 
     if (!documentIdToUse) {
-      // Se não existir, cria um registro de documento (apenas metadados)
       const { data: newDoc, error: insertDocError } = await supabase
         .from('documents')
         .insert({
           tenant_id: tenantId,
-          document_type: 'report_card', // Alterado para 'report_card'
+          document_type: 'report_card',
           related_entity_id: studentId,
-          file_url: 'generated_on_demand', // URL placeholder, pois o conteúdo é dinâmico
+          file_url: 'generated_on_demand',
           description: `Boletim Escolar de ${student?.full_name || 'Aluno'}`,
           metadata: { generatedBy: profile?.id, studentName: student?.full_name },
         })
@@ -250,77 +232,8 @@ const ReportCard: React.FC = () => {
     window.print();
   };
 
-  const isLoading = isLoadingStudent || isLoadingTenant || isLoadingGrades;
-  const error = studentError || tenantError || gradesError;
-
-  // Processar as notas para o formato do boletim
-  const processedGrades = useMemo(() => {
-    if (!grades || grades.length === 0) return [];
-
-    const subjectsMap = new Map<string, ProcessedSubjectGrade>();
-    const allPeriods = new Set<string>(); // Para coletar todos os períodos existentes
-
-    grades.forEach(grade => {
-      if (!subjectsMap.has(grade.subject_name)) {
-        subjectsMap.set(grade.subject_name, {
-          subject_name: grade.subject_name,
-          unit_grades: {},
-          total_units_grade: null,
-          final_average: null,
-          absences: 0, // Placeholder
-          result: 'N/A',
-        });
-      }
-      const subject = subjectsMap.get(grade.subject_name)!;
-
-      // Agrupar notas por período e calcular a média para cada período
-      if (!subject.unit_grades[grade.period]) {
-        subject.unit_grades[grade.period] = grade.grade_value; 
-      } else {
-        // Se houver múltiplas notas para o mesmo período, podemos somar ou pegar a última/média
-        // Por simplicidade, vamos pegar a última nota registrada para o período
-        subject.unit_grades[grade.period] = grade.grade_value; 
-      }
-      allPeriods.add(grade.period);
-    });
-
-    // Converter para array e calcular totais e médias
-    const result: ProcessedSubjectGrade[] = Array.from(subjectsMap.values()).map(subject => {
-      const validUnitGrades = Object.values(subject.unit_grades).filter(g => g !== null) as number[];
-      
-      if (validUnitGrades.length > 0) {
-        subject.total_units_grade = validUnitGrades.reduce((sum, g) => sum + g, 0);
-        subject.final_average = validUnitGrades.length > 0 ? subject.total_units_grade / validUnitGrades.length : null;
-        
-        if (subject.final_average !== null && subject.final_average >= 7) { // Exemplo de regra de aprovação
-          subject.result = 'Aprovado';
-        } else if (subject.final_average !== null && subject.final_average >= 5) { // Exemplo de regra de recuperação
-          subject.result = 'Recuperação';
-        } else if (subject.final_average !== null) {
-          subject.result = 'Reprovado';
-        } else {
-          subject.result = 'N/A';
-        }
-      } else {
-        subject.result = 'N/A';
-      }
-      return subject;
-    });
-
-    return result;
-  }, [grades]);
-
-  // Ordenar os períodos para o cabeçalho da tabela (ex: 1ª Unidade, 2ª Unidade)
-  const sortedPeriods = useMemo(() => {
-    const periods = Array.from(new Set(grades?.map(g => g.period) || []));
-    // Tenta ordenar numericamente se os nomes dos períodos forem "1ª Unidade", "2º Bimestre", etc.
-    return periods.sort((a, b) => {
-      const numA = parseInt(a.match(/\d+/)?.[0] || '0');
-      const numB = parseInt(b.match(/\d+/)?.[0] || '0');
-      return numA - numB;
-    });
-  }, [grades]);
-
+  const isLoading = isLoadingStudent || isLoadingTenant || isLoadingSummary;
+  const error = studentError || tenantError || summaryError;
 
   if (isLoading) {
     return (
@@ -336,7 +249,7 @@ const ReportCard: React.FC = () => {
         <h1 className="text-2xl text-destructive">Erro ao Carregar Dados</h1>
         <p className="text-muted-foreground">Verifique se o aluno e a escola estão corretamente cadastrados. Erro: {error.message}</p>
         <Button asChild variant="link" className="mt-4 print-hidden">
-          <Link to="/documents"> {/* Corrigido o caminho para /documents */}
+          <Link to="/documents">
             <ArrowLeft className="mr-2 h-4 w-4" /> Voltar
           </Link>
         </Button>
@@ -348,10 +261,8 @@ const ReportCard: React.FC = () => {
     return <div className="text-destructive p-8">Aluno ou escola não encontrados.</div>;
   }
 
-  // Acessando o nome do curso diretamente da relação 'courses' do aluno
   const studentCourseName = student.courses?.name || 'N/A';
   const primaryGuardian = student.guardians.find(g => g.relationship === 'Pai' || g.relationship === 'Mãe' || g.relationship === 'Tutor') || student.guardians[0];
-
 
   const schoolConfig = tenant.config;
   const fullAddress = [
@@ -362,6 +273,14 @@ const ReportCard: React.FC = () => {
     schoolConfig?.address_state,
     schoolConfig?.address_zip_code ? ` - CEP: ${schoolConfig.address_zip_code}` : '',
   ].filter(Boolean).join('');
+  
+  const processedGrades = academicSummary?.subjects || [];
+  const sortedPeriods = academicSummary?.periods.sort((a, b) => {
+      const numA = parseInt(a.match(/\d+/)?.[0] || '0');
+      const numB = parseInt(b.match(/\d+/)?.[0] || '0');
+      return numA - numB;
+  }) || [];
+
 
   return (
     <div className="max-w-4xl mx-auto bg-white p-6 shadow-lg print:shadow-none print:p-0 print:w-full print:max-w-none print:mx-0" ref={printRef}>
@@ -369,7 +288,7 @@ const ReportCard: React.FC = () => {
       {/* Botões de Ação (Ocultos na Impressão) */}
       <div className="flex justify-between items-center mb-6 print-hidden">
         <Button variant="outline" asChild>
-          <Link to="/documents"> {/* Corrigido o caminho para /documents */}
+          <Link to="/documents">
             <ArrowLeft className="mr-2 h-4 w-4" /> Voltar
           </Link>
         </Button>
@@ -537,9 +456,9 @@ const ReportCard: React.FC = () => {
       <div className="mt-8 p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-md text-sm text-blue-800 dark:text-blue-200 print-hidden">
         <p className="font-semibold">Atenção:</p>
         <ul className="list-disc list-inside ml-2">
-          <li>As colunas de "Unidade" são preenchidas com a última nota registrada para o período correspondente. Para um cálculo de média mais preciso por unidade, seria necessário um sistema de pesos ou múltiplas avaliações por período.</li>
-          <li>A coluna "Faltas" é um placeholder. A funcionalidade de registro de faltas não está implementada no sistema atual e exigiria uma extensão no banco de dados.</li>
-          <li>A regra de "Resultado" é um exemplo (Média Final &gt;= 7: Aprovado; &gt;= 5: Recuperação; &lt; 5: Reprovado).</li>
+          <li>As notas por período são a última nota registrada para o período correspondente.</li>
+          <li>A coluna "Faltas" é um placeholder.</li>
+          <li>A regra de "Resultado" é calculada pelo servidor (Média Final &gt;= 7: Aprovado; &gt;= 5: Recuperação; &lt; 5: Reprovado).</li>
         </ul>
       </div>
 

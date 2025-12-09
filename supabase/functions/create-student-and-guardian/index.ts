@@ -56,7 +56,7 @@ async function generateNextRegistrationCode(supabaseAdmin: any, tenantId: string
     // Usa 4 dígitos para a sequência
     const nextSequenceStr = String(nextSequence).padStart(4, '0');
     const newRegistrationCode = `${prefix}${nextSequenceStr}`;
-    console.log(`[generateNextRegistrationCode] Attempt ${attempt}: Generated new code: ${newRegistrationCode}`);
+    console.log(`[generateNextRegistrationCode] Attempt ${attempts}: Generated new code: ${newRegistrationCode}`);
     return newRegistrationCode;
 }
 
@@ -133,7 +133,7 @@ serve(async (req) => {
 
     let studentId: string;
     let registration_code: string = '';
-    const maxRetries = 5; // Aumentado o número de re-tentativas para maior robustez
+    const maxRetries = 5; 
     let attempts = 0;
 
     // Loop de re-tentativa para geração e inserção do aluno

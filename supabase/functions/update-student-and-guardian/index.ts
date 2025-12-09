@@ -54,11 +54,17 @@ serve(async (req) => {
         .single();
 
     if (profileError || !profileData || !['admin', 'secretary'].includes(profileData.role)) {
-        throw new Error("Permissão negada. Apenas administradores e secretários podem editar alunos.");
+        return new Response(JSON.stringify({ error: "Permissão negada. Apenas administradores e secretários podem editar alunos." }), {
+            status: 403, // Forbidden
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
     }
     
     if (profileData.tenant_id !== tenant_id) {
-        throw new Error("Erro de segurança: ID da escola não corresponde ao usuário logado.");
+        return new Response(JSON.stringify({ error: "Erro de segurança: ID da escola não corresponde ao usuário logado." }), {
+            status: 403, // Forbidden
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
     }
     // --- FIM DA VERIFICAÇÃO DE PERMISSÃO ---
 

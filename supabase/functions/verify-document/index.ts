@@ -124,26 +124,27 @@ serve(async (req) => {
       throw new Error(`Erro ao buscar dados da escola: ${tenantError.message}`);
     }
 
-    // 5. Buscar notas do aluno
-    const { data: gradesData, error: gradesError } = await supabaseAdmin
-      .from('grades')
-      .select(`subject_name, grade_value, assessment_type, period, date_recorded`)
-      .eq('student_id', studentId)
-      .order('period')
-      .order('subject_name');
+    // 5. Buscar resumo acadêmico usando a função SQL
+    const { data: academicSummaryData, error: academicSummaryError } = await supabaseAdmin.rpc(
+        'calculate_student_academic_summary', 
+        { p_student_id: studentId }
+    );
 
-    if (gradesError) {
-      console.error("Supabase Grades Fetch Error:", gradesError);
-      throw new Error(`Erro ao buscar notas do aluno: ${gradesError.message}`);
+    if (academicSummaryError) {
+      console.error("Supabase Academic Summary RPC Error:", academicSummaryError);
+      throw new Error(`Erro ao calcular resumo acadêmico: ${academicSummaryError.message}`);
     }
+    
+    // O resultado é um objeto JSONB que contém 'subjects' e 'periods'
+    const academicSummary = academicSummaryData;
 
     return new Response(JSON.stringify({
       success: true,
       student: student,
       tenant: tenantData,
-      grades: gradesData,
+      academicSummary: academicSummary, // Retorna o resumo processado
       documentId: documentId,
-      documentType: documentType, // Retorna o tipo de documento
+      documentType: documentType,
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 200,
