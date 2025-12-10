@@ -118,7 +118,7 @@ const fetchClassesForGradeEntry = async (tenantId: string, employeeId: string | 
 
     // Transforma dados do admin para o formato TeacherAssignedClassCourse para consistência
     const adminClasses: TeacherAssignedClassCourse[] = [];
-    (data as SupabaseClassForAdmin[]).forEach(cls => { // Usar a nova interface aqui
+    (data as unknown as SupabaseClassForAdmin[]).forEach(cls => { // Usar a nova interface aqui
       cls.class_courses.forEach(cc => {
         if (cc.courses) {
           adminClasses.push({
@@ -155,7 +155,7 @@ const fetchClassesForGradeEntry = async (tenantId: string, employeeId: string | 
       throw new Error(error.message);
     }
     
-    const rawTeacherAssignments = data as SupabaseTeacherAssignment[]; // Corrigido: Usar a nova interface
+    const rawTeacherAssignments = data as unknown as SupabaseTeacherAssignment[]; // Corrigido: Usar a nova interface
     console.log("fetchClassesForGradeEntry (Teacher) Raw Data:", rawTeacherAssignments);
 
     // Agrupa por class_id e course_id para consolidar períodos
