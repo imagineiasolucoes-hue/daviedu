@@ -53,6 +53,28 @@ interface TeacherAssignedClassCourse {
   periods: ('Manhã' | 'Tarde' | 'Noite' | 'Integral')[]; // Períodos que o professor leciona esta combinação
 }
 
+// Interfaces auxiliares para tipar os dados brutos do Supabase
+interface SupabaseClassCourseLink {
+  course_id: string;
+  courses: { id: string; name: string } | null;
+}
+
+interface SupabaseClassForAdmin {
+  id: string;
+  name: string;
+  school_year: number;
+  class_courses: SupabaseClassCourseLink[];
+}
+
+interface SupabaseTeacherAssignment {
+  class_id: string;
+  course_id: string;
+  period: 'Manhã' | 'Tarde' | 'Noite' | 'Integral';
+  classes: { name: string; school_year: number } | null;
+  courses: { name: string } | null;
+}
+
+
 // --- Schemas de Validação ---
 const gradeEntrySchema = z.object({
   courseId: z.string().uuid("Selecione uma Série/Ano.").optional().nullable(),
@@ -96,7 +118,7 @@ const fetchClassesForGradeEntry = async (tenantId: string, employeeId: string | 
 
     // Transforma dados do admin para o formato TeacherAssignedClassCourse para consistência
     const adminClasses: TeacherAssignedClassCourse[] = [];
-    data.forEach(cls => {
+    (data as SupabaseClassForAdmin[]).forEach(cls => { // Usar a nova interface aqui
       cls.class_courses.forEach(cc => {
         if (cc.courses) {
           adminClasses.push({
@@ -104,7 +126,7 @@ const fetchClassesForGradeEntry = async (tenantId: string, employeeId: string | 
             course_id: cc.course_id,
             class_name: cls.name,
             class_school_year: cls.school_year,
-            course_name: cc.courses.name,
+            course_name: cc.courses.name, // Corrigido: cc.courses é um objeto, não um array
             periods: ['Manhã', 'Tarde', 'Noite', 'Integral'], // Admins podem atribuir a todos os períodos para qualquer combinação turma-curso
           });
         }
@@ -133,13 +155,7 @@ const fetchClassesForGradeEntry = async (tenantId: string, employeeId: string | 
       throw new Error(error.message);
     }
     
-    const rawTeacherAssignments = data as {
-      class_id: string;
-      course_id: string;
-      period: 'Manhã' | 'Tarde' | 'Noite' | 'Integral';
-      classes: { name: string; school_year: number } | null;
-      courses: { name: string } | null;
-    }[];
+    const rawTeacherAssignments = data as SupabaseTeacherAssignment[]; // Corrigido: Usar a nova interface
     console.log("fetchClassesForGradeEntry (Teacher) Raw Data:", rawTeacherAssignments);
 
     // Agrupa por class_id e course_id para consolidar períodos

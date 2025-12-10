@@ -19,8 +19,7 @@ interface Class {
   class_courses: {
     courses: { name: string } | null;
   }[];
-  // Contagem de alunos (será buscada separadamente ou mockada)
-  student_count?: number;
+  student_count?: number; // Adicionado student_count aqui
 }
 
 interface TeacherClassLink {
@@ -32,6 +31,7 @@ interface TeacherClassLink {
     name: string;
     school_year: number;
     room: string | null;
+    student_count?: number; // Adicionado student_count aqui
   } | null;
   courses: { name: string } | null; // Adicionado para buscar o nome do curso diretamente
 }
