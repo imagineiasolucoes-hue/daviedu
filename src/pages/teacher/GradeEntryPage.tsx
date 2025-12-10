@@ -307,7 +307,7 @@ const GradeEntryPage: React.FC = () => {
     const classes = allClassesForEntry ?? []; // Use nullish coalescing to ensure it's an array
     if (!selectedClassId) return [];
     return classes.filter(assignment => assignment.class_id === selectedClassId);
-  }, [allClassesForEntry, selectedClassId]);
+  }, [allClassesForEntry || [], selectedClassId]); // Alterado: allClassesForEntry || []
 
   // Extrai os cursos únicos das atribuições da turma selecionada
   const availableCoursesInClass = useMemo(() => {
@@ -326,7 +326,7 @@ const GradeEntryPage: React.FC = () => {
       a => a.class_id === selectedClassId && a.course_id === selectedCourseId
     );
     return assignment ? assignment.periods : [];
-  }, [allClassesForEntry, selectedClassId, selectedCourseId]);
+  }, [allClassesForEntry || [], selectedClassId, selectedCourseId]); // Alterado: allClassesForEntry || []
 
   // Efeito para resetar o courseId e period se a turma mudar
   useEffect(() => {
@@ -345,11 +345,20 @@ const GradeEntryPage: React.FC = () => {
   // Efeito para inicializar as notas quando os alunos carregam
   useEffect(() => {
     if (students) {
-      form.setValue('grades', students.map(s => ({ studentId: s.id, gradeValue: null })));
+      const currentGrades = form.getValues('grades');
+      const newGrades = students.map(s => ({ studentId: s.id, gradeValue: null }));
+      // Só atualiza se a lista de alunos ou o seu comprimento mudou
+      if (currentGrades.length !== newGrades.length || 
+          !currentGrades.every((g, i) => g.studentId === newGrades[i].studentId)) {
+        form.setValue('grades', newGrades);
+      }
     } else {
-      form.setValue('grades', []);
+      // Se não há alunos, garante que o array de notas esteja vazio
+      if (form.getValues('grades').length > 0) {
+        form.setValue('grades', []);
+      }
     }
-  }, [students, form]);
+  }, [students, form]); // form é uma referência estável, students vem do react-query
 
   const onSubmit = async (data: GradeEntryFormData) => {
     // Validação de segurança: O usuário deve ser um professor/funcionário para lançar notas
@@ -495,7 +504,7 @@ const GradeEntryPage: React.FC = () => {
   const currentSelectedClass = useMemo(() => {
     const classAssignment = (allClassesForEntry ?? []).find(a => a.class_id === selectedClassId);
     return classAssignment ? `${classAssignment.class_name} (${classAssignment.class_school_year})` : '';
-  }, [allClassesForEntry, selectedClassId]);
+  }, [allClassesForEntry || [], selectedClassId]); // Alterado: allClassesForEntry || []
 
 
   return (
@@ -529,7 +538,7 @@ const GradeEntryPage: React.FC = () => {
                   <SelectContent>
                     <SelectItem value="">Nenhuma Turma</SelectItem> {/* Valor vazio para 'Nenhuma Turma' */}
                     {/* Popula com turmas únicas das atribuições */}
-                    {Array.from(new Map((allClassesForEntry ?? [])?.map(a => [a.class_id, a])).values()).map(c => (
+                    {Array.from(new Map((allClassesForEntry ?? []).map(a => [a.class_id, a])).values()).map(c => (
                       <SelectItem key={c.class_id} value={c.class_id}>
                         {c.class_name} ({c.class_school_year})
                       </SelectItem>
