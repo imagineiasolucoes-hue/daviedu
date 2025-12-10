@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import * as z from 'zod';
+import *s z from 'zod';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useProfile } from '@/hooks/useProfile';
@@ -335,9 +335,8 @@ const GradeEntryPage: React.FC = () => {
 
   // Efeito para resetar o period se o curso mudar
   useEffect(() => {
-    if (selectedCourseId) {
-      form.setValue('period', '', { shouldValidate: true }); // Reset period when course changes
-    }
+    // Sempre reseta period quando selectedCourseId muda (incluindo para null)
+    form.setValue('period', '', { shouldValidate: true });
   }, [selectedCourseId, form]);
 
 
@@ -460,7 +459,7 @@ const GradeEntryPage: React.FC = () => {
   ) => {
     const isDataEmpty = !data || data.length === 0;
     const isDisabled = isLoading || isDataEmpty;
-    const displayValue = currentValue || (isOptional ? 'none' : '');
+    const displayValue = currentValue ?? (isOptional ? '' : ''); // Usar ?? para null/undefined
 
     return (
       <div className="space-y-2">
@@ -474,7 +473,7 @@ const GradeEntryPage: React.FC = () => {
             <SelectValue placeholder={isLoading ? "Carregando..." : placeholder} />
           </SelectTrigger>
           <SelectContent>
-            {isOptional && <SelectItem value="none">Nenhum</SelectItem>}
+            {isOptional && <SelectItem value="">Nenhum</SelectItem>} {/* Valor vazio para 'Nenhum' */}
             {data?.map(item => (
               <SelectItem key={item.id} value={item.name}>{item.name}</SelectItem>
             ))}
@@ -517,16 +516,16 @@ const GradeEntryPage: React.FC = () => {
                 <Label htmlFor="classId">Turma</Label>
                 <Select 
                   onValueChange={(value) => {
-                    form.setValue('classId', value === 'none' ? null : value); // Convert 'none' to null
+                    form.setValue('classId', value === '' ? null : value); // Convert '' to null
                   }} 
-                  value={form.watch('classId') || 'none'}
+                  value={form.watch('classId') ?? ''} // Use ?? para garantir '' se for null/undefined
                   disabled={isLoadingClassesForEntry || allClassesForEntry?.length === 0}
                 >
                   <SelectTrigger id="classId">
                     <SelectValue placeholder={isLoadingClassesForEntry ? "Carregando turmas..." : "Selecione a turma"} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="none">Nenhuma Turma</SelectItem>
+                    <SelectItem value="">Nenhuma Turma</SelectItem> {/* Valor vazio para 'Nenhuma Turma' */}
                     {/* Popula com turmas únicas das atribuições */}
                     {Array.from(new Map(allClassesForEntry?.map(a => [a.class_id, a])).values()).map(c => (
                       <SelectItem key={c.class_id} value={c.class_id}>
@@ -559,15 +558,15 @@ const GradeEntryPage: React.FC = () => {
               <div className="space-y-2">
                 <Label htmlFor="courseId">Série / Ano</Label>
                 <Select 
-                  onValueChange={(value) => form.setValue('courseId', value === 'none' ? null : value)} 
-                  value={form.watch('courseId') || 'none'}
+                  onValueChange={(value) => form.setValue('courseId', value === '' ? null : value)} 
+                  value={form.watch('courseId') ?? ''} // Use ?? para garantir '' se for null/undefined
                   disabled={!selectedClassId || availableCoursesInClass.length === 0}
                 >
                   <SelectTrigger id="courseId">
                     <SelectValue placeholder={!selectedClassId ? "Selecione uma turma" : (availableCoursesInClass.length === 0 ? "Nenhum curso associado" : "Selecione a série/ano")} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="none">Nenhuma Série/Ano</SelectItem>
+                    <SelectItem value="">Nenhuma Série/Ano</SelectItem> {/* Valor vazio para 'Nenhuma Série/Ano' */}
                     {availableCoursesInClass.map(c => (
                       <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
                     ))}
@@ -627,7 +626,7 @@ const GradeEntryPage: React.FC = () => {
                 assessmentTypes,
                 isLoadingAssessmentTypes,
                 "Selecione o tipo",
-                (value) => form.setValue('assessmentType', value === 'none' ? null : value),
+                (value) => form.setValue('assessmentType', value === '' ? null : value), // Convert '' to null
                 form.watch('assessmentType'),
                 form.formState.errors.assessmentType,
                 "Nenhum tipo de avaliação cadastrado. Cadastre em Secretaria > Matérias.",
