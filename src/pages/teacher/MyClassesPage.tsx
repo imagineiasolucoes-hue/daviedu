@@ -27,7 +27,12 @@ interface TeacherClassLink {
   class_id: string;
   course_id: string; // Adicionado course_id
   period: string;
-  classes: Class | null;
+  classes: {
+    id: string;
+    name: string;
+    school_year: number;
+    room: string | null;
+  } | null;
   courses: { name: string } | null; // Adicionado para buscar o nome do curso diretamente
 }
 
@@ -43,10 +48,7 @@ const fetchMyClasses = async (employeeId: string): Promise<TeacherClassLink[]> =
         id, 
         name, 
         school_year, 
-        room, 
-        class_courses (
-          courses (name)
-        )
+        room
       ),
       courses (name)
     `)
@@ -58,25 +60,22 @@ const fetchMyClasses = async (employeeId: string): Promise<TeacherClassLink[]> =
   const rawData: TeacherClassLink[] = data as unknown as TeacherClassLink[];
   console.log("MyClassesPage: Raw teacher_classes data:", rawData); // Log de depuração
   
-  // Mapeia para retornar os objetos TeacherClassLink, que agora incluem o nome do curso
-  const classes = rawData
-    .map(tc => {
-      if (tc.classes && tc.courses) { // Garante que a turma e o curso existem
-        return {
-          ...tc,
-          classes: {
-            ...tc.classes,
-            period: tc.period, // Usamos o período da atribuição do professor
-            student_count: Math.floor(Math.random() * 30) + 10, // Mock de contagem de alunos
-          },
-        };
-      }
-      return null;
-    })
-    .filter(Boolean) as TeacherClassLink[];
+  // Adicionar contagem de alunos mockada para cada turma
+  const classesWithStudentCount = rawData.map(tc => {
+    if (tc.classes) {
+      return {
+        ...tc,
+        classes: {
+          ...tc.classes,
+          student_count: Math.floor(Math.random() * 30) + 10, // Mock de contagem de alunos
+        },
+      };
+    }
+    return tc;
+  });
 
-  console.log("MyClassesPage: Processed classes for display:", classes); // Log de depuração
-  return classes;
+  console.log("MyClassesPage: Processed classes for display:", classesWithStudentCount); // Log de depuração
+  return classesWithStudentCount;
 };
 
 const MyClassesPage: React.FC = () => {

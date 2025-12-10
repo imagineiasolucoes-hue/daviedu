@@ -247,11 +247,20 @@ const AddTeacherSheet: React.FC = () => {
         main_subject: data.main_subject || null,
       };
 
-      const { error } = await supabase.functions.invoke('create-teacher', {
+      const { error, data: edgeFunctionData } = await supabase.functions.invoke('create-teacher', {
         body: JSON.stringify(payload),
       });
 
-      if (error) throw new Error(error.message);
+      if (error) {
+        // Tenta extrair a mensagem de erro do corpo da resposta da Edge Function
+        const detailedError = error.context?.data?.error || error.message;
+        throw new Error(detailedError);
+      }
+      
+      // Se a Edge Function retornar um objeto de erro no corpo (como fazemos), trate-o
+      if (edgeFunctionData && edgeFunctionData.error) {
+        throw new Error(edgeFunctionData.error);
+      }
 
       toast.success("Professor cadastrado com sucesso.");
       queryClient.invalidateQueries({ queryKey: ['teachers', tenantId] });
