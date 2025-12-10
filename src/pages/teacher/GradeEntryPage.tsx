@@ -423,36 +423,14 @@ const GradeEntryPage: React.FC = () => {
 
   const isLoading = isProfileLoading || isLoadingClassesForEntry || isLoadingStudents || isLoadingSubjects || isLoadingAssessmentTypes || isLoadingAcademicPeriods;
 
-  // const isFormReady = !!selectedClassId && !!selectedCourseId && !!selectedSubjectName && !!selectedPeriod; // OLD LINE
+  // NEW LOGIC: Determine if course selection is required
+  const isCourseRequired = !!selectedClassId && availableCoursesInClass.length > 0;
 
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center h-full min-h-[50vh]">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      </div>
-    );
-  }
-
-  if (!isTeacher && !isAdmin) {
-    return (
-      <div className="space-y-6">
-        <h1 className="text-3xl font-bold flex items-center gap-2">
-          <ClipboardList className="h-8 w-8 text-primary" />
-          Lançamento de Notas
-        </h1>
-        <Card>
-          <CardHeader>
-            <CardTitle>Acesso Negado</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-destructive">
-              Você não tem permissão para acessar esta página. Apenas professores e administradores podem lançar notas.
-            </p>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
+  // NEW LOGIC: Update isFormReady to conditionally check selectedCourseId
+  const isFormReady = !!selectedClassId && 
+                      (isCourseRequired ? !!selectedCourseId : true) && 
+                      !!selectedSubjectName && 
+                      !!selectedPeriod;
 
   const renderSelectWithFeedback = (
     id: string,
@@ -607,10 +585,10 @@ const GradeEntryPage: React.FC = () => {
                 <Select 
                   onValueChange={(value) => form.setValue('period', value)} 
                   value={form.watch('period') || ''}
-                  disabled={!selectedClassId || !selectedCourseId || availablePeriodsForSelectedClassCourse.length === 0}
+                  disabled={!selectedClassId || (isCourseRequired && !selectedCourseId) || availablePeriodsForSelectedClassCourse.length === 0}
                 >
                   <SelectTrigger id="period">
-                    <SelectValue placeholder={!selectedClassId || !selectedCourseId ? "Selecione turma e série" : (availablePeriodsForSelectedClassCourse.length === 0 ? "Nenhum período disponível" : "Selecione o período")} />
+                    <SelectValue placeholder={!selectedClassId || (isCourseRequired && !selectedCourseId) ? "Selecione turma e série" : (availablePeriodsForSelectedClassCourse.length === 0 ? "Nenhum período disponível" : "Selecione o período")} />
                   </SelectTrigger>
                   <SelectContent>
                     {availablePeriodsForSelectedClassCourse.map(p => (
@@ -619,7 +597,7 @@ const GradeEntryPage: React.FC = () => {
                   </SelectContent>
                 </Select>
                 {form.formState.errors.period && <p className="text-sm text-destructive">{form.formState.errors.period.message}</p>}
-                {selectedClassId && selectedCourseId && availablePeriodsForSelectedClassCourse.length === 0 && (
+                {selectedClassId && (isCourseRequired ? selectedCourseId : true) && availablePeriodsForSelectedClassCourse.length === 0 && (
                   <p className="text-xs text-muted-foreground mt-1">
                       Nenhum período disponível para esta combinação de turma e série/ano.
                   </p>
