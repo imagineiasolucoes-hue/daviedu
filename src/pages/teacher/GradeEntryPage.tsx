@@ -78,7 +78,7 @@ interface SupabaseTeacherAssignment {
 // --- Schemas de Validação ---
 const gradeEntrySchema = z.object({
   courseId: z.string().uuid("Selecione uma Série/Ano.").optional().nullable(),
-  classId: z.string().uuid("Selecione uma turma."),
+  classId: z.string().uuid("Selecione uma turma.").nullable(), // classId pode ser null
   subjectName: z.string().min(1, "Selecione uma matéria."),
   assessmentType: z.string().optional().nullable(), 
   period: z.string().min(1, "Selecione o período da avaliação."), 
@@ -248,7 +248,7 @@ const GradeEntryPage: React.FC = () => {
     resolver: zodResolver(gradeEntrySchema),
     defaultValues: {
       courseId: null, // Usar null para consistência com o Select
-      classId: '',
+      classId: null, // Alterado de '' para null
       subjectName: '',
       assessmentType: null, 
       period: '',
@@ -280,7 +280,7 @@ const GradeEntryPage: React.FC = () => {
 
   const { data: students, isLoading: isLoadingStudents } = useQuery<Student[], Error>({
     queryKey: ['studentsInClass', selectedClassId, tenantId],
-    queryFn: () => fetchStudentsByClass(selectedClassId, tenantId!),
+    queryFn: () => fetchStudentsByClass(selectedClassId!, tenantId!), // Adicionado ! para garantir que selectedClassId não é null
     enabled: !!selectedClassId && !!tenantId,
   });
 
@@ -328,10 +328,9 @@ const GradeEntryPage: React.FC = () => {
 
   // Efeito para resetar o courseId e period se a turma mudar
   useEffect(() => {
-    if (selectedClassId) {
-      form.setValue('courseId', null, { shouldValidate: true }); // Reset course when class changes
-      form.setValue('period', '', { shouldValidate: true }); // Reset period when class changes
-    }
+    // Sempre reseta courseId e period quando selectedClassId muda (incluindo para null)
+    form.setValue('courseId', null, { shouldValidate: true });
+    form.setValue('period', '', { shouldValidate: true });
   }, [selectedClassId, form]);
 
   // Efeito para resetar o period se o curso mudar
@@ -518,7 +517,7 @@ const GradeEntryPage: React.FC = () => {
                 <Label htmlFor="classId">Turma</Label>
                 <Select 
                   onValueChange={(value) => {
-                    form.setValue('classId', value);
+                    form.setValue('classId', value === 'none' ? null : value); // Convert 'none' to null
                   }} 
                   value={form.watch('classId') || 'none'}
                   disabled={isLoadingClassesForEntry || allClassesForEntry?.length === 0}
