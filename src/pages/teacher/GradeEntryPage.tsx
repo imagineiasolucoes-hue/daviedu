@@ -346,6 +346,15 @@ const GradeEntryPage: React.FC = () => {
       }
     }
   }, [students, form]);
+  
+  // NEW LOGIC: Determine if course selection is required
+  const isCourseRequired = !!selectedClassId && availableCoursesInClass.length > 0;
+
+  // NEW LOGIC: Update isFormReady to conditionally check selectedCourseId
+  const isFormReady = !!selectedClassId && 
+                      (isCourseRequired ? !!selectedCourseId : true) && 
+                      !!selectedSubjectName && 
+                      !!selectedPeriod;
 
   const onSubmit = async (data: GradeEntryFormData) => {
     if (!tenantId || !teacherEmployeeId) { 
@@ -353,10 +362,17 @@ const GradeEntryPage: React.FC = () => {
       return;
     }
 
-    if (availableCoursesInClass.length > 0 && !data.courseId) {
+    // Validation check moved from isFormReady to onSubmit for explicit error message
+    if (isCourseRequired && !data.courseId) {
         toast.error("Erro", { description: "Selecione a Série/Ano para a qual as notas se aplicam." });
         return;
     }
+    
+    // If course is not required, ensure it is null in the payload
+    if (!isCourseRequired) {
+        data.courseId = null;
+    }
+
 
     const gradesToInsert = data.grades
       .filter(g => g.gradeValue !== null && g.gradeValue !== undefined) 
@@ -407,7 +423,7 @@ const GradeEntryPage: React.FC = () => {
 
   const isLoading = isProfileLoading || isLoadingClassesForEntry || isLoadingStudents || isLoadingSubjects || isLoadingAssessmentTypes || isLoadingAcademicPeriods;
 
-  const isFormReady = !!selectedClassId && !!selectedCourseId && !!selectedSubjectName && !!selectedPeriod;
+  // const isFormReady = !!selectedClassId && !!selectedCourseId && !!selectedSubjectName && !!selectedPeriod; // OLD LINE
 
   if (isLoading) {
     return (
