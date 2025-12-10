@@ -320,6 +320,7 @@ const GradeEntryPage: React.FC = () => {
     const assignment = classes.find(
       a => a.class_id === selectedClassId && a.course_id === selectedCourseId
     );
+    // Retorna um array vazio se a atribuição não for encontrada
     return assignment ? assignment.periods : [];
   }, [allClassesForEntry, selectedClassId, selectedCourseId]);
 
@@ -445,6 +446,40 @@ const GradeEntryPage: React.FC = () => {
           <CardContent>
             <p className="text-destructive">
               Você não tem permissão para acessar esta página. Apenas professores e administradores podem lançar notas.
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  // Se o professor/admin não tiver turmas atribuídas, mostramos a mensagem de fallback
+  if (!allClassesForEntry || allClassesForEntry.length === 0) {
+    return (
+      <div className="space-y-6">
+        <h1 className="text-3xl font-bold flex items-center gap-2">
+          <ClipboardList className="h-8 w-8 text-primary" />
+          Lançamento de Notas
+        </h1>
+        <Card>
+          <CardHeader>
+            <CardTitle>Nenhuma Turma Atribuída</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-muted-foreground">
+              {isTeacher ? (
+                <>
+                  Você não tem turmas atribuídas para lançamento de notas. <br />
+                  Por favor, entre em contato com a secretaria da escola para que as turmas sejam atribuídas ao seu perfil.
+                </>
+              ) : isAdmin ? (
+                <>
+                  Nenhuma turma cadastrada para a escola. <br />
+                  Vá para <Link to="/classes" className="text-primary hover:underline">Gestão de Turmas</Link> para criar novas turmas.
+                </>
+              ) : (
+                "Nenhuma turma disponível para lançamento de notas no momento."
+              )}
             </p>
           </CardContent>
         </Card>
