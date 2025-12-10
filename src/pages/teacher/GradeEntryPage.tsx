@@ -423,14 +423,34 @@ const GradeEntryPage: React.FC = () => {
 
   const isLoading = isProfileLoading || isLoadingClassesForEntry || isLoadingStudents || isLoadingSubjects || isLoadingAssessmentTypes || isLoadingAcademicPeriods;
 
-  // NEW LOGIC: Determine if course selection is required
-  const isCourseRequired = !!selectedClassId && availableCoursesInClass.length > 0;
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-full min-h-[50vh]">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
 
-  // NEW LOGIC: Update isFormReady to conditionally check selectedCourseId
-  const isFormReady = !!selectedClassId && 
-                      (isCourseRequired ? !!selectedCourseId : true) && 
-                      !!selectedSubjectName && 
-                      !!selectedPeriod;
+  if (!isTeacher && !isAdmin) {
+    return (
+      <div className="space-y-6">
+        <h1 className="text-3xl font-bold flex items-center gap-2">
+          <ClipboardList className="h-8 w-8 text-primary" />
+          Lançamento de Notas
+        </h1>
+        <Card>
+          <CardHeader>
+            <CardTitle>Acesso Negado</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-destructive">
+              Você não tem permissão para acessar esta página. Apenas professores e administradores podem lançar notas.
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   const renderSelectWithFeedback = (
     id: string,
