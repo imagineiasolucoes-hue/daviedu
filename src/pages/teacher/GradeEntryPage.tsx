@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import *s z from 'zod';
+import * as z from 'zod';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useProfile } from '@/hooks/useProfile';
@@ -304,8 +304,9 @@ const GradeEntryPage: React.FC = () => {
 
   // Filtra as atribuições de turma-curso que correspondem à turma selecionada
   const selectedClassAssignments = useMemo(() => {
-    if (!allClassesForEntry || !selectedClassId) return [];
-    return allClassesForEntry.filter(assignment => assignment.class_id === selectedClassId);
+    const classes = allClassesForEntry ?? []; // Use nullish coalescing to ensure it's an array
+    if (!selectedClassId) return [];
+    return classes.filter(assignment => assignment.class_id === selectedClassId);
   }, [allClassesForEntry, selectedClassId]);
 
   // Extrai os cursos únicos das atribuições da turma selecionada
@@ -319,12 +320,13 @@ const GradeEntryPage: React.FC = () => {
 
   // Extrai os períodos disponíveis para a combinação turma-curso selecionada
   const availablePeriodsForSelectedClassCourse = useMemo(() => {
+    const classes = allClassesForEntry ?? []; // Use nullish coalescing to ensure it's an array
     if (!selectedClassId || !selectedCourseId) return [];
-    const assignment = selectedClassAssignments.find(
+    const assignment = classes.find(
       a => a.class_id === selectedClassId && a.course_id === selectedCourseId
     );
     return assignment ? assignment.periods : [];
-  }, [selectedClassAssignments, selectedClassId, selectedCourseId]);
+  }, [allClassesForEntry, selectedClassId, selectedCourseId]);
 
   // Efeito para resetar o courseId e period se a turma mudar
   useEffect(() => {
@@ -459,7 +461,7 @@ const GradeEntryPage: React.FC = () => {
   ) => {
     const isDataEmpty = !data || data.length === 0;
     const isDisabled = isLoading || isDataEmpty;
-    const displayValue = currentValue ?? (isOptional ? '' : ''); // Usar ?? para null/undefined
+    const displayValue = currentValue ?? (isOptional ? '' : ''); // Usar ?? para garantir '' se for null/undefined
 
     return (
       <div className="space-y-2">
@@ -491,7 +493,7 @@ const GradeEntryPage: React.FC = () => {
 
   // Obtém a turma selecionada para exibir o nome no título da tabela de alunos
   const currentSelectedClass = useMemo(() => {
-    const classAssignment = allClassesForEntry?.find(a => a.class_id === selectedClassId);
+    const classAssignment = (allClassesForEntry ?? []).find(a => a.class_id === selectedClassId);
     return classAssignment ? `${classAssignment.class_name} (${classAssignment.class_school_year})` : '';
   }, [allClassesForEntry, selectedClassId]);
 
@@ -527,7 +529,7 @@ const GradeEntryPage: React.FC = () => {
                   <SelectContent>
                     <SelectItem value="">Nenhuma Turma</SelectItem> {/* Valor vazio para 'Nenhuma Turma' */}
                     {/* Popula com turmas únicas das atribuições */}
-                    {Array.from(new Map(allClassesForEntry?.map(a => [a.class_id, a])).values()).map(c => (
+                    {Array.from(new Map((allClassesForEntry ?? [])?.map(a => [a.class_id, a])).values()).map(c => (
                       <SelectItem key={c.class_id} value={c.class_id}>
                         {c.class_name} ({c.class_school_year})
                       </SelectItem>
