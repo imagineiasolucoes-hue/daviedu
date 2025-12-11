@@ -304,6 +304,19 @@ const GradeEntryPage: React.FC = () => {
     enabled: !!tenantId,
   });
 
+  // NOVO MEMO: Lista de Turmas Únicas para o primeiro Select
+  const uniqueClassesForSelect = useMemo(() => {
+    const classes = allClassesForEntry || [];
+    const uniqueMap = new Map<string, TeacherAssignedClassCourse>();
+    classes.forEach(a => {
+      if (!uniqueMap.has(a.class_id)) {
+        uniqueMap.set(a.class_id, a);
+      }
+    });
+    return Array.from(uniqueMap.values());
+  }, [allClassesForEntry]);
+
+
   const selectedClassAssignments = useMemo(() => {
     const classes = allClassesForEntry || [];
     if (!selectedClassId) return [];
@@ -564,14 +577,14 @@ const GradeEntryPage: React.FC = () => {
                     form.setValue('classId', value === '' ? null : value);
                   }} 
                   value={form.watch('classId') ?? ''}
-                  disabled={isLoadingClassesForEntry || allClassesForEntry?.length === 0}
+                  disabled={isLoadingClassesForEntry || uniqueClassesForSelect.length === 0}
                 >
                   <SelectTrigger id="classId">
                     <SelectValue placeholder={isLoadingClassesForEntry ? "Carregando turmas..." : "Selecione a turma"} />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="">Nenhuma Turma</SelectItem>
-                    {Array.from(new Map((allClassesForEntry || []).map(a => [a.class_id, a])).values()).map(c => (
+                    {uniqueClassesForSelect.map(c => (
                       <SelectItem key={c.class_id} value={c.class_id}>
                         {c.class_name} ({c.class_school_year})
                       </SelectItem>
