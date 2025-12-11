@@ -162,7 +162,8 @@ const fetchClassesForGradeEntry = async (tenantId: string, employeeId: string | 
     const groupedAssignments = new Map<string, TeacherAssignedClassCourse>();
 
     rawTeacherAssignments.forEach(assignment => {
-      if (assignment.classes && assignment.courses) {
+      // Adicionando verificação defensiva para garantir que classes e courses não sejam nulos
+      if (assignment.classes && assignment.courses) { 
         const key = `${assignment.class_id}-${assignment.course_id}`;
         if (!groupedAssignments.has(key)) {
           groupedAssignments.set(key, {
@@ -174,7 +175,10 @@ const fetchClassesForGradeEntry = async (tenantId: string, employeeId: string | 
             periods: [],
           });
         }
-        groupedAssignments.get(key)!.periods.push(assignment.period);
+        // Garantindo que o período seja um valor válido antes de adicionar
+        if (['Manhã', 'Tarde', 'Noite', 'Integral'].includes(assignment.period)) {
+            groupedAssignments.get(key)!.periods.push(assignment.period);
+        }
       }
     });
 
