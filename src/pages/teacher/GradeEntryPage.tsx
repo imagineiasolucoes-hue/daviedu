@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import * as z from 'zod'; // Corrected import
+import * as z from 'zod';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useProfile } from '@/hooks/useProfile';
@@ -131,6 +131,17 @@ const fetchClassesForGradeEntry = async (tenantId: string, employeeId: string | 
           });
         }
       });
+      // Adiciona a turma sem curso se não houver cursos associados, para permitir lançamento de notas em turmas sem curso
+      if (cls.class_courses.length === 0) {
+        adminClasses.push({
+            class_id: cls.id,
+            course_id: 'none', // Usar 'none' como placeholder para curso nulo
+            class_name: cls.name,
+            class_school_year: cls.school_year,
+            course_name: 'N/A',
+            periods: ['Manhã', 'Tarde', 'Noite', 'Integral'],
+        });
+      }
     });
     return adminClasses;
 
@@ -326,26 +337,40 @@ const GradeEntryPage: React.FC = () => {
   const availableCoursesInClass = useMemo(() => {
     const coursesMap = new Map<string, Course>();
     selectedClassAssignments.forEach(assignment => {
-      coursesMap.set(assignment.course_id, { id: assignment.course_id, name: assignment.course_name });
+      // Exclui o placeholder 'none' se houver cursos reais
+      if (assignment.course_id !== 'none') {
+        coursesMap.set(assignment.course_id, { id: assignment.course_id, name: assignment.course_name });
+      }
     });
     return Array.from(coursesMap.values());
   }, [selectedClassAssignments]);
 
   const availablePeriodsForSelectedClassCourse = useMemo(() => {
     const classes = allClassesForEntry || [];
+    
+    // Se não houver cursos disponíveis, procuramos a atribuição com course_id 'none'
+    if (availableCoursesInClass.length === 0) {
+        const assignment = classes.find(a => a.class_id === selectedClassId && a.course_id === 'none');
+        return assignment ? assignment.periods : [];
+    }
+
+    // Se houver cursos, precisamos de classId E courseId
     if (!selectedClassId || !selectedCourseId) return [];
+    
     const assignment = classes.find(
       a => a.class_id === selectedClassId && a.course_id === selectedCourseId
     );
-    // Retorna um array vazio se a atribuição não for encontrada
+    
     return assignment ? assignment.periods : [];
-  }, [allClassesForEntry, selectedClassId, selectedCourseId]);
+  }, [allClassesForEntry, selectedClassId, selectedCourseId, availableCoursesInClass]);
 
+  // Efeito para resetar o courseId e period quando a turma muda
   useEffect(() => {
     form.setValue('courseId', null, { shouldValidate: true });
     form.setValue('period', '', { shouldValidate: true });
   }, [selectedClassId, form]);
 
+  // Efeito para resetar o period quando o curso muda
   useEffect(() => {
     form.setValue('period', '', { shouldValidate: true });
   }, [selectedCourseId, form]);
@@ -534,7 +559,7 @@ const GradeEntryPage: React.FC = () => {
           <SelectContent>
             {isOptional && <SelectItem value="">Nenhum</SelectItem>}
             {data?.map(item => (
-              <SelectItem key={item.id} value={item.name}>{item.name}</SelectItem>
+              <SelectItem key={item.name} value={item.name}>{item.name}</SelectItem>
             ))}
           </SelectContent>
         </Select>
