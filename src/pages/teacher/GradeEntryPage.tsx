@@ -559,7 +559,7 @@ const GradeEntryPage: React.FC = () => {
           <SelectContent>
             {isOptional && <SelectItem value="">Nenhum</SelectItem>}
             {data?.map(item => (
-              <SelectItem key={item.name} value={item.name}>{item.name}</SelectItem>
+              <SelectItem key={item.id} value={item.name}>{item.name}</SelectItem>
             ))}
           </SelectContent>
         </Select>
