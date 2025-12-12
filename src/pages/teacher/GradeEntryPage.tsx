@@ -1,4 +1,3 @@
-Série/Ano).">
 import React, { useState, useEffect, useMemo } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -44,37 +43,16 @@ interface AcademicPeriod {
   name: string;
 }
 
-// Representa uma atribuição específica de turma-curso para um professor/admin
-interface TeacherAssignedClassCourse {
-  class_id: string;
-  course_id: string;
-  class_name: string;
-  class_school_year: number;
-  course_name: string;
-  periods: ('Manhã' | 'Tarde' | 'Noite' | 'Integral')[]; // Períodos de tempo de aula (não acadêmicos)
-}
-
-// Interfaces auxiliares para tipar os dados brutos do Supabase
-interface SupabaseClassCourseLink {
-  course_id: string;
-  courses: { id: string; name: string } | null;
-}
-
-interface SupabaseClassForAdmin {
+// Representa uma turma com seus cursos associados (para Admin/Secretary)
+interface ClassWithCourses {
   id: string;
   name: string;
   school_year: number;
-  class_courses: SupabaseClassCourseLink[];
+  class_courses: {
+    course_id: string;
+    courses: { id: string; name: string } | null;
+  }[];
 }
-
-interface SupabaseTeacherAssignment {
-  class_id: string;
-  course_id: string;
-  period: 'Manhã' | 'Tarde' | 'Noite' | 'Integral';
-  classes: { name: string; school_year: number } | null;
-  courses: { name: string } | null;
-}
-
 
 // --- Schemas de Validação ---
 const gradeEntrySchema = z.object({
@@ -93,9 +71,38 @@ type GradeEntryFormData = z.infer<typeof gradeEntrySchema>;
 
 // --- Funções de Busca de Dados ---
 
-const fetchClassesForGradeEntry = async (tenantId: string, employeeId: string | undefined, isTeacher: boolean, isAdmin: boolean): Promise<TeacherAssignedClassCourse[]> => {
-  if (isAdmin) {
-    // Admin vê todas as turmas e seus associados cursos
+const fetchClassesForGradeEntry = async (tenantId: string, employeeId: string | undefined, isTeacher: boolean): Promise<ClassWithCourses[]> => {
+  if (isTeacher && employeeId) {
+    // Professor: Busca as turmas através das atribuições (teacher_classes)
+    const { data: assignments, error: assignmentError } = await supabase
+      .from('teacher_classes')
+      .select(`
+        class_id,
+        classes (
+          id,
+          name,
+          school_year,
+          class_courses (
+            course_id,
+            courses (id, name)
+          )
+        )
+      `)
+      .eq('employee_id', employeeId);
+
+    if (assignmentError) throw new Error(assignmentError.message);
+
+    // Filtra e mapeia para obter apenas as turmas únicas
+    const uniqueClassesMap = new Map<string, ClassWithCourses>();
+    assignments.forEach(a => {
+      if (a.classes && !uniqueClassesMap.has(a.classes.id)) {
+        uniqueClassesMap.set(a.classes.id, a.classes as unknown as ClassWithCourses);
+      }
+    });
+    return Array.from(uniqueClassesMap.values());
+
+  } else {
+    // Admin/Secretary: Vê todas as turmas
     const { data, error } = await supabase
       .from('classes')
       .select(`
@@ -110,79 +117,8 @@ const fetchClassesForGradeEntry = async (tenantId: string, employeeId: string | 
       .eq('tenant_id', tenantId)
       .order('name');
     if (error) throw new Error(error.message);
-
-    const adminClasses: TeacherAssignedClassCourse[] = [];
-    (data as unknown as SupabaseClassForAdmin[]).forEach(cls => {
-      cls.class_courses.forEach(cc => {
-        if (cc.courses) {
-          adminClasses.push({
-            class_id: cls.id,
-            course_id: cc.course_id,
-            class_name: cls.name,
-            class_school_year: cls.school_year,
-            course_name: cc.courses.name,
-            periods: ['Manhã', 'Tarde', 'Noite', 'Integral'],
-          });
-        }
-      });
-      if (cls.class_courses.length === 0) {
-        adminClasses.push({
-            class_id: cls.id,
-            course_id: 'none', 
-            class_name: cls.name,
-            class_school_year: cls.school_year,
-            course_name: 'N/A',
-            periods: ['Manhã', 'Tarde', 'Noite', 'Integral'],
-        });
-      }
-    });
-    return adminClasses;
-
-  } else if (isTeacher && employeeId) {
-    // Professor vê apenas as turmas e cursos aos quais está atribuído
-    const { data, error } = await supabase
-      .from('teacher_classes')
-      .select(`
-        class_id,
-        course_id,
-        period,
-        classes (
-          name,
-          school_year
-        ),
-        courses (name)
-      `)
-      .eq('employee_id', employeeId);
-
-    if (error) throw new Error(error.message);
-    
-    const rawTeacherAssignments = data as unknown as SupabaseTeacherAssignment[];
-
-    // Agrupa por class_id e course_id para consolidar períodos
-    const groupedAssignments = new Map<string, TeacherAssignedClassCourse>();
-
-    rawTeacherAssignments.forEach(assignment => {
-      if (assignment.classes && assignment.courses) { 
-        const key = `${assignment.class_id}-${assignment.course_id}`;
-        if (!groupedAssignments.has(key)) {
-          groupedAssignments.set(key, {
-            class_id: assignment.class_id,
-            course_id: assignment.course_id,
-            class_name: assignment.classes.name,
-            class_school_year: assignment.classes.school_year,
-            course_name: assignment.courses.name,
-            periods: [],
-          });
-        }
-        if (['Manhã', 'Tarde', 'Noite', 'Integral'].includes(assignment.period)) {
-            groupedAssignments.get(key)!.periods.push(assignment.period);
-        }
-      }
-    });
-
-    return Array.from(groupedAssignments.values());
+    return data as unknown as ClassWithCourses[];
   }
-  return [];
 };
 
 const fetchStudentsByClass = async (classId: string, tenantId: string): Promise<Student[]> => {
@@ -231,7 +167,6 @@ const GradeEntryPage: React.FC = () => {
   const { profile, isLoading: isProfileLoading, isTeacher, isAdmin, isSecretary } = useProfile();
   const queryClient = useQueryClient();
   const tenantId = profile?.tenant_id;
-  // Professores e Secretários/Admins podem lançar notas, mas o teacher_id é o employee_id
   const teacherEmployeeId = profile?.employee_id; 
 
   // --- Form Setup ---
@@ -253,9 +188,9 @@ const GradeEntryPage: React.FC = () => {
   const selectedPeriod = form.watch('period');
 
   // --- Data Fetching ---
-  const { data: allClassesForEntry, isLoading: isLoadingClassesForEntry } = useQuery<TeacherAssignedClassCourse[], Error>({
+  const { data: allClassesForEntry, isLoading: isLoadingClassesForEntry } = useQuery<ClassWithCourses[], Error>({
     queryKey: ['classesForGradeEntry', tenantId, teacherEmployeeId, isTeacher, isAdmin],
-    queryFn: () => fetchClassesForGradeEntry(tenantId!, teacherEmployeeId, isTeacher, isAdmin),
+    queryFn: () => fetchClassesForGradeEntry(tenantId!, teacherEmployeeId, isTeacher),
     enabled: !!tenantId && (isTeacher || isAdmin || isSecretary),
   });
 
@@ -285,58 +220,42 @@ const GradeEntryPage: React.FC = () => {
 
   // --- Memoized Data Filtering ---
   
-  // 1. Unique Classes for the first select
-  const uniqueClassesForSelect = useMemo(() => {
-    const classes = allClassesForEntry || [];
-    const uniqueMap = new Map<string, TeacherAssignedClassCourse>();
-    classes.forEach(a => {
-      if (!uniqueMap.has(a.class_id)) {
-        uniqueMap.set(a.class_id, a);
-      }
-    });
-    return Array.from(uniqueMap.values());
-  }, [allClassesForEntry]);
-
-  // 2. Assignments for the selected class
-  const selectedClassAssignments = useMemo(() => {
-    const classes = allClassesForEntry || [];
-    if (!selectedClassId) return [];
-    return classes.filter(assignment => assignment.class_id === selectedClassId);
+  // 1. Detalhes da Turma Selecionada
+  const selectedClassDetails = useMemo(() => {
+    return allClassesForEntry?.find(c => c.id === selectedClassId) || null;
   }, [allClassesForEntry, selectedClassId]);
 
-  // 3. Available Courses (filtered by selected class)
+  // 2. Available Courses (filtered by selected class)
   const availableCoursesInClass = useMemo(() => {
-    const coursesMap = new Map<string, Course>();
-    selectedClassAssignments.forEach(assignment => {
-      if (assignment.course_id !== 'none') {
-        coursesMap.set(assignment.course_id, { id: assignment.course_id, name: assignment.course_name });
-      }
-    });
-    return Array.from(coursesMap.values());
-  }, [selectedClassAssignments]);
+    if (!selectedClassDetails) return [];
+    
+    return selectedClassDetails.class_courses
+      .map(cc => cc.courses)
+      .filter(c => c !== null) as Course[];
+  }, [selectedClassDetails]);
 
   // Determine if course selection is required
   const isCourseSelectionRequired = !!selectedClassId && availableCoursesInClass.length > 0;
   
   // Determine if the form is ready to submit (all critical fields selected)
   const isFormReady = !!selectedClassId && 
-                      (isCourseSelectionRequired ? !!selectedCourseId : true) && 
                       !!selectedSubjectName && 
                       !!selectedPeriod &&
+                      (isCourseSelectionRequired ? !!selectedCourseId : true) && 
                       (students?.length ?? 0) > 0;
 
   // --- Effects for Form Synchronization ---
   
   // Reset courseId and period when class changes
   useEffect(() => {
-    form.setValue('courseId', null, { shouldValidate: true });
-    form.setValue('period', '', { shouldValidate: true });
-  }, [selectedClassId, form]);
-
-  // Reset period when course changes
-  useEffect(() => {
-    form.setValue('period', '', { shouldValidate: true });
-  }, [selectedCourseId, form]);
+    // Se a turma mudar, e a nova turma exigir seleção de curso, resetamos o curso.
+    // Se a nova turma não exigir curso, garantimos que courseId seja null.
+    if (selectedClassId) {
+        const requiresCourse = availableCoursesInClass.length > 0;
+        form.setValue('courseId', requiresCourse ? null : 'none', { shouldValidate: true });
+        form.setValue('period', '', { shouldValidate: true });
+    }
+  }, [selectedClassId, form, availableCoursesInClass.length]);
 
   // Sync students list with grades array
   useEffect(() => {
@@ -348,7 +267,7 @@ const GradeEntryPage: React.FC = () => {
     }
   }, [students, form]);
   
-  // --- Submission Logic (Refactored for clarity and explicit validation) ---
+  // --- Submission Logic ---
   const onSubmit = async (data: GradeEntryFormData) => {
     // CRITICAL VALIDATION 1: Permissions
     if (!tenantId || !teacherEmployeeId) { 
@@ -363,7 +282,7 @@ const GradeEntryPage: React.FC = () => {
     }
     
     // Ensure courseId is null if not required (for DB consistency)
-    const finalCourseId = isCourseSelectionRequired ? data.courseId : null;
+    const finalCourseId = isCourseSelectionRequired && data.courseId !== 'none' ? data.courseId : null;
 
     // CRITICAL VALIDATION 3: Grades to Insert
     const gradesToInsert = data.grades
@@ -376,7 +295,7 @@ const GradeEntryPage: React.FC = () => {
         subject_name: data.subjectName,
         grade_value: g.gradeValue,
         assessment_type: data.assessmentType || null, 
-        period: data.period, // This is the Academic Period Name (e.g., "1º Bimestre")
+        period: data.period, // Academic Period Name (e.g., "1º Bimestre")
         teacher_id: teacherEmployeeId,
         date_recorded: new Date().toISOString().split('T')[0], 
       }));
@@ -481,7 +400,7 @@ const GradeEntryPage: React.FC = () => {
     );
   }
 
-  // Helper function for rendering selects with feedback (kept from original file)
+  // Helper function for rendering selects with feedback
   const renderSelectWithFeedback = (
     id: string,
     label: string,
@@ -526,8 +445,7 @@ const GradeEntryPage: React.FC = () => {
     );
   };
 
-  const currentSelectedClassDetails = uniqueClassesForSelect.find(c => c.class_id === selectedClassId);
-  const currentSelectedClassName = currentSelectedClassDetails ? `${currentSelectedClassDetails.class_name} (${currentSelectedClassDetails.class_school_year})` : '';
+  const currentSelectedClassName = selectedClassDetails ? `${selectedClassDetails.name} (${selectedClassDetails.school_year})` : '';
 
 
   return (
@@ -553,16 +471,16 @@ const GradeEntryPage: React.FC = () => {
                     form.setValue('classId', value === '' ? null : value);
                   }} 
                   value={form.watch('classId') ?? ''}
-                  disabled={isLoadingClassesForEntry || uniqueClassesForSelect.length === 0}
+                  disabled={isLoadingClassesForEntry || allClassesForEntry.length === 0}
                 >
                   <SelectTrigger id="classId">
                     <SelectValue placeholder={isLoadingClassesForEntry ? "Carregando turmas..." : "Selecione a turma"} />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="">Nenhuma Turma</SelectItem>
-                    {uniqueClassesForSelect.map(c => (
-                      <SelectItem key={c.class_id} value={c.class_id}>
-                        {c.class_name} ({c.class_school_year})
+                    {allClassesForEntry.map(c => (
+                      <SelectItem key={c.id} value={c.id}>
+                        {c.name} ({c.school_year})
                       </SelectItem>
                     ))}
                   </SelectContent>
