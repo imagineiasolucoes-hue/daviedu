@@ -1,3 +1,4 @@
+Série/Ano).">
 import React, { useState, useEffect, useMemo } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -50,7 +51,7 @@ interface TeacherAssignedClassCourse {
   class_name: string;
   class_school_year: number;
   course_name: string;
-  periods: ('Manhã' | 'Tarde' | 'Noite' | 'Integral')[]; // Períodos que o professor leciona esta combinação
+  periods: ('Manhã' | 'Tarde' | 'Noite' | 'Integral')[]; // Períodos de tempo de aula (não acadêmicos)
 }
 
 // Interfaces auxiliares para tipar os dados brutos do Supabase
@@ -93,8 +94,6 @@ type GradeEntryFormData = z.infer<typeof gradeEntrySchema>;
 // --- Funções de Busca de Dados ---
 
 const fetchClassesForGradeEntry = async (tenantId: string, employeeId: string | undefined, isTeacher: boolean, isAdmin: boolean): Promise<TeacherAssignedClassCourse[]> => {
-  console.log("fetchClassesForGradeEntry: tenantId:", tenantId, "employeeId:", employeeId, "isTeacher:", isTeacher, "isAdmin:", isAdmin);
-
   if (isAdmin) {
     // Admin vê todas as turmas e seus associados cursos
     const { data, error } = await supabase
@@ -110,13 +109,8 @@ const fetchClassesForGradeEntry = async (tenantId: string, employeeId: string | 
       `)
       .eq('tenant_id', tenantId)
       .order('name');
-    if (error) {
-      console.error("fetchClassesForGradeEntry (Admin) Error:", error);
-      throw new Error(error.message);
-    }
-    console.log("fetchClassesForGradeEntry (Admin) Raw Data:", data);
+    if (error) throw new Error(error.message);
 
-    // Transforma dados do admin para o formato TeacherAssignedClassCourse para consistência
     const adminClasses: TeacherAssignedClassCourse[] = [];
     (data as unknown as SupabaseClassForAdmin[]).forEach(cls => {
       cls.class_courses.forEach(cc => {
@@ -127,15 +121,14 @@ const fetchClassesForGradeEntry = async (tenantId: string, employeeId: string | 
             class_name: cls.name,
             class_school_year: cls.school_year,
             course_name: cc.courses.name,
-            periods: ['Manhã', 'Tarde', 'Noite', 'Integral'], // Admins podem atribuir a todos os períodos para qualquer combinação turma-curso
+            periods: ['Manhã', 'Tarde', 'Noite', 'Integral'],
           });
         }
       });
-      // Adiciona a turma sem curso se não houver cursos associados, para permitir lançamento de notas em turmas sem curso
       if (cls.class_courses.length === 0) {
         adminClasses.push({
             class_id: cls.id,
-            course_id: 'none', // Usar 'none' como placeholder para curso nulo
+            course_id: 'none', 
             class_name: cls.name,
             class_school_year: cls.school_year,
             course_name: 'N/A',
@@ -161,19 +154,14 @@ const fetchClassesForGradeEntry = async (tenantId: string, employeeId: string | 
       `)
       .eq('employee_id', employeeId);
 
-    if (error) {
-      console.error("fetchClassesForGradeEntry (Teacher) Error:", error);
-      throw new Error(error.message);
-    }
+    if (error) throw new Error(error.message);
     
     const rawTeacherAssignments = data as unknown as SupabaseTeacherAssignment[];
-    console.log("fetchClassesForGradeEntry (Teacher) Raw Data:", rawTeacherAssignments);
 
     // Agrupa por class_id e course_id para consolidar períodos
     const groupedAssignments = new Map<string, TeacherAssignedClassCourse>();
 
     rawTeacherAssignments.forEach(assignment => {
-      // Adicionando verificação defensiva para garantir que classes e courses não sejam nulos
       if (assignment.classes && assignment.courses) { 
         const key = `${assignment.class_id}-${assignment.course_id}`;
         if (!groupedAssignments.has(key)) {
@@ -186,7 +174,6 @@ const fetchClassesForGradeEntry = async (tenantId: string, employeeId: string | 
             periods: [],
           });
         }
-        // Garantindo que o período seja um valor válido antes de adicionar
         if (['Manhã', 'Tarde', 'Noite', 'Integral'].includes(assignment.period)) {
             groupedAssignments.get(key)!.periods.push(assignment.period);
         }
@@ -195,7 +182,6 @@ const fetchClassesForGradeEntry = async (tenantId: string, employeeId: string | 
 
     return Array.from(groupedAssignments.values());
   }
-  console.log("fetchClassesForGradeEntry: No classes returned (neither Admin nor Teacher conditions met).");
   return [];
 };
 
@@ -242,21 +228,13 @@ const fetchAcademicPeriods = async (tenantId: string): Promise<AcademicPeriod[]>
 };
 
 const GradeEntryPage: React.FC = () => {
-  const { profile, isLoading: isProfileLoading, isTeacher, isAdmin } = useProfile();
+  const { profile, isLoading: isProfileLoading, isTeacher, isAdmin, isSecretary } = useProfile();
   const queryClient = useQueryClient();
   const tenantId = profile?.tenant_id;
-  const teacherEmployeeId = profile?.employee_id;
+  // Professores e Secretários/Admins podem lançar notas, mas o teacher_id é o employee_id
+  const teacherEmployeeId = profile?.employee_id; 
 
-  useEffect(() => {
-    if (!isProfileLoading) {
-      console.log("GradeEntryPage Debug: Profile:", profile);
-      console.log("GradeEntryPage Debug: isTeacher:", isTeacher, "isAdmin:", isAdmin, "employeeId:", teacherEmployeeId);
-      if (!teacherEmployeeId && (isTeacher || isAdmin)) {
-        toast.warning("Atenção", { description: "Seu perfil de professor/admin não está vinculado a um registro de funcionário (employee_id). O lançamento de notas pode falhar." });
-      }
-    }
-  }, [isProfileLoading, isTeacher, isAdmin, teacherEmployeeId, profile]);
-
+  // --- Form Setup ---
   const form = useForm<GradeEntryFormData>({
     resolver: zodResolver(gradeEntrySchema),
     defaultValues: {
@@ -274,22 +252,12 @@ const GradeEntryPage: React.FC = () => {
   const selectedSubjectName = form.watch('subjectName');
   const selectedPeriod = form.watch('period');
 
-  const { data: allClassesForEntry, isLoading: isLoadingClassesForEntry, error: classesForEntryError } = useQuery<TeacherAssignedClassCourse[], Error>({
+  // --- Data Fetching ---
+  const { data: allClassesForEntry, isLoading: isLoadingClassesForEntry } = useQuery<TeacherAssignedClassCourse[], Error>({
     queryKey: ['classesForGradeEntry', tenantId, teacherEmployeeId, isTeacher, isAdmin],
     queryFn: () => fetchClassesForGradeEntry(tenantId!, teacherEmployeeId, isTeacher, isAdmin),
-    enabled: !!tenantId && (isTeacher || isAdmin),
+    enabled: !!tenantId && (isTeacher || isAdmin || isSecretary),
   });
-  
-  useEffect(() => {
-    if (classesForEntryError) {
-      console.error("useQuery classesForGradeEntry Error:", classesForEntryError);
-      toast.error("Erro ao carregar turmas", { description: classesForEntryError.message });
-    }
-    if (!isLoadingClassesForEntry) {
-      console.log("allClassesForEntry data:", allClassesForEntry);
-    }
-  }, [classesForEntryError, isLoadingClassesForEntry, allClassesForEntry]);
-
 
   const { data: students, isLoading: isLoadingStudents } = useQuery<Student[], Error>({
     queryKey: ['studentsInClass', selectedClassId, tenantId],
@@ -315,7 +283,9 @@ const GradeEntryPage: React.FC = () => {
     enabled: !!tenantId,
   });
 
-  // NOVO MEMO: Lista de Turmas Únicas para o primeiro Select
+  // --- Memoized Data Filtering ---
+  
+  // 1. Unique Classes for the first select
   const uniqueClassesForSelect = useMemo(() => {
     const classes = allClassesForEntry || [];
     const uniqueMap = new Map<string, TeacherAssignedClassCourse>();
@@ -327,17 +297,17 @@ const GradeEntryPage: React.FC = () => {
     return Array.from(uniqueMap.values());
   }, [allClassesForEntry]);
 
-
+  // 2. Assignments for the selected class
   const selectedClassAssignments = useMemo(() => {
     const classes = allClassesForEntry || [];
     if (!selectedClassId) return [];
     return classes.filter(assignment => assignment.class_id === selectedClassId);
   }, [allClassesForEntry, selectedClassId]);
 
+  // 3. Available Courses (filtered by selected class)
   const availableCoursesInClass = useMemo(() => {
     const coursesMap = new Map<string, Course>();
     selectedClassAssignments.forEach(assignment => {
-      // Exclui o placeholder 'none' se houver cursos reais
       if (assignment.course_id !== 'none') {
         coursesMap.set(assignment.course_id, { id: assignment.course_id, name: assignment.course_name });
       }
@@ -345,89 +315,68 @@ const GradeEntryPage: React.FC = () => {
     return Array.from(coursesMap.values());
   }, [selectedClassAssignments]);
 
-  const availablePeriodsForSelectedClassCourse = useMemo(() => {
-    const classes = allClassesForEntry || [];
-    
-    // Se não houver cursos disponíveis, procuramos a atribuição com course_id 'none'
-    if (availableCoursesInClass.length === 0) {
-        const assignment = classes.find(a => a.class_id === selectedClassId && a.course_id === 'none');
-        return assignment ? assignment.periods : [];
-    }
+  // Determine if course selection is required
+  const isCourseSelectionRequired = !!selectedClassId && availableCoursesInClass.length > 0;
+  
+  // Determine if the form is ready to submit (all critical fields selected)
+  const isFormReady = !!selectedClassId && 
+                      (isCourseSelectionRequired ? !!selectedCourseId : true) && 
+                      !!selectedSubjectName && 
+                      !!selectedPeriod &&
+                      (students?.length ?? 0) > 0;
 
-    // Se houver cursos, precisamos de classId E courseId
-    if (!selectedClassId || !selectedCourseId) return [];
-    
-    const assignment = classes.find(
-      a => a.class_id === selectedClassId && a.course_id === selectedCourseId
-    );
-    
-    return assignment ? assignment.periods : [];
-  }, [allClassesForEntry, selectedClassId, selectedCourseId, availableCoursesInClass]);
-
-  // Efeito para resetar o courseId e period quando a turma muda
+  // --- Effects for Form Synchronization ---
+  
+  // Reset courseId and period when class changes
   useEffect(() => {
     form.setValue('courseId', null, { shouldValidate: true });
     form.setValue('period', '', { shouldValidate: true });
   }, [selectedClassId, form]);
 
-  // Efeito para resetar o period quando o curso muda
+  // Reset period when course changes
   useEffect(() => {
     form.setValue('period', '', { shouldValidate: true });
   }, [selectedCourseId, form]);
 
+  // Sync students list with grades array
   useEffect(() => {
     if (students) {
-      const currentGrades = form.getValues('grades');
       const newGrades = students.map(s => ({ studentId: s.id, gradeValue: null }));
-      if (currentGrades.length !== newGrades.length || 
-          !currentGrades.every((g, i) => g.studentId === newGrades[i].studentId)) {
-        form.setValue('grades', newGrades);
-      }
+      form.setValue('grades', newGrades);
     } else {
-      if (form.getValues('grades').length > 0) {
-        form.setValue('grades', []);
-      }
+      form.setValue('grades', []);
     }
   }, [students, form]);
   
-  // NEW LOGIC: Determine if course selection is required
-  const isCourseRequired = !!selectedClassId && availableCoursesInClass.length > 0;
-
-  // NEW LOGIC: Update isFormReady to conditionally check selectedCourseId
-  const isFormReady = !!selectedClassId && 
-                      (isCourseRequired ? !!selectedCourseId : true) && 
-                      !!selectedSubjectName && 
-                      !!selectedPeriod;
-
+  // --- Submission Logic (Refactored for clarity and explicit validation) ---
   const onSubmit = async (data: GradeEntryFormData) => {
+    // CRITICAL VALIDATION 1: Permissions
     if (!tenantId || !teacherEmployeeId) { 
-      toast.error("Erro de Permissão", { description: "Seu perfil não está vinculado a um funcionário/professor. Apenas administradores e professores cadastrados podem lançar notas." });
+      toast.error("Erro de Permissão", { description: "Seu perfil não está vinculado a um funcionário/professor. Apenas administradores e secretários podem lançar notas." });
       return;
     }
 
-    // Validation check moved from isFormReady to onSubmit for explicit error message
-    if (isCourseRequired && !data.courseId) {
-        toast.error("Erro", { description: "Selecione a Série/Ano para a qual as notas se aplicam." });
+    // CRITICAL VALIDATION 2: Conditional Course Selection
+    if (isCourseSelectionRequired && !data.courseId) {
+        toast.error("Erro de Validação", { description: "Selecione a Série/Ano para a qual as notas se aplicam." });
         return;
     }
     
-    // If course is not required, ensure it is null in the payload
-    if (!isCourseRequired) {
-        data.courseId = null;
-    }
+    // Ensure courseId is null if not required (for DB consistency)
+    const finalCourseId = isCourseSelectionRequired ? data.courseId : null;
 
-
+    // CRITICAL VALIDATION 3: Grades to Insert
     const gradesToInsert = data.grades
       .filter(g => g.gradeValue !== null && g.gradeValue !== undefined) 
       .map(g => ({
         tenant_id: tenantId,
         student_id: g.studentId,
         class_id: data.classId,
-        course_id: data.courseId,
+        course_id: finalCourseId, // Use the conditionally determined course ID
         subject_name: data.subjectName,
         grade_value: g.gradeValue,
         assessment_type: data.assessmentType || null, 
-        period: data.period,
+        period: data.period, // This is the Academic Period Name (e.g., "1º Bimestre")
         teacher_id: teacherEmployeeId,
         date_recorded: new Date().toISOString().split('T')[0], 
       }));
@@ -437,6 +386,7 @@ const GradeEntryPage: React.FC = () => {
       return;
     }
 
+    // CRITICAL FUNCTION: Database Insertion
     try {
       const { error } = await supabase
         .from('grades')
@@ -447,11 +397,12 @@ const GradeEntryPage: React.FC = () => {
       toast.success("Notas lançadas com sucesso!");
       queryClient.invalidateQueries({ queryKey: ['studentGrades'] }); 
       
+      // Reset form state, keeping the current selection context
       form.reset({
         courseId: data.courseId,
         classId: data.classId, 
         subjectName: data.subjectName,
-        assessmentType: null, 
+        assessmentType: null, // Reset assessment type
         period: data.period,
         grades: students?.map(s => ({ studentId: s.id, gradeValue: null })) || [], 
       });
@@ -464,6 +415,7 @@ const GradeEntryPage: React.FC = () => {
     }
   };
 
+  // --- Loading and Permission Checks ---
   const isLoading = isProfileLoading || isLoadingClassesForEntry || isLoadingStudents || isLoadingSubjects || isLoadingAssessmentTypes || isLoadingAcademicPeriods;
 
   if (isLoading) {
@@ -474,7 +426,7 @@ const GradeEntryPage: React.FC = () => {
     );
   }
 
-  if (!isTeacher && !isAdmin) {
+  if (!isTeacher && !isAdmin && !isSecretary) {
     return (
       <div className="space-y-6">
         <h1 className="text-3xl font-bold flex items-center gap-2">
@@ -487,7 +439,7 @@ const GradeEntryPage: React.FC = () => {
           </CardHeader>
           <CardContent>
             <p className="text-destructive">
-              Você não tem permissão para acessar esta página. Apenas professores e administradores podem lançar notas.
+              Você não tem permissão para acessar esta página. Apenas professores, administradores e secretários podem lançar notas.
             </p>
           </CardContent>
         </Card>
@@ -495,7 +447,7 @@ const GradeEntryPage: React.FC = () => {
     );
   }
 
-  // Se o professor/admin não tiver turmas atribuídas, mostramos a mensagem de fallback
+  // Fallback for no assignments
   if (!allClassesForEntry || allClassesForEntry.length === 0) {
     return (
       <div className="space-y-6">
@@ -514,7 +466,7 @@ const GradeEntryPage: React.FC = () => {
                   Você não tem turmas atribuídas para lançamento de notas. <br />
                   Por favor, entre em contato com a secretaria da escola para que as turmas sejam atribuídas ao seu perfil.
                 </>
-              ) : isAdmin ? (
+              ) : (isAdmin || isSecretary) ? (
                 <>
                   Nenhuma turma cadastrada para a escola. <br />
                   Vá para <Link to="/classes" className="text-primary hover:underline">Gestão de Turmas</Link> para criar novas turmas.
@@ -529,6 +481,7 @@ const GradeEntryPage: React.FC = () => {
     );
   }
 
+  // Helper function for rendering selects with feedback (kept from original file)
   const renderSelectWithFeedback = (
     id: string,
     label: string,
@@ -573,10 +526,8 @@ const GradeEntryPage: React.FC = () => {
     );
   };
 
-  const currentSelectedClass = useMemo(() => {
-    const classAssignment = (allClassesForEntry || []).find(a => a.class_id === selectedClassId);
-    return classAssignment ? `${classAssignment.class_name} (${classAssignment.class_school_year})` : '';
-  }, [allClassesForEntry, selectedClassId]);
+  const currentSelectedClassDetails = uniqueClassesForSelect.find(c => c.class_id === selectedClassId);
+  const currentSelectedClassName = currentSelectedClassDetails ? `${currentSelectedClassDetails.class_name} (${currentSelectedClassDetails.class_school_year})` : '';
 
 
   return (
@@ -617,23 +568,6 @@ const GradeEntryPage: React.FC = () => {
                   </SelectContent>
                 </Select>
                 {form.formState.errors.classId && <p className="text-sm text-destructive">{form.formState.errors.classId.message}</p>}
-                {(!allClassesForEntry || allClassesForEntry.length === 0) && !isLoadingClassesForEntry && (
-                  <p className="text-xs text-muted-foreground mt-1">
-                    {isTeacher ? (
-                      <>
-                        Nenhuma turma atribuída a você. <br />
-                        Por favor, entre em contato com a secretaria da escola para que as turmas sejam atribuídas ao seu perfil.
-                      </>
-                    ) : isAdmin ? (
-                      <>
-                        Nenhuma turma cadastrada para a escola. <br />
-                        Vá para <Link to="/classes" className="text-primary hover:underline">Gestão de Turmas</Link> para criar novas turmas.
-                      </>
-                    ) : (
-                      "Nenhuma turma encontrada."
-                    )}
-                  </p>
-                )}
               </div>
 
               {/* CAMPO 2: Série / Ano (Condicional) */}
@@ -676,30 +610,19 @@ const GradeEntryPage: React.FC = () => {
                 false
               )}
 
-              {/* CAMPO 4: Período */}
-              <div className="space-y-2">
-                <Label htmlFor="period">Período</Label>
-                <Select 
-                  onValueChange={(value) => form.setValue('period', value)} 
-                  value={form.watch('period') || ''}
-                  disabled={!selectedClassId || (isCourseRequired && !selectedCourseId) || availablePeriodsForSelectedClassCourse.length === 0}
-                >
-                  <SelectTrigger id="period">
-                    <SelectValue placeholder={!selectedClassId || (isCourseRequired && !selectedCourseId) ? "Selecione turma e série" : (availablePeriodsForSelectedClassCourse.length === 0 ? "Nenhum período disponível" : "Selecione o período")} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {availablePeriodsForSelectedClassCourse.map(p => (
-                      <SelectItem key={p} value={p}>{p}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                {form.formState.errors.period && <p className="text-sm text-destructive">{form.formState.errors.period.message}</p>}
-                {selectedClassId && (isCourseRequired ? selectedCourseId : true) && availablePeriodsForSelectedClassCourse.length === 0 && (
-                  <p className="text-xs text-muted-foreground mt-1">
-                      Nenhum período disponível para esta combinação de turma e série/ano.
-                  </p>
-                )}
-              </div>
+              {/* CAMPO 4: Período Acadêmico */}
+              {renderSelectWithFeedback(
+                "period",
+                "Período Acadêmico",
+                academicPeriods,
+                isLoadingAcademicPeriods,
+                "Selecione o período",
+                (value) => form.setValue('period', value),
+                form.watch('period'),
+                form.formState.errors.period,
+                "Nenhum período acadêmico cadastrado. Cadastre em Secretaria > Matérias.",
+                false
+              )}
 
               {/* CAMPO 5: Tipo de Avaliação */}
               {renderSelectWithFeedback(
@@ -721,7 +644,7 @@ const GradeEntryPage: React.FC = () => {
             {/* Tabela de Alunos e Notas */}
             <h3 className="text-lg font-semibold flex items-center gap-2">
               <GraduationCap className="h-5 w-5 text-primary" />
-              Alunos da Turma {currentSelectedClass}
+              Alunos da Turma {currentSelectedClassName}
             </h3>
             {selectedClassId && students && students.length > 0 ? (
               <div className="overflow-x-auto">
