@@ -5,7 +5,7 @@ import { useProfile, UserRole } from '@/hooks/useProfile';
 import { Navigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Loader2, MessageSquare, PlusCircle, Trash2, Pencil, CheckCircle, XCircle, Filter, School, Users, MoreHorizontal } from 'lucide-react';
+import { Loader2, MessageSquare, PlusCircle, Trash2, Pencil, School, Users, MoreHorizontal, Link as LinkIcon, Image } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
@@ -13,6 +13,7 @@ import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import MessageSheet from '@/components/super-admin/MessageSheet'; // Componente para adicionar/editar
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 
 interface SuperAdminMessage {
   id: string;
@@ -23,11 +24,11 @@ interface SuperAdminMessage {
   target_role: UserRole[];
   created_at: string;
   tenants: { name: string } | null;
+  link_url: string | null; // Adicionado
+  image_url: string | null; // Adicionado
 }
 
 const fetchMessages = async (): Promise<SuperAdminMessage[]> => {
-  // Usamos a service_role_key na Edge Function, mas aqui podemos usar o client normal
-  // A RLS para SELECT do Super Admin na tabela 'super_admin_messages' é 'true' (Super Admin can manage messages)
   const { data, error } = await supabase
     .from('super_admin_messages')
     .select(`
@@ -38,6 +39,8 @@ const fetchMessages = async (): Promise<SuperAdminMessage[]> => {
       target_role, 
       created_at, 
       tenant_id,
+      link_url,
+      image_url,
       tenants (name)
     `)
     .order('created_at', { ascending: false });
@@ -153,6 +156,8 @@ const SuperAdminMessagesPage: React.FC = () => {
                   <TableHead>Título</TableHead>
                   <TableHead>Escola (Tenant)</TableHead>
                   <TableHead>Roles Alvo</TableHead>
+                  <TableHead>Link</TableHead> {/* NOVA COLUNA */}
+                  <TableHead>Imagem</TableHead> {/* NOVA COLUNA */}
                   <TableHead>Status</TableHead>
                   <TableHead>Criada em</TableHead>
                   <TableHead className="text-right">Ações</TableHead>
@@ -177,6 +182,25 @@ const SuperAdminMessagesPage: React.FC = () => {
                       <div className="flex flex-wrap gap-1">
                         {msg.target_role.map(role => getRoleBadge(role))}
                       </div>
+                    </TableCell>
+                    <TableCell>
+                      {msg.link_url ? (
+                        <a href={msg.link_url} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline flex items-center text-sm">
+                          <LinkIcon className="h-4 w-4 mr-1" /> Link
+                        </a>
+                      ) : (
+                        <span className="text-muted-foreground text-sm">N/A</span>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      {msg.image_url ? (
+                        <Avatar className="h-8 w-8">
+                          <AvatarImage src={msg.image_url} alt="Imagem" />
+                          <AvatarFallback><Image className="h-4 w-4" /></AvatarFallback>
+                        </Avatar>
+                      ) : (
+                        <span className="text-muted-foreground text-sm">N/A</span>
+                      )}
                     </TableCell>
                     <TableCell>
                       {msg.is_active ? (
