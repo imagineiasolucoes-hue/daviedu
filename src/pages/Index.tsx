@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { ArrowRight, CheckCircle, Clock, BarChart, Users, DollarSign, MessageSquare, ShieldCheck, Zap, Cloud, Star, Phone, Mail, Instagram, Facebook, Linkedin, HelpCircle } from 'lucide-react'; // Adicionado HelpCircle
+import { ArrowRight, CheckCircle, Clock, BarChart, Users, DollarSign, MessageSquare, ShieldCheck, Zap, Cloud, Star, Phone, Mail, Instagram, Facebook, HelpCircle } from 'lucide-react'; // Adicionado HelpCircle
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import FloatingConsultantButton from '@/components/FloatingConsultantButton';
@@ -47,7 +47,7 @@ const Footer: React.FC = () => (
           <a href="#" className="text-muted-foreground hover:text-primary"><Facebook size={20} /></a>
         </div>
         <h4 className="font-semibold text-foreground mb-2">Recursos</h4>
-        <p><Link to="/faq" className="hover:text-primary">Dúvidas Frequentes (FAQ)</Link></p> {/* NOVO LINK */}
+        <p><Link to="/faq" className="hover:text-primary">Dúvidas Frequentes (FAQ)</Link></p>
       </div>
     </div>
     <div className="max-w-7xl mx-auto mt-8 pt-6 border-t border-border/50 text-center text-xs text-muted-foreground">
@@ -71,20 +71,25 @@ const Index = () => {
             <div className="flex flex-col lg:flex-row gap-12 items-center">
               <div className="lg:w-1/2 space-y-6 text-center lg:text-left">
                 <h1 className="text-4xl md:text-6xl font-extrabold tracking-tight text-foreground">
-                  Gestão escolar <span className="text-accent">descomplicada</span> para escolas pequenas e médias
+                  A Gestão Escolar que <span className="text-accent">Liberta sua Secretaria</span>
                 </h1>
                 <p className="text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto lg:mx-0">
-                  Tudo que sua escola precisa – matrícula, notas, financeiro e comunicação – por apenas R$ 220/mês.
+                  O DaviEDU centraliza matrícula, notas, financeiro e comunicação. Solução completa, preço fixo e justo para escolas pequenas e médias.
                 </p>
                 <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start pt-4">
                   <Button asChild size="lg" className="text-lg px-8 py-6 bg-accent hover:bg-accent/90">
                     <Link to="/register">
-                      Iniciar teste grátis de 7 dias
+                      Comece seu Teste Grátis de 7 Dias
                       <ArrowRight className="ml-2 h-5 w-5" />
                     </Link>
                   </Button>
+                  <Button asChild size="lg" variant="outline" className="text-lg px-8 py-6 border-primary text-primary hover:bg-primary/10">
+                    <a href="#pricing">
+                      Ver Preço Fixo
+                    </a>
+                  </Button>
                 </div>
-                <p className="text-sm text-muted-foreground pt-2">Sem fidelidade. Cancelamento fácil.</p>
+                <p className="text-sm text-muted-foreground pt-2">Sem fidelidade. Sem custos escondidos. Sem complicação.</p>
               </div>
               <div className="lg:w-1/2 flex justify-center lg:justify-end">
                 <img 
@@ -102,19 +107,19 @@ const Index = () => {
           <div className="max-w-5xl mx-auto grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
             <div className="flex flex-col items-center space-y-2">
               <Clock className="h-10 w-10 text-accent" />
-              <p className="font-semibold">Economize tempo da secretaria</p>
+              <p className="font-semibold">Redução de 40% no tempo administrativo</p>
             </div>
             <div className="flex flex-col items-center space-y-2">
               <DollarSign className="h-10 w-10 text-accent" />
-              <p className="font-semibold">Controle financeiro simplificado</p>
+              <p className="font-semibold">Controle financeiro total e intuitivo</p>
             </div>
             <div className="flex flex-col items-center space-y-2">
               <Users className="h-10 w-10 text-accent" />
-              <p className="font-semibold">Pais e alunos conectados</p>
+              <p className="font-semibold">Portal do Aluno e Responsável</p>
             </div>
             <div className="flex flex-col items-center space-y-2">
               <BarChart className="h-10 w-10 text-accent" />
-              <p className="font-semibold">Relatórios prontos para decisões</p>
+              <p className="font-semibold">Relatórios acadêmicos e financeiros</p>
             </div>
           </div>
         </section>
@@ -122,15 +127,15 @@ const Index = () => {
         {/* 3. Por que escolher o DaviEDU? */}
         <section className="py-16 md:py-24 px-4 bg-muted/50">
           <div className="max-w-7xl mx-auto text-center">
-            <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-12">Por que o DaviEDU é a escolha certa para sua escola?</h2>
+            <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-12">O DaviEDU é a solução que sua escola estava esperando.</h2>
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
               {[
-                { icon: DollarSign, title: "Pacote único por R$ 220/mês", desc: "Sem custos escondidos ou planos complicados." },
-                { icon: Zap, title: "Implantação rápida em até 24h", desc: "Comece a usar o sistema em tempo recorde." },
-                { icon: MessageSquare, title: "Suporte via WhatsApp", desc: "Atendimento rápido e humanizado quando você precisar." },
-                { icon: Users, title: "Foco em escolas pequenas e médias", desc: "Uma solução pensada para as suas necessidades." },
-                { icon: Cloud, title: "Dados em nuvem e segurança", desc: "Acesse de qualquer lugar com total tranquilidade." },
-                { icon: ShieldCheck, title: "Cancelamento fácil", desc: "Liberdade para decidir, sem burocracia." },
+                { icon: DollarSign, title: "Preço Fixo e Acessível", desc: "R$ 220/mês. Sem surpresas, sem limites de alunos ou usuários." },
+                { icon: Zap, title: "Ativação Imediata", desc: "Comece a usar em minutos. Implantação rápida e sem dor de cabeça." },
+                { icon: MessageSquare, title: "Suporte Premium via WhatsApp", desc: "Atendimento direto e humanizado para resolver tudo rapidamente." },
+                { icon: Users, title: "Feito para o seu porte", desc: "Foco total em escolas pequenas e médias, com funcionalidades essenciais." },
+                { icon: Cloud, title: "Segurança e Acesso Total", desc: "Sistema 100% em nuvem, acessível de qualquer dispositivo, com dados protegidos." },
+                { icon: ShieldCheck, title: "Liberdade Contratual", desc: "Sem fidelidade. Cancele a qualquer momento, de forma simples e transparente." },
               ].map(item => (
                 <div key={item.title} className="p-6 bg-card rounded-lg text-left flex items-start gap-4">
                   <item.icon className="h-8 w-8 text-accent flex-shrink-0 mt-1" />
@@ -147,13 +152,13 @@ const Index = () => {
         {/* 4. Como funciona */}
         <section className="py-16 md:py-24 px-4">
           <div className="max-w-4xl mx-auto text-center">
-            <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-12">Veja como é simples usar o DaviEDU</h2>
+            <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-12">Sua escola organizada em 4 passos</h2>
             <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
               {[
-                { num: 1, title: "Cadastre sua escola", desc: "Preencha os dados iniciais em poucos minutos." },
-                { num: 2, title: "Configure turmas e alunos", desc: "Importe ou cadastre suas informações de forma fácil." },
-                { num: 3, title: "Registre as atividades", desc: "Lance notas, pagamentos e comunicados do dia a dia." },
-                { num: 4, title: "Acompanhe os resultados", desc: "Use relatórios intuitivos para tomar as melhores decisões." },
+                { num: 1, title: "Inicie o Teste Grátis", desc: "Cadastre sua escola e comece a usar o sistema em segundos." },
+                { num: 2, title: "Configure o Básico", desc: "Defina turmas, séries e cadastre seus professores e alunos." },
+                { num: 3, title: "Centralize as Operações", desc: "Use o sistema para lançar notas, gerenciar o financeiro e emitir documentos." },
+                { num: 4, title: "Foque no Ensino", desc: "Com a gestão automatizada, sua equipe tem mais tempo para o que realmente importa: a educação." },
               ].map(step => (
                 <div key={step.num} className="flex flex-col items-center text-center">
                   <div className="w-12 h-12 rounded-full bg-accent text-accent-foreground flex items-center justify-center text-xl font-bold mb-4">{step.num}</div>
@@ -226,14 +231,15 @@ const Index = () => {
             <Card className="mt-8 shadow-lg">
               <CardHeader>
                 <p className="text-5xl font-bold text-primary">R$ 220<span className="text-xl font-normal text-muted-foreground">/mês</span></p>
-                <p className="text-muted-foreground">Sem taxas extras. Sem surpresas.</p>
+                <p className="text-muted-foreground">Sem taxas extras. Sem surpresas. Sem limite de usuários.</p>
               </CardHeader>
               <CardContent className="space-y-4 text-left">
                 <ul className="space-y-2">
-                  <li className="flex items-center"><CheckCircle className="h-5 w-5 text-green-500 mr-2" /> Gestão acadêmica</li>
-                  <li className="flex items-center"><CheckCircle className="h-5 w-5 text-green-500 mr-2" /> Controle financeiro</li>
-                  <li className="flex items-center"><CheckCircle className="h-5 w-5 text-green-500 mr-2" /> Comunicação com pais e alunos</li>
-                  <li className="flex items-center"><CheckCircle className="h-5 w-5 text-green-500 mr-2" /> Suporte completo</li>
+                  <li className="flex items-center"><CheckCircle className="h-5 w-5 text-green-500 mr-2" /> Gestão acadêmica completa</li>
+                  <li className="flex items-center"><CheckCircle className="h-5 w-5 text-green-500 mr-2" /> Controle financeiro (Receitas e Despesas)</li>
+                  <li className="flex items-center"><CheckCircle className="h-5 w-5 text-green-500 mr-2" /> Portal do Aluno e Responsável</li>
+                  <li className="flex items-center"><CheckCircle className="h-5 w-5 text-green-500 mr-2" /> Suporte Premium via WhatsApp</li>
+                  <li className="flex items-center"><CheckCircle className="h-5 w-5 text-green-500 mr-2" /> Backup diário e seguro</li>
                 </ul>
                 <div className="space-y-3 pt-2">
                   <Button asChild size="lg" className="w-full text-lg bg-kiwify hover:bg-kiwify/90 text-white">
@@ -277,6 +283,10 @@ const Index = () => {
                 <AccordionTrigger>Tem suporte por WhatsApp?</AccordionTrigger>
                 <AccordionContent>Sim! Oferecemos suporte rápido e direto via WhatsApp para resolver qualquer dúvida ou problema que você tenha no dia a dia.</AccordionContent>
               </AccordionItem>
+              <AccordionItem value="item-6">
+                <AccordionTrigger>O que acontece após o teste grátis?</AccordionTrigger>
+                <AccordionContent>Após 7 dias, se você não assinar, seu acesso será suspenso. Seus dados serão mantidos por um período, mas você precisará regularizar a assinatura para continuar usando o sistema.</AccordionContent>
+              </AccordionItem>
             </Accordion>
           </div>
         </section>
@@ -284,7 +294,7 @@ const Index = () => {
         {/* 9. Chamada Final */}
         <section className="py-20 md:py-24 px-4 text-center">
           <div className="max-w-3xl mx-auto">
-            <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-6">Transforme a gestão da sua escola hoje mesmo</h2>
+            <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-6">Pronto para simplificar a gestão da sua escola?</h2>
             <Button asChild size="lg" className="text-lg px-10 py-7 bg-accent hover:bg-accent/90">
               <Link to="/register">Iniciar teste grátis de 7 dias</Link>
             </Button>

@@ -43,7 +43,7 @@ interface AcademicPeriod {
   name: string;
 }
 
-// Representa uma turma com seus cursos associados (para Admin/Secretary)
+// Representa uma turma com seus cursos associados
 interface ClassWithCourses {
   id: string;
   name: string;
@@ -52,6 +52,12 @@ interface ClassWithCourses {
     course_id: string;
     courses: { id: string; name: string } | null;
   }[];
+}
+
+// Tipo para o resultado da query teacher_classes
+interface TeacherAssignmentResult {
+  class_id: string;
+  classes: ClassWithCourses | null; // Corrigido para ser um objeto ClassWithCourses ou null
 }
 
 // --- Schemas de Validação ---
@@ -92,11 +98,14 @@ const fetchClassesForGradeEntry = async (tenantId: string, employeeId: string | 
 
     if (assignmentError) throw new Error(assignmentError.message);
 
+    // O Supabase retorna 'classes' como um objeto aninhado (ClassWithCourses | null)
+    const rawAssignments: TeacherAssignmentResult[] = assignments as unknown as TeacherAssignmentResult[];
+
     // Filtra e mapeia para obter apenas as turmas únicas
     const uniqueClassesMap = new Map<string, ClassWithCourses>();
-    assignments.forEach(a => {
+    rawAssignments.forEach(a => {
       if (a.classes && !uniqueClassesMap.has(a.classes.id)) {
-        uniqueClassesMap.set(a.classes.id, a.classes as unknown as ClassWithCourses);
+        uniqueClassesMap.set(a.classes.id, a.classes);
       }
     });
     return Array.from(uniqueClassesMap.values());
