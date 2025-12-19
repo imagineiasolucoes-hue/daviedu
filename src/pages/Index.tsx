@@ -128,7 +128,7 @@ const Index = () => {
         <section className="py-16 md:py-24 px-4 bg-muted/50">
           <div className="max-w-7xl mx-auto text-center">
             <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-12">O DaviEDU é a solução que sua escola estava esperando.</h2>
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
               {[
                 { icon: DollarSign, title: "Preço Fixo e Acessível", desc: "R$ 220/mês. Sem surpresas, sem limites de alunos ou usuários." },
                 { icon: Zap, title: "Ativação Imediata", desc: "Comece a usar em minutos. Implantação rápida e sem dor de cabeça." },
@@ -174,7 +174,7 @@ const Index = () => {
         <section className="py-16 md:py-24 px-4 bg-muted/50">
           <div className="max-w-5xl mx-auto text-center">
             <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-12">O que outras escolas dizem</h2>
-            <div className="grid md:grid-cols-1 lg:grid-cols-3 gap-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
               <Card className="text-left">
                 <CardContent className="pt-6">
                   <div className="flex mb-2">
