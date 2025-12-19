@@ -438,14 +438,14 @@ const GradeEntryPage: React.FC = () => {
     const isDisabled = isLoading || isDataEmpty;
     
     // Se o valor for null ou undefined, usamos 'none' para o Select, se for opcional.
-    // Se não for opcional, usamos uma string vazia para forçar o placeholder (embora o SelectItem não possa ser vazio).
+    // Se não for opcional, usamos uma string vazia para forçar o placeholder.
     const displayValue = currentValue === null || currentValue === undefined ? (isOptional ? 'none' : '') : currentValue;
 
     return (
       <div className="space-y-2">
         <Label htmlFor={id}>{label}</Label>
         <Select 
-          onValueChange={(value) => onValueChange(value === 'none' ? '' : value)} // Converte 'none' de volta para '' (que será tratado como null no submit)
+          onValueChange={(value) => onValueChange(value === 'none' ? null : value)} // Converte 'none' para null
           value={displayValue}
           disabled={isDisabled}
         >
@@ -574,7 +574,7 @@ const GradeEntryPage: React.FC = () => {
                 assessmentTypes,
                 isLoadingAssessmentTypes,
                 "Selecione o tipo",
-                (value) => form.setValue('assessmentType', value === '' ? null : value),
+                (value) => form.setValue('assessmentType', value),
                 form.watch('assessmentType'),
                 form.formState.errors.assessmentType,
                 "Nenhum tipo de avaliação cadastrado. Cadastre em Secretaria > Matérias.",
