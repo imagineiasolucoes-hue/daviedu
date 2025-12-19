@@ -94,9 +94,16 @@ const fetchClassesForGradeEntry = async (tenantId: string, employeeId: string | 
 
     // Filtra e mapeia para obter apenas as turmas únicas
     const uniqueClassesMap = new Map<string, ClassWithCourses>();
-    assignments.forEach(a => {
+    
+    // Tipagem explícita para o item do loop para resolver o erro TS2339
+    const rawAssignments = assignments as { 
+        class_id: string; 
+        classes: ClassWithCourses | null; 
+    }[];
+
+    rawAssignments.forEach(a => {
       if (a.classes && !uniqueClassesMap.has(a.classes.id)) {
-        uniqueClassesMap.set(a.classes.id, a.classes as unknown as ClassWithCourses);
+        uniqueClassesMap.set(a.classes.id, a.classes);
       }
     });
     return Array.from(uniqueClassesMap.values());
