@@ -12,7 +12,6 @@ import PreEnrollmentInfoPage from "./pages/PreEnrollmentInfoPage";
 import { SessionContextProvider } from "./components/auth/SessionContextProvider";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
 import SuperAdminProtectedRoute from "./components/auth/SuperAdminProtectedRoute";
-import TeacherProtectedRoute from "./components/auth/TeacherProtectedRoute";
 import Dashboard from "./pages/Dashboard";
 import AppLayout from "./components/layout/AppLayout";
 import DocumentLayout from "./components/layout/DocumentLayout";
@@ -31,14 +30,11 @@ import CoursesPage from "./pages/CoursesPage";
 import SubjectsPage from "./pages/SubjectsPage";
 import BackupDashboard from "./pages/BackupDashboard";
 import FAQPage from "./pages/FAQPage";
-import TeacherDashboard from "./pages/teacher/TeacherDashboard";
-import GradeEntryPage from "./pages/teacher/GradeEntryPage";
-import ClassDiaryPage from "./pages/teacher/ClassDiaryPage";
-import MyClassesPage from "./pages/teacher/MyClassesPage"; 
+import GradeEntryPage from "./pages/GradeEntryPage"; // Importação atualizada
 import ReportCard from "./components/documents/templates/ReportCard";
 import StudentTranscript from "./components/documents/templates/StudentTranscript";
 import MonthlyFeeCollection from "./components/documents/templates/MonthlyFeeCollection";
-import StudentContract from "./components/documents/templates/StudentContract.tsx"; // NOVO IMPORT
+import StudentContract from "./components/documents/templates/StudentContract";
 import SecretariaPage from "./pages/SecretariaPage";
 import VerifyDocumentPage from "./pages/VerifyDocumentPage";
 import StudentPage from "./pages/StudentPage";
@@ -97,19 +93,14 @@ const App = () => {
                   <Route path="/expenses" element={<ExpensesPage />} />
                   <Route path="/settings" element={<SettingsPage />} />
                   
+                  {/* Grade Entry (Acessível por Admin/Secretary/Teacher) */}
+                  <Route path="/grades/entry" element={<GradeEntryPage />} />
+                  
                   {/* Super Admin Routes */}
                   <Route element={<SuperAdminProtectedRoute />}>
                     <Route path="/backup" element={<BackupDashboard />} />
                     <Route path="/super-admin/tenants" element={<TenantsPage />} />
                     <Route path="/super-admin/users" element={<UsersPage />} />
-                  </Route>
-
-                  {/* Teacher Routes */}
-                  <Route element={<TeacherProtectedRoute />}>
-                    <Route path="/teacher/dashboard" element={<TeacherDashboard />} />
-                    <Route path="/teacher/grade-entry" element={<GradeEntryPage />} />
-                    <Route path="/teacher/class-diary" element={<ClassDiaryPage />} />
-                    <Route path="/teacher/my-classes" element={<MyClassesPage />} /> 
                   </Route>
                 </Route>
 
@@ -118,7 +109,7 @@ const App = () => {
                   <Route path="/documents/generate/transcript/:entityId" element={<StudentTranscript />} />
                   <Route path="/documents/generate/report_card/:entityId" element={<ReportCard />} />
                   <Route path="/documents/generate/monthly_fee_collection/:entityId" element={<MonthlyFeeCollection />} />
-                  <Route path="/documents/generate/contract/:entityId" element={<StudentContract />} /> {/* NOVA ROTA */}
+                  <Route path="/documents/generate/contract/:entityId" element={<StudentContract />} />
                 </Route>
 
               </Route>

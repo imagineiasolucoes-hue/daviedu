@@ -37,9 +37,9 @@ const secretaryActions = [
     description: 'Definir cursos e séries.',
   },
   {
-    label: 'Lançar Notas', // NOVO ITEM
-    icon: GraduationCap, // NOVO ÍCONE
-    to: '/teacher/grade-entry', // Rota para lançamento de notas
+    label: 'Lançar Notas',
+    icon: GraduationCap,
+    to: '/grades/entry', // Rota atualizada
     description: 'Registrar avaliações e notas dos alunos.',
   },
   {

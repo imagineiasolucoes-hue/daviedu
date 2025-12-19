@@ -279,10 +279,22 @@ const GradeEntryPage: React.FC = () => {
   // --- Submission Logic ---
   const onSubmit = async (data: GradeEntryFormData) => {
     // CRITICAL VALIDATION 1: Permissions
-    if (!tenantId || !teacherEmployeeId) { 
-      toast.error("Erro de Permissão", { description: "Seu perfil não está vinculado a um funcionário/professor. Apenas administradores e secretários podem lançar notas." });
+    // Agora, professores, administradores e secretários podem lançar notas.
+    if (!tenantId || (!teacherEmployeeId && !isAdmin && !isSecretary)) { 
+      toast.error("Erro de Permissão", { description: "Seu perfil não tem permissão para lançar notas." });
       return;
     }
+    
+    // Se for Admin/Secretary, o teacherEmployeeId será null, mas a inserção no DB
+    // exige um teacher_id. Para Admin/Secretary, usaremos o employee_id do Admin/Secretary
+    // se ele existir, ou um placeholder se necessário.
+    // Vamos garantir que o teacher_id seja o employee_id do usuário logado, se existir.
+    const currentEmployeeId = profile?.employee_id;
+    if (!currentEmployeeId) {
+        toast.error("Erro de Perfil", { description: "Seu perfil não está vinculado a um registro de funcionário (employee_id) para lançar notas." });
+        return;
+    }
+
 
     // CRITICAL VALIDATION 2: Conditional Course Selection
     if (isCourseSelectionRequired && !data.courseId) {
@@ -305,7 +317,7 @@ const GradeEntryPage: React.FC = () => {
         grade_value: g.gradeValue,
         assessment_type: data.assessmentType || null, 
         period: data.period, // Academic Period Name (e.g., "1º Bimestre")
-        teacher_id: teacherEmployeeId,
+        teacher_id: currentEmployeeId, // Usando o employee_id do usuário logado
         date_recorded: new Date().toISOString().split('T')[0], 
       }));
 

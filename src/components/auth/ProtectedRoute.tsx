@@ -1,12 +1,12 @@
 import React from 'react';
 import { Navigate, Outlet } from 'react-router-dom';
 import { useAuth } from './SessionContextProvider';
-import { useProfile } from '@/hooks/useProfile'; // Importando useProfile
+import { useProfile } from '@/hooks/useProfile';
 import { Loader2 } from 'lucide-react';
 
 const ProtectedRoute: React.FC = () => {
   const { user, isLoading: isAuthLoading } = useAuth();
-  const { profile, isLoading: isProfileLoading, isTeacher, isSuperAdmin, isStudent } = useProfile(); // Usando isStudent
+  const { profile, isLoading: isProfileLoading, isStudent } = useProfile(); // isTeacher and isSuperAdmin are no longer needed for redirection logic here
 
   const isLoading = isAuthLoading || isProfileLoading;
 
@@ -38,24 +38,6 @@ const ProtectedRoute: React.FC = () => {
     return <Navigate to="/student-portal" replace />;
   }
   
-  // 2. Redirecionamento baseado na Role (Admin/Teacher)
-  // Se for professor e não for Super Admin, redireciona para o dashboard de professor.
-  if (isTeacher && !isSuperAdmin && window.location.pathname === '/dashboard') {
-    return <Navigate to="/teacher/dashboard" replace />;
-  }
-  
-  // 3. Bloqueio de Acesso para Aluno ao AppLayout
-  // Se for estudante, mas a rota atual for uma rota do AppLayout (como /dashboard, /students, etc.),
-  // e ele não foi pego pelo redirecionamento acima (o que não deve acontecer se o redirecionamento funcionar),
-  // garantimos que ele não veja o AppLayout.
-  // No entanto, como a rota /student-portal está fora do AppLayout no App.tsx,
-  // o Outlet aqui só deve renderizar para não-alunos.
-
-  // Se for aluno, e a rota atual for /student-portal, ele continua.
-  if (isStudent) {
-    return <Outlet />; // Permite que o Outlet renderize o StudentPage
-  }
-
   // Se for Admin, Secretary, Teacher ou Super Admin, renderiza as rotas filhas (que usam AppLayout)
   return <Outlet />;
 };
