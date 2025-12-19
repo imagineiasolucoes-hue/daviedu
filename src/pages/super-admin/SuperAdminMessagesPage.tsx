@@ -5,7 +5,7 @@ import { useProfile, UserRole } from '@/hooks/useProfile';
 import { Navigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Loader2, MessageSquare, PlusCircle, Trash2, Pencil, CheckCircle, XCircle, Filter, School, Users } from 'lucide-react';
+import { Loader2, MessageSquare, PlusCircle, Trash2, Pencil, CheckCircle, XCircle, Filter, School, Users, MoreHorizontal } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
