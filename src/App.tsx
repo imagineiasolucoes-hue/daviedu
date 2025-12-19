@@ -38,6 +38,7 @@ import StudentContract from "./components/documents/templates/StudentContract";
 import SecretariaPage from "./pages/SecretariaPage";
 import VerifyDocumentPage from "./pages/VerifyDocumentPage";
 import StudentPage from "./pages/StudentPage";
+import SuperAdminMessageDisplay from "./components/super-admin/SuperAdminMessageDisplay"; // NOVO IMPORT
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -60,6 +61,9 @@ const App = () => {
           }}
         >
           <SessionContextProvider>
+            {/* Componente de Mensagens do Super Admin (Visível em todas as rotas protegidas) */}
+            <SuperAdminMessageDisplay /> 
+            
             <Routes>
               {/* Public Routes */}
               <Route path="/" element={<Index />} />
