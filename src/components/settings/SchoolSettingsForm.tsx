@@ -11,7 +11,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Loader2, Upload, Download, School, Banknote, QrCode } from 'lucide-react';
+import { Loader2, Upload, Download, School, Banknote, QrCode, GraduationCap } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import { Separator } from '@/components/ui/separator';
 
@@ -26,7 +26,7 @@ const tenantConfigSchema = z.object({
   address_zip_code: z.string().optional().nullable(),
   logo_url: z.string().url("URL da logo inválida.").optional().nullable(),
   
-  // NOVOS CAMPOS FINANCEIROS
+  // CAMPOS FINANCEIROS
   pix_key: z.string().optional().nullable(),
   bank_name: z.string().optional().nullable(),
   bank_agency: z.string().optional().nullable(),
@@ -34,6 +34,9 @@ const tenantConfigSchema = z.object({
 
   // NOVO CAMPO: Ato de Criação/Autorização
   authorization_act: z.string().optional().nullable(),
+  
+  // NOVO CAMPO: Média Mínima de Aprovação
+  minimum_passing_grade: z.coerce.number().min(0).max(10).optional().nullable(),
 });
 
 const tenantSchema = z.object({
@@ -90,13 +93,15 @@ const SchoolSettingsForm: React.FC = () => {
           address_state: tenant.config?.address_state || null,
           address_zip_code: tenant.config?.address_zip_code || null,
           logo_url: tenant.config?.logo_url || null,
-          // NOVOS CAMPOS
+          // NOVOS CAMPOS FINANCEIROS
           pix_key: tenant.config?.pix_key || null,
           bank_name: tenant.config?.bank_name || null,
           bank_agency: tenant.config?.bank_agency || null,
           bank_account: tenant.config?.bank_account || null,
           // NOVO CAMPO
           authorization_act: tenant.config?.authorization_act || null,
+          // NOVO CAMPO: Média Mínima de Aprovação (Default para 7.0 se não configurado)
+          minimum_passing_grade: tenant.config?.minimum_passing_grade ?? 7.0,
         },
       });
     }
@@ -147,13 +152,15 @@ const SchoolSettingsForm: React.FC = () => {
       address_state: data.config?.address_state || null,
       address_zip_code: data.config?.address_zip_code || null,
       logo_url: logoUrl || null,
-      // NOVOS CAMPOS
+      // NOVOS CAMPOS FINANCEIROS
       pix_key: data.config?.pix_key || null,
       bank_name: data.config?.bank_name || null,
       bank_agency: data.config?.bank_agency || null,
       bank_account: data.config?.bank_account || null,
       // NOVO CAMPO
       authorization_act: data.config?.authorization_act || null,
+      // NOVO CAMPO: Média Mínima de Aprovação
+      minimum_passing_grade: data.config?.minimum_passing_grade ?? 7.0,
     };
 
     const { error } = await supabase
@@ -251,6 +258,35 @@ const SchoolSettingsForm: React.FC = () => {
               <div className="space-y-2">
                 <Label htmlFor="authorization_act">Ato de Criação/Autorização (Opcional)</Label>
                 <Input id="authorization_act" {...form.register("config.authorization_act")} placeholder="Ex: Portaria nº 123/2020 - SEDUC" />
+              </div>
+            </div>
+          </div>
+
+          <Separator />
+          
+          {/* Configurações Acadêmicas */}
+          <div className="grid md:grid-cols-3 gap-6 items-start">
+            <div className="md:col-span-1">
+              <h3 className="font-semibold flex items-center gap-2">
+                <GraduationCap className="h-5 w-5 text-primary" />
+                Regras Acadêmicas
+              </h3>
+              <p className="text-sm text-muted-foreground">Definições que afetam o cálculo de notas e resultados.</p>
+            </div>
+            <div className="md:col-span-2 grid gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="minimum_passing_grade">Média Mínima de Aprovação (0.0 a 10.0)</Label>
+                <Input 
+                  id="minimum_passing_grade" 
+                  type="number" 
+                  step="0.1" 
+                  min="0" 
+                  max="10"
+                  {...form.register("config.minimum_passing_grade", { valueAsNumber: true })} 
+                  placeholder="Ex: 7.0"
+                />
+                {form.formState.errors.config?.minimum_passing_grade && <p className="text-sm text-destructive">{form.formState.errors.config.minimum_passing_grade.message}</p>}
+                <p className="text-xs text-muted-foreground">Esta média é usada para determinar o resultado final (Aprovado, Reprovado, Recuperação).</p>
               </div>
             </div>
           </div>
