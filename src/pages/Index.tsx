@@ -44,8 +44,8 @@ const Footer: React.FC = () => (
       <div className="text-sm">
         <h4 className="font-semibold text-foreground mb-2">Siga-nos</h4>
         <div className="flex justify-center md:justify-start space-x-4 mb-2">
-          <a href="#" className="text-muted-foreground hover:text-primary"><Instagram size={20} /></a>
-          <a href="#" className="text-muted-foreground hover:text-primary"><Facebook size={20} /></a>
+          <a href="https://www.instagram.com/imagineiasolucoes/" target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-primary"><Instagram size={20} /></a>
+          <a href="https://www.facebook.com/profile.php?id=61582527995208" target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-primary"><Facebook size={20} /></a>
         </div>
         <h4 className="font-semibold text-foreground mb-2">Recursos</h4>
         <p><Link to="/faq" className="hover:text-primary">Dúvidas Frequentes (FAQ)</Link></p>
