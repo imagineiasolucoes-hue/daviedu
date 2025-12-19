@@ -145,7 +145,8 @@ const MessageSheet: React.FC<MessageSheetProps> = ({ open, onOpenChange, initial
 
       // 1. Upload da Imagem, se houver um novo arquivo
       if (imageFile) {
-        const filePath = `public/${Date.now()}_${imageFile.name}`;
+        // CORREÇÃO: Usando uma subpasta 'messages' em vez de 'public' para evitar conflitos de caminho
+        const filePath = `messages/${Date.now()}_${imageFile.name}`; 
         
         // NOTA: O bucket 'sa-messages' deve ser criado manualmente no Supabase Storage
         const { error: uploadError } = await supabase.storage
