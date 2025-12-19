@@ -257,10 +257,10 @@ const GradeEntryPage: React.FC = () => {
   
   // Reset courseId and period when class changes
   useEffect(() => {
-    // Se a turma mudar, e a nova turma exigir seleção de curso, resetamos o curso.
-    // Se a nova turma não exigir curso, garantimos que courseId seja null.
     if (selectedClassId) {
         const requiresCourse = availableCoursesInClass.length > 0;
+        // Se for necessário curso, setamos para null (que será mapeado para 'none' no Select).
+        // Se não for necessário, setamos para 'none' (que será mapeado para null no submit).
         form.setValue('courseId', requiresCourse ? null : 'none', { shouldValidate: true });
         form.setValue('period', '', { shouldValidate: true });
     }
@@ -279,16 +279,11 @@ const GradeEntryPage: React.FC = () => {
   // --- Submission Logic ---
   const onSubmit = async (data: GradeEntryFormData) => {
     // CRITICAL VALIDATION 1: Permissions
-    // Agora, professores, administradores e secretários podem lançar notas.
     if (!tenantId || (!teacherEmployeeId && !isAdmin && !isSecretary)) { 
       toast.error("Erro de Permissão", { description: "Seu perfil não está vinculado a um funcionário/professor. Apenas administradores e secretários podem lançar notas." });
       return;
     }
     
-    // Se for Admin/Secretary, o teacherEmployeeId será null, mas a inserção no DB
-    // exige um teacher_id. Para Admin/Secretary, usaremos o employee_id do Admin/Secretary
-    // se ele existir, ou um placeholder se necessário.
-    // Vamos garantir que o teacher_id seja o employee_id do usuário logado, se existir.
     const currentEmployeeId = profile?.employee_id;
     if (!currentEmployeeId) {
         toast.error("Erro de Perfil", { description: "Seu perfil não está vinculado a um registro de funcionário (employee_id) para lançar notas." });
@@ -428,7 +423,7 @@ const GradeEntryPage: React.FC = () => {
     data: { id: string; name: string }[] | undefined,
     isLoading: boolean,
     placeholder: string,
-    onValueChange: (value: string) => void,
+    onValueChange: (value: string | null) => void, // Aceita null
     currentValue: string | null | undefined,
     error: any,
     emptyMessage: string,
@@ -437,9 +432,8 @@ const GradeEntryPage: React.FC = () => {
     const isDataEmpty = !data || data.length === 0;
     const isDisabled = isLoading || isDataEmpty;
     
-    // Se o valor for null ou undefined, usamos 'none' para o Select, se for opcional.
-    // Se não for opcional, usamos uma string vazia para forçar o placeholder.
-    const displayValue = currentValue === null || currentValue === undefined ? (isOptional ? 'none' : '') : currentValue;
+    // Mapeia null/undefined para 'none' para o Select (que não aceita string vazia ou null/undefined)
+    const displayValue = currentValue === null || currentValue === undefined || currentValue === '' ? 'none' : currentValue;
 
     return (
       <div className="space-y-2">
@@ -453,8 +447,10 @@ const GradeEntryPage: React.FC = () => {
             <SelectValue placeholder={isLoading ? "Carregando..." : placeholder} />
           </SelectTrigger>
           <SelectContent>
-            {/* O SelectItem para valor nulo/opcional deve ter um valor que não seja uma string vazia */}
+            {/* O SelectItem para valor nulo/opcional DEVE ter um valor de string não vazia, usamos 'none' */}
             {isOptional && <SelectItem value="none">Nenhum</SelectItem>}
+            {/* Se não for opcional, o item 'none' é o placeholder, mas não deve ser selecionável se houver dados */}
+            {!isOptional && <SelectItem value="none" disabled={!isDataEmpty}>{placeholder}</SelectItem>}
             {data?.map(item => (
               <SelectItem key={item.id} value={item.name}>{item.name}</SelectItem>
             ))}
@@ -493,16 +489,17 @@ const GradeEntryPage: React.FC = () => {
                 <Label htmlFor="classId">Turma</Label>
                 <Select 
                   onValueChange={(value) => {
-                    form.setValue('classId', value === '' ? null : value);
+                    // Turma não é opcional, mas pode ser nula no formulário (null)
+                    form.setValue('classId', value === 'none' ? null : value);
                   }} 
-                  value={form.watch('classId') ?? ''}
+                  value={form.watch('classId') ?? 'none'} // Mapeia null para 'none'
                   disabled={isLoadingClassesForEntry || allClassesForEntry.length === 0}
                 >
                   <SelectTrigger id="classId">
                     <SelectValue placeholder={isLoadingClassesForEntry ? "Carregando turmas..." : "Selecione a turma"} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">Nenhuma Turma</SelectItem>
+                    <SelectItem value="none" disabled={allClassesForEntry.length > 0}>Selecione a Turma</SelectItem>
                     {allClassesForEntry.map(c => (
                       <SelectItem key={c.id} value={c.id}>
                         {c.name} ({c.school_year})
@@ -517,15 +514,15 @@ const GradeEntryPage: React.FC = () => {
               <div className="space-y-2">
                 <Label htmlFor="courseId">Série / Ano</Label>
                 <Select 
-                  onValueChange={(value) => form.setValue('courseId', value === '' ? null : value)} 
-                  value={form.watch('courseId') ?? ''}
+                  onValueChange={(value) => form.setValue('courseId', value === 'none' ? null : value)} 
+                  value={form.watch('courseId') ?? 'none'} // Mapeia null para 'none'
                   disabled={!selectedClassId || availableCoursesInClass.length === 0}
                 >
                   <SelectTrigger id="courseId">
                     <SelectValue placeholder={!selectedClassId ? "Selecione uma turma" : (availableCoursesInClass.length === 0 ? "Nenhum curso associado" : "Selecione a série/ano")} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">Nenhuma Série/Ano</SelectItem>
+                    <SelectItem value="none" disabled={availableCoursesInClass.length > 0}>Nenhuma Série/Ano</SelectItem>
                     {availableCoursesInClass.map(c => (
                       <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
                     ))}
