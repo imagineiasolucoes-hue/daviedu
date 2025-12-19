@@ -281,7 +281,7 @@ const GradeEntryPage: React.FC = () => {
     // CRITICAL VALIDATION 1: Permissions
     // Agora, professores, administradores e secretários podem lançar notas.
     if (!tenantId || (!teacherEmployeeId && !isAdmin && !isSecretary)) { 
-      toast.error("Erro de Permissão", { description: "Seu perfil não tem permissão para lançar notas." });
+      toast.error("Erro de Permissão", { description: "Seu perfil não está vinculado a um funcionário/professor. Apenas administradores e secretários podem lançar notas." });
       return;
     }
     
@@ -436,13 +436,16 @@ const GradeEntryPage: React.FC = () => {
   ) => {
     const isDataEmpty = !data || data.length === 0;
     const isDisabled = isLoading || isDataEmpty;
-    const displayValue = currentValue ?? (isOptional ? '' : '');
+    
+    // Se o valor for null ou undefined, usamos 'none' para o Select, se for opcional.
+    // Se não for opcional, usamos uma string vazia para forçar o placeholder (embora o SelectItem não possa ser vazio).
+    const displayValue = currentValue === null || currentValue === undefined ? (isOptional ? 'none' : '') : currentValue;
 
     return (
       <div className="space-y-2">
         <Label htmlFor={id}>{label}</Label>
         <Select 
-          onValueChange={onValueChange} 
+          onValueChange={(value) => onValueChange(value === 'none' ? '' : value)} // Converte 'none' de volta para '' (que será tratado como null no submit)
           value={displayValue}
           disabled={isDisabled}
         >
@@ -450,7 +453,8 @@ const GradeEntryPage: React.FC = () => {
             <SelectValue placeholder={isLoading ? "Carregando..." : placeholder} />
           </SelectTrigger>
           <SelectContent>
-            {isOptional && <SelectItem value="">Nenhum</SelectItem>}
+            {/* O SelectItem para valor nulo/opcional deve ter um valor que não seja uma string vazia */}
+            {isOptional && <SelectItem value="none">Nenhum</SelectItem>}
             {data?.map(item => (
               <SelectItem key={item.id} value={item.name}>{item.name}</SelectItem>
             ))}
