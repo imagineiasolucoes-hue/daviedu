@@ -30,7 +30,7 @@ import CoursesPage from "./pages/CoursesPage";
 import SubjectsPage from "./pages/SubjectsPage";
 import BackupDashboard from "./pages/BackupDashboard";
 import FAQPage from "./pages/FAQPage";
-import GradeEntryPage from "./pages/GradeEntryPage"; // Importação atualizada
+import GradeEntryPage from "./pages/GradeEntryPage";
 import ReportCard from "./components/documents/templates/ReportCard";
 import StudentTranscript from "./components/documents/templates/StudentTranscript";
 import MonthlyFeeCollection from "./components/documents/templates/MonthlyFeeCollection";
@@ -38,7 +38,8 @@ import StudentContract from "./components/documents/templates/StudentContract";
 import SecretariaPage from "./pages/SecretariaPage";
 import VerifyDocumentPage from "./pages/VerifyDocumentPage";
 import StudentPage from "./pages/StudentPage";
-import SuperAdminMessageDisplay from "./components/super-admin/SuperAdminMessageDisplay"; // NOVO IMPORT
+import SuperAdminMessageDisplay from "./components/super-admin/SuperAdminMessageDisplay";
+import SuperAdminMessagesPage from "./pages/super-admin/SuperAdminMessagesPage"; // NOVO IMPORT
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -105,6 +106,7 @@ const App = () => {
                     <Route path="/backup" element={<BackupDashboard />} />
                     <Route path="/super-admin/tenants" element={<TenantsPage />} />
                     <Route path="/super-admin/users" element={<UsersPage />} />
+                    <Route path="/super-admin/messages" element={<SuperAdminMessagesPage />} /> {/* NOVA ROTA */}
                   </Route>
                 </Route>
 
