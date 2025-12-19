@@ -14,6 +14,8 @@ import DeleteStudentDialog from '@/components/students/DeleteStudentDialog';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
+import { format } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
 
 interface Student {
   id: string;
@@ -22,6 +24,7 @@ interface Student {
   status: string;
   phone: string | null;
   classes: { name: string } | null;
+  created_at: string; // NOVO CAMPO
 }
 
 interface Class {
@@ -49,7 +52,7 @@ const fetchStudents = async (tenantId: string, filters: StudentFilters, page: nu
 
   let query = supabase
     .from('students')
-    .select(`id, full_name, registration_code, status, phone, classes (name)`, { count: 'exact' })
+    .select(`id, full_name, registration_code, status, phone, classes (name), created_at`, { count: 'exact' }) // Adicionado created_at
     .eq('tenant_id', tenantId);
 
   if (filters.name) {
@@ -65,6 +68,8 @@ const fetchStudents = async (tenantId: string, filters: StudentFilters, page: nu
     query = query.eq('class_id', filters.classId);
   }
 
+  // Ordenar por data de criação (para ver pré-matrículas recentes) e depois por nome
+  query = query.order('created_at', { ascending: false });
   query = query.order('full_name', { ascending: true });
   query = query.range(offset, offset + PAGE_SIZE - 1);
 
@@ -267,9 +272,9 @@ const StudentsPage: React.FC = () => {
                     <TableHead>ID</TableHead>
                     <TableHead>Nome Completo</TableHead>
                     <TableHead>Matrícula</TableHead>
-                    <TableHead>Telefone</TableHead>
                     <TableHead>Turma</TableHead>
                     <TableHead>Status</TableHead>
+                    <TableHead>Data de Cadastro</TableHead> {/* NOVA COLUNA */}
                     <TableHead className="text-right">Ações</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -279,9 +284,11 @@ const StudentsPage: React.FC = () => {
                       <TableCell className="text-xs text-muted-foreground font-mono max-w-[100px] truncate">{student.id}</TableCell>
                       <TableCell className="font-medium">{student.full_name}</TableCell>
                       <TableCell>{student.registration_code}</TableCell>
-                      <TableCell>{student.phone || 'N/A'}</TableCell>
                       <TableCell>{student.classes?.name || 'N/A'}</TableCell>
                       <TableCell>{getStatusBadge(student.status)}</TableCell>
+                      <TableCell>
+                        {format(new Date(student.created_at), 'dd/MM/yyyy', { locale: ptBR })}
+                      </TableCell>
                       <TableCell className="text-right">
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
