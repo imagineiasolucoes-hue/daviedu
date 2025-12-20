@@ -72,6 +72,11 @@ const Login = () => {
               Cadastre-se aqui
             </Link>
           </div>
+          <div className="mt-6 text-center text-sm text-muted-foreground">
+            <Link to="/" className="text-primary hover:underline">
+              Voltar para a página inicial
+            </Link>
+          </div>
         </CardContent>
       </Card>
     </div>
