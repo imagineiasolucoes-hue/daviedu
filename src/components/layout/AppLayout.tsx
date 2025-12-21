@@ -80,7 +80,7 @@ const AppLayout: React.FC = () => {
   return (
     <div className="flex min-h-screen flex-col bg-background lg:flex-row">
       {/* Desktop Sidebar */}
-      <div className="hidden lg:block w-64 flex-shrink-0">
+      <div className="hidden lg:block fixed top-0 left-0 h-screen w-64 flex-shrink-0 z-40">
         <Sidebar 
           isSuperAdmin={isSuperAdmin} 
           displayName={displayName} 
@@ -91,7 +91,7 @@ const AppLayout: React.FC = () => {
       </div>
 
       {/* Main Content Area */}
-      <div className="flex flex-col flex-grow">
+      <div className="flex flex-col flex-grow lg:ml-64">
         {/* Header for Mobile/Tablet */}
         <header className="sticky top-0 z-30 flex h-14 items-center gap-4 border-b bg-background px-4 sm:static sm:h-auto sm:border-0 sm:bg-transparent lg:hidden print-hidden">
           <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
