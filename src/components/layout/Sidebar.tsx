@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Home, Users, Settings, LogOut, School, BookOpen, DollarSign, TrendingUp, TrendingDown, CalendarDays, FileText, UserCheck, ListChecks, HardDrive, ShoppingCart, HelpCircle, LayoutDashboard, ClipboardList, GraduationCap, ChevronDown, BookMarked, FolderKanban, MessageSquare, ShieldCheck } from 'lucide-react'; // Adicionado ShieldCheck
+import { Home, Users, Settings, LogOut, School, BookOpen, DollarSign, TrendingUp, TrendingDown, CalendarDays, FileText, UserCheck, ListChecks, HardDrive, ShoppingCart, HelpCircle, LayoutDashboard, ClipboardList, GraduationCap, ChevronDown, BookMarked, FolderKanban, MessageSquare, ShieldCheck } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { cn } from '@/lib/utils';
-import { useProfile, UserRole } from '@/hooks/useProfile'; // Importar UserRole
+import { useProfile, UserRole } from '@/hooks/useProfile';
 
 interface NavItemProps {
   to: string;
@@ -12,12 +12,12 @@ interface NavItemProps {
   label: string;
   variant?: 'default' | 'accent';
   onCloseSheet: () => void;
-  isSubItem?: boolean; // Para estilizar sub-itens
+  isSubItem?: boolean;
 }
 
 interface NavigationItem extends NavItemProps {
   children?: NavigationItem[];
-  featureKey?: string; // Chave para o sistema de permissões
+  featureKey?: string;
 }
 
 interface SidebarProps {
@@ -26,10 +26,11 @@ interface SidebarProps {
   roleDisplay: string;
   onLogout: () => void;
   onCloseSheet: () => void;
-  permissions?: { // NOVO: Propriedade de permissões
+  permissions?: {
     teacher?: { [key: string]: boolean };
     secretary?: { [key: string]: boolean };
   };
+  tenantName: string | null | undefined; // NOVO: Nome da escola
 }
 
 const NavItem: React.FC<NavItemProps> = ({ to, icon, label, variant = 'default', onCloseSheet, isSubItem = false }) => {
@@ -48,7 +49,7 @@ const NavItem: React.FC<NavItemProps> = ({ to, icon, label, variant = 'default',
       onClick={onCloseSheet}
       className={cn(
         "flex items-center gap-3 rounded-lg px-3 py-2 transition-all",
-        isSubItem && "ml-4", // Indentação para sub-itens
+        isSubItem && "ml-4",
         isActive ? activeClasses : inactiveClasses
       )}
     >
@@ -58,7 +59,7 @@ const NavItem: React.FC<NavItemProps> = ({ to, icon, label, variant = 'default',
   );
 };
 
-const Sidebar: React.FC<SidebarProps> = ({ isSuperAdmin, displayName, roleDisplay, onLogout, onCloseSheet, permissions }) => {
+const Sidebar: React.FC<SidebarProps> = ({ isSuperAdmin, displayName, roleDisplay, onLogout, onCloseSheet, permissions, tenantName }) => {
   const location = useLocation();
   const { profile, isTeacher, isAdmin, isSecretary } = useProfile();
   const [openParent, setOpenParent] = useState<string | null>(null);
@@ -178,6 +179,10 @@ const Sidebar: React.FC<SidebarProps> = ({ isSuperAdmin, displayName, roleDispla
     }
   }, [location.pathname, filteredNavigationItems]);
 
+  const toggleParent = (path: string) => {
+    setOpenParent(openParent === path ? null : path);
+  };
+
   return (
     <div className="flex h-full max-h-screen flex-col gap-2 bg-sidebar p-4 border-r border-sidebar-border">
       <div className="flex h-14 items-center px-4 lg:px-6">
@@ -186,6 +191,14 @@ const Sidebar: React.FC<SidebarProps> = ({ isSuperAdmin, displayName, roleDispla
         </Link>
       </div>
       
+      {/* NOVO: Exibição do nome da escola */}
+      {!isSuperAdmin && tenantName && (
+        <div className="px-4 py-2 text-sm text-muted-foreground border-b border-sidebar-border">
+          <p className="font-semibold text-primary">Escola:</p>
+          <p className="truncate">{tenantName}</p>
+        </div>
+      )}
+
       <Separator className="bg-sidebar-border" />
 
       <div className="flex-1 overflow-y-auto py-2">
@@ -224,7 +237,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isSuperAdmin, displayName, roleDispla
               {(openParent === item.to || (item.children && item.children.some(child => location.pathname.startsWith(child.to)))) && item.children && (
                 <div className="grid gap-1 pl-4">
                   {item.children
-                    .filter(child => hasPermission(child.featureKey, child.roles as UserRole[])) // Filtra filhos também
+                    .filter(child => hasPermission(child.featureKey, child.roles as UserRole[]))
                     .map((child) => (
                       <NavItem key={child.to} {...child} isSubItem={true} />
                     ))}

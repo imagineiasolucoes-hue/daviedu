@@ -13,7 +13,7 @@ import { useBackupMonitoring } from '@/hooks/useBackupMonitoring';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
 import SuspendedAccessOverlay from '@/components/auth/SuspendedAccessOverlay';
-import { useQuery } from '@tanstack/react-query'; // NOVO IMPORT
+import { useQuery } from '@tanstack/react-query';
 
 // Definir o tipo para a configuração do tenant
 interface TenantConfig {
@@ -24,6 +24,11 @@ interface TenantConfig {
   // Outras configurações existentes
 }
 
+// NOVO: Interface para o nome do tenant
+interface TenantName {
+  name: string;
+}
+
 const fetchTenantConfig = async (tenantId: string): Promise<TenantConfig | null> => {
   const { data, error } = await supabase
     .from('tenants')
@@ -32,6 +37,17 @@ const fetchTenantConfig = async (tenantId: string): Promise<TenantConfig | null>
     .single();
   if (error) throw new Error(error.message);
   return data.config;
+};
+
+// NOVO: Função para buscar o nome do tenant
+const fetchTenantName = async (tenantId: string): Promise<string | null> => {
+  const { data, error } = await supabase
+    .from('tenants')
+    .select('name')
+    .eq('id', tenantId)
+    .single();
+  if (error) throw new Error(error.message);
+  return data.name;
 };
 
 const AppLayout: React.FC = () => {
@@ -46,6 +62,13 @@ const AppLayout: React.FC = () => {
   const { data: tenantConfig, isLoading: isLoadingTenantConfig } = useQuery<TenantConfig | null, Error>({
     queryKey: ['tenantConfig', profile?.tenant_id],
     queryFn: () => fetchTenantConfig(profile!.tenant_id!),
+    enabled: !!profile?.tenant_id && !isSuperAdmin, // Apenas para usuários de escola, não Super Admin
+  });
+
+  // NOVO: Fetch do nome do tenant
+  const { data: tenantName, isLoading: isLoadingTenantName } = useQuery<string | null, Error>({
+    queryKey: ['tenantName', profile?.tenant_id],
+    queryFn: () => fetchTenantName(profile!.tenant_id!),
     enabled: !!profile?.tenant_id && !isSuperAdmin, // Apenas para usuários de escola, não Super Admin
   });
 
@@ -83,7 +106,7 @@ const AppLayout: React.FC = () => {
     }
   };
 
-  if (isLoading || isLoadingTenantConfig) {
+  if (isLoading || isLoadingTenantConfig || isLoadingTenantName) { // Incluído isLoadingTenantName
     return (
       <div className="flex items-center justify-center min-h-screen">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -111,7 +134,8 @@ const AppLayout: React.FC = () => {
           roleDisplay={roleDisplay} 
           onLogout={handleLogout} 
           onCloseSheet={() => {}}
-          permissions={permissions} // PASSANDO AS PERMISSÕES
+          permissions={permissions}
+          tenantName={tenantName} {/* NOVO: Passando o nome da escola */}
         />
       </div>
 
@@ -137,7 +161,8 @@ const AppLayout: React.FC = () => {
                 roleDisplay={roleDisplay} 
                 onLogout={handleLogout} 
                 onCloseSheet={() => setIsSheetOpen(false)}
-                permissions={permissions} // PASSANDO AS PERMISSÕES
+                permissions={permissions}
+                tenantName={tenantName} {/* NOVO: Passando o nome da escola */}
               />
             </SheetContent>
           </Sheet>
