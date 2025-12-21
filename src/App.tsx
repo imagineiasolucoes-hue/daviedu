@@ -39,7 +39,8 @@ import SecretariaPage from "./pages/SecretariaPage";
 import VerifyDocumentPage from "./pages/VerifyDocumentPage";
 import StudentPage from "./pages/StudentPage";
 import SuperAdminMessageDisplay from "./components/super-admin/SuperAdminMessageDisplay";
-import SuperAdminMessagesPage from "./pages/super-admin/SuperAdminMessagesPage"; // NOVO IMPORT
+import SuperAdminMessagesPage from "./pages/super-admin/SuperAdminMessagesPage";
+import TermsPage from "./pages/TermsPage"; // NOVO IMPORT
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -75,6 +76,7 @@ const App = () => {
               <Route path="/pre-matricula/:tenantId" element={<PreEnrollment />} />
               <Route path="/faq" element={<FAQPage />} />
               <Route path="/verify-document/:token" element={<VerifyDocumentPage />} />
+              <Route path="/terms" element={<TermsPage />} /> {/* NOVA ROTA */}
 
               {/* Protected Routes */}
               <Route element={<ProtectedRoute />}>
@@ -106,7 +108,7 @@ const App = () => {
                     <Route path="/backup" element={<BackupDashboard />} />
                     <Route path="/super-admin/tenants" element={<TenantsPage />} />
                     <Route path="/super-admin/users" element={<UsersPage />} />
-                    <Route path="/super-admin/messages" element={<SuperAdminMessagesPage />} /> {/* NOVA ROTA */}
+                    <Route path="/super-admin/messages" element={<SuperAdminMessagesPage />} />
                   </Route>
                 </Route>
 

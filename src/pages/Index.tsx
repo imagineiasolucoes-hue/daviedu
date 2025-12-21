@@ -54,7 +54,7 @@ const Footer: React.FC = () => (
     <div className="max-w-7xl mx-auto mt-8 pt-6 border-t border-border/50 text-center text-xs text-muted-foreground">
       <p>&copy; {new Date().getFullYear()} Davi EDU. Todos os direitos reservados.</p>
       <p className="mt-2">
-        <Link to="/privacy" className="hover:text-primary">Política de Privacidade</Link> | <Link to="/terms" className="hover:text-primary">Termos de Uso</Link>
+        <Link to="/privacy" className="hover:text-primary">Política de Privacidade</Link> | <Link to="/terms" className="hover:text-primary">Termos de Uso</Link> {/* NOVO LINK */}
       </p>
     </div>
   </footer>

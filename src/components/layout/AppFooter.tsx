@@ -1,5 +1,6 @@
 import React from 'react';
 import { Separator } from '@/components/ui/separator';
+import { Link } from 'react-router-dom'; // Importar Link
 
 const AppFooter: React.FC = () => {
   const appVersion = import.meta.env.VITE_APP_VERSION;
@@ -27,6 +28,11 @@ const AppFooter: React.FC = () => {
             alt="Imagine IA Soluções Logo" 
             className="h-5" 
           />
+        </div>
+        {/* NOVO: Links de Políticas */}
+        <div className="flex items-center gap-4 mt-2 sm:mt-0">
+          <Link to="/privacy" className="hover:text-primary">Política de Privacidade</Link>
+          <Link to="/terms" className="hover:text-primary">Termos de Uso</Link>
         </div>
       </div>
     </footer>
