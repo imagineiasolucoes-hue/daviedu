@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Home, Users, Settings, LogOut, School, BookOpen, DollarSign, TrendingUp, TrendingDown, CalendarDays, FileText, UserCheck, ListChecks, HardDrive, ShoppingCart, HelpCircle, LayoutDashboard, ClipboardList, GraduationCap, ChevronDown, BookMarked, FolderKanban, MessageSquare } from 'lucide-react';
+import { Home, Users, Settings, LogOut, School, BookOpen, DollarSign, TrendingUp, TrendingDown, CalendarDays, FileText, UserCheck, ListChecks, HardDrive, ShoppingCart, HelpCircle, LayoutDashboard, ClipboardList, GraduationCap, ChevronDown, BookMarked, FolderKanban, MessageSquare, ShieldCheck } from 'lucide-react'; // Adicionado ShieldCheck
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { cn } from '@/lib/utils';
-import { useProfile } from '@/hooks/useProfile';
+import { useProfile, UserRole } from '@/hooks/useProfile'; // Importar UserRole
 
 interface NavItemProps {
   to: string;
@@ -17,6 +17,19 @@ interface NavItemProps {
 
 interface NavigationItem extends NavItemProps {
   children?: NavigationItem[];
+  featureKey?: string; // Chave para o sistema de permissões
+}
+
+interface SidebarProps {
+  isSuperAdmin: boolean;
+  displayName: string;
+  roleDisplay: string;
+  onLogout: () => void;
+  onCloseSheet: () => void;
+  permissions?: { // NOVO: Propriedade de permissões
+    teacher?: { [key: string]: boolean };
+    secretary?: { [key: string]: boolean };
+  };
 }
 
 const NavItem: React.FC<NavItemProps> = ({ to, icon, label, variant = 'default', onCloseSheet, isSubItem = false }) => {
@@ -45,45 +58,54 @@ const NavItem: React.FC<NavItemProps> = ({ to, icon, label, variant = 'default',
   );
 };
 
-interface SidebarProps {
-  isSuperAdmin: boolean;
-  displayName: string;
-  roleDisplay: string;
-  onLogout: () => void;
-  onCloseSheet: () => void;
-}
-
-const Sidebar: React.FC<SidebarProps> = ({ isSuperAdmin, displayName, roleDisplay, onLogout, onCloseSheet }) => {
+const Sidebar: React.FC<SidebarProps> = ({ isSuperAdmin, displayName, roleDisplay, onLogout, onCloseSheet, permissions }) => {
   const location = useLocation();
-  const { isTeacher, isAdmin, isSecretary } = useProfile(); // isTeacher is still used to determine if the user is a teacher, but not for exclusive navigation
-  const [openParent, setOpenParent] = useState<string | null>(null); // Estado para controlar qual item pai está aberto
+  const { profile, isTeacher, isAdmin, isSecretary } = useProfile();
+  const [openParent, setOpenParent] = useState<string | null>(null);
 
-  // Função para alternar a abertura de um item pai
-  const toggleParent = (path: string) => {
-    setOpenParent(prev => (prev === path ? null : path));
-  };
+  // Função para verificar se o usuário tem permissão para uma funcionalidade
+  const hasPermission = (featureKey: string | undefined, itemRoles: UserRole[]): boolean => {
+    if (isSuperAdmin || isAdmin) return true; // Admins e Super Admins sempre têm acesso total
 
-  // Determina se um item pai deve estar ativo (se sua rota ou qualquer sub-rota estiver ativa)
-  const isParentActive = (item: NavigationItem) => {
-    return location.pathname === item.to || (item.children && item.children.some(child => location.pathname.startsWith(child.to)));
+    if (!featureKey || !profile?.role) return false; // Se não houver chave de funcionalidade ou perfil, não tem acesso
+
+    const userRole = profile.role;
+    
+    // Se a funcionalidade não está na lista de roles do item, não mostra
+    if (!itemRoles.includes(userRole)) return false;
+
+    // Se não há permissões configuradas, o padrão é permitir (ou o que for definido no RolePermissionsForm)
+    if (!permissions) return true; 
+
+    // Verifica a permissão específica para a função e funcionalidade
+    if (userRole === 'teacher' && permissions.teacher) {
+      return permissions.teacher[featureKey] ?? true; // Default para true se não configurado
+    }
+    if (userRole === 'secretary' && permissions.secretary) {
+      return permissions.secretary[featureKey] ?? true; // Default para true se não configurado
+    }
+
+    return false; // Por padrão, nega se não houver regra explícita
   };
 
   const adminNavItems: NavigationItem[] = [
-    { to: "/dashboard", icon: <Home className="h-5 w-5" />, label: "Dashboard", onCloseSheet },
+    { to: "/dashboard", icon: <Home className="h-5 w-5" />, label: "Dashboard", onCloseSheet, featureKey: 'dashboard', roles: ['admin', 'secretary', 'teacher'] },
     {
-      to: "/secretaria", // Nova página da Secretaria
+      to: "/secretaria",
       icon: <FolderKanban className="h-5 w-5" />,
       label: "Secretaria",
       onCloseSheet: () => onCloseSheet(),
+      featureKey: 'secretaria_group', // Chave para o grupo da secretaria
+      roles: ['admin', 'secretary'], // Apenas admin e secretary veem o grupo
       children: [
-        { to: "/students", icon: <Users className="h-5 w-5" />, label: "Alunos", onCloseSheet, isSubItem: true },
-        { to: "/teachers", icon: <UserCheck className="h-5 w-5" />, label: "Professores", onCloseSheet, isSubItem: true },
-        { to: "/classes", icon: <BookOpen className="h-5 w-5" />, label: "Turmas", onCloseSheet, isSubItem: true },
-        { to: "/classes/courses", icon: <ListChecks className="h-5 w-5" />, label: "Séries/Anos", onCloseSheet, isSubItem: true },
-        { to: "/classes/subjects", icon: <BookMarked className="h-5 w-5" />, label: "Matérias", onCloseSheet, isSubItem: true },
-        { to: "/grades/entry", icon: <GraduationCap className="h-5 w-5" />, label: "Lançar Notas", onCloseSheet, isSubItem: true }, // Rota atualizada
-        { to: "/calendar", icon: <CalendarDays className="h-5 w-5" />, label: "Calendário", onCloseSheet, isSubItem: true },
-        { to: "/documents", icon: <FileText className="h-5 w-5" />, label: "Documentos", onCloseSheet, isSubItem: true },
+        { to: "/students", icon: <Users className="h-5 w-5" />, label: "Alunos", onCloseSheet, isSubItem: true, featureKey: 'students', roles: ['admin', 'secretary'] },
+        { to: "/teachers", icon: <UserCheck className="h-5 w-5" />, label: "Professores", onCloseSheet, isSubItem: true, featureKey: 'teachers', roles: ['admin', 'secretary'] },
+        { to: "/classes", icon: <BookOpen className="h-5 w-5" />, label: "Turmas", onCloseSheet, isSubItem: true, featureKey: 'classes', roles: ['admin', 'secretary'] },
+        { to: "/classes/courses", icon: <ListChecks className="h-5 w-5" />, label: "Séries/Anos", onCloseSheet, isSubItem: true, featureKey: 'courses', roles: ['admin', 'secretary'] },
+        { to: "/classes/subjects", icon: <BookMarked className="h-5 w-5" />, label: "Matérias", onCloseSheet, isSubItem: true, featureKey: 'subjects', roles: ['admin', 'secretary'] },
+        { to: "/grades/entry", icon: <GraduationCap className="h-5 w-5" />, label: "Lançar Notas", onCloseSheet, isSubItem: true, featureKey: 'grades_entry', roles: ['admin', 'secretary', 'teacher'] },
+        { to: "/calendar", icon: <CalendarDays className="h-5 w-5" />, label: "Calendário", onCloseSheet, isSubItem: true, featureKey: 'calendar', roles: ['admin', 'secretary', 'teacher'] },
+        { to: "/documents", icon: <FileText className="h-5 w-5" />, label: "Documentos", onCloseSheet, isSubItem: true, featureKey: 'documents', roles: ['admin', 'secretary', 'teacher'] },
       ],
     },
     {
@@ -91,24 +113,39 @@ const Sidebar: React.FC<SidebarProps> = ({ isSuperAdmin, displayName, roleDispla
       icon: <DollarSign className="h-5 w-5" />,
       label: "Financeiro",
       onCloseSheet: () => onCloseSheet(),
+      featureKey: 'finance_group', // Chave para o grupo financeiro
+      roles: ['admin', 'secretary'], // Apenas admin e secretary veem o grupo
       children: [
-        { to: "/revenues", icon: <TrendingUp className="h-5 w-5" />, label: "Receitas", onCloseSheet, isSubItem: true },
-        { to: "/expenses", icon: <TrendingDown className="h-5 w-5" />, label: "Despesas", onCloseSheet, isSubItem: true },
+        { to: "/revenues", icon: <TrendingUp className="h-5 w-5" />, label: "Receitas", onCloseSheet, isSubItem: true, featureKey: 'revenues', roles: ['admin', 'secretary'] },
+        { to: "/expenses", icon: <TrendingDown className="h-5 w-5" />, label: "Despesas", onCloseSheet, isSubItem: true, featureKey: 'expenses', roles: ['admin', 'secretary'] },
       ],
     },
-    { to: "/settings", icon: <Settings className="h-5 w-5" />, label: "Configurações", onCloseSheet },
-    { to: "/faq", icon: <HelpCircle className="h-5 w-5" />, label: "Ajuda (FAQ)", variant: 'accent', onCloseSheet },
+    {
+      to: "/settings",
+      icon: <Settings className="h-5 w-5" />,
+      label: "Configurações",
+      onCloseSheet: () => onCloseSheet(),
+      featureKey: 'settings_group', // Chave para o grupo de configurações
+      roles: ['admin', 'secretary', 'teacher'], // Todos podem ver o grupo de configurações
+      children: [
+        { to: "/settings?tab=profile", icon: <Users className="h-5 w-5" />, label: "Perfil", onCloseSheet, isSubItem: true, featureKey: 'settings_profile', roles: ['admin', 'secretary', 'teacher'] },
+        { to: "/settings?tab=school", icon: <School className="h-5 w-5" />, label: "Escola", onCloseSheet, isSubItem: true, featureKey: 'settings_school', roles: ['admin', 'secretary'] },
+        { to: "/settings?tab=contracts", icon: <FileText className="h-5 w-5" />, label: "Contratos", onCloseSheet, isSubItem: true, featureKey: 'settings_contracts', roles: ['admin', 'secretary'] },
+        { to: "/settings?tab=permissions", icon: <ShieldCheck className="h-5 w-5" />, label: "Permissões", onCloseSheet, isSubItem: true, featureKey: 'settings_permissions', roles: ['admin'] }, // Apenas Admin
+        { to: "/settings?tab=security", icon: <Lock className="h-5 w-5" />, label: "Segurança", onCloseSheet, isSubItem: true, featureKey: 'settings_security', roles: ['admin', 'secretary', 'teacher'] },
+      ],
+    },
+    { to: "/faq", icon: <HelpCircle className="h-5 w-5" />, label: "Ajuda (FAQ)", variant: 'accent', onCloseSheet, featureKey: 'faq', roles: ['admin', 'secretary', 'teacher'] },
   ];
 
   const superAdminNavItems: NavigationItem[] = [
-    { to: "/dashboard", icon: <LayoutDashboard className="h-5 w-5" />, label: "Visão Geral", onCloseSheet },
-    { to: "/super-admin/tenants", icon: <School className="h-5 w-5" />, label: "Gestão de Escolas", onCloseSheet },
-    { to: "/super-admin/users", icon: <Users className="h-5 w-5" />, label: "Gestão de Usuários", onCloseSheet },
-    { to: "/super-admin/messages", icon: <MessageSquare className="h-5 w-5" />, label: "Comunicação Global", onCloseSheet }, // NOVO ITEM
-    { to: "/backup", icon: <HardDrive className="h-5 w-5" />, label: "Backup Global", onCloseSheet },
+    { to: "/dashboard", icon: <LayoutDashboard className="h-5 w-5" />, label: "Visão Geral", onCloseSheet, featureKey: 'sa_overview', roles: ['super_admin'] },
+    { to: "/super-admin/tenants", icon: <School className="h-5 w-5" />, label: "Gestão de Escolas", onCloseSheet, featureKey: 'sa_tenants', roles: ['super_admin'] },
+    { to: "/super-admin/users", icon: <Users className="h-5 w-5" />, label: "Gestão de Usuários", onCloseSheet, featureKey: 'sa_users', roles: ['super_admin'] },
+    { to: "/super-admin/messages", icon: <MessageSquare className="h-5 w-5" />, label: "Comunicação Global", onCloseSheet, featureKey: 'sa_messages', roles: ['super_admin'] },
+    { to: "/backup", icon: <HardDrive className="h-5 w-5" />, label: "Backup Global", onCloseSheet, featureKey: 'sa_backup', roles: ['super_admin'] },
   ];
 
-  // Professores e outros usuários escolares agora usam a navegação principal (adminNavItems)
   let navigationItems: NavigationItem[];
   if (isSuperAdmin) {
     navigationItems = superAdminNavItems;
@@ -116,14 +153,30 @@ const Sidebar: React.FC<SidebarProps> = ({ isSuperAdmin, displayName, roleDispla
     navigationItems = adminNavItems;
   }
 
-  // Determina se o item pai deve estar aberto por padrão se uma sub-rota estiver ativa
+  // Filtra os itens de navegação com base nas permissões
+  const filteredNavigationItems = navigationItems.filter(item => {
+    // Se for um item pai com filhos, verifica se algum filho é visível
+    if (item.children) {
+      const visibleChildren = item.children.filter(child => hasPermission(child.featureKey, child.roles as UserRole[]));
+      // O item pai é visível se ele mesmo tiver permissão OU se tiver filhos visíveis
+      return hasPermission(item.featureKey, item.roles as UserRole[]) || visibleChildren.length > 0;
+    }
+    // Se não tiver filhos, verifica a permissão do próprio item
+    return hasPermission(item.featureKey, item.roles as UserRole[]);
+  });
+
+  // Determina se um item pai deve estar ativo (se sua rota ou qualquer sub-rota estiver ativa)
+  const isParentActive = (item: NavigationItem) => {
+    return location.pathname === item.to || (item.children && item.children.some(child => location.pathname.startsWith(child.to)));
+  };
+
+  // Efeito para abrir o item pai se uma sub-rota estiver ativa
   useEffect(() => {
-    const activeParent = navigationItems.find(item => isParentActive(item) && item.children);
+    const activeParent = filteredNavigationItems.find(item => isParentActive(item) && item.children);
     if (activeParent && openParent !== activeParent.to) {
       setOpenParent(activeParent.to);
     }
-  }, [location.pathname, navigationItems]);
-
+  }, [location.pathname, filteredNavigationItems]);
 
   return (
     <div className="flex h-full max-h-screen flex-col gap-2 bg-sidebar p-4 border-r border-sidebar-border">
@@ -137,7 +190,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isSuperAdmin, displayName, roleDispla
 
       <div className="flex-1 overflow-y-auto py-2">
         <nav className="grid items-start gap-1 text-sm font-medium">
-          {navigationItems.map((item) => (
+          {filteredNavigationItems.map((item) => (
             <React.Fragment key={item.to}>
               {item.children && item.children.length > 0 ? (
                 <div className="flex items-center justify-between">
@@ -170,9 +223,11 @@ const Sidebar: React.FC<SidebarProps> = ({ isSuperAdmin, displayName, roleDispla
 
               {(openParent === item.to || (item.children && item.children.some(child => location.pathname.startsWith(child.to)))) && item.children && (
                 <div className="grid gap-1 pl-4">
-                  {item.children.map((child) => (
-                    <NavItem key={child.to} {...child} isSubItem={true} />
-                  ))}
+                  {item.children
+                    .filter(child => hasPermission(child.featureKey, child.roles as UserRole[])) // Filtra filhos também
+                    .map((child) => (
+                      <NavItem key={child.to} {...child} isSubItem={true} />
+                    ))}
                 </div>
               )}
             </React.Fragment>

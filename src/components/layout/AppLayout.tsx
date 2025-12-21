@@ -12,15 +12,42 @@ import AppFooter from './AppFooter';
 import { useBackupMonitoring } from '@/hooks/useBackupMonitoring';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
-import SuspendedAccessOverlay from '@/components/auth/SuspendedAccessOverlay'; // NOVO IMPORT
+import SuspendedAccessOverlay from '@/components/auth/SuspendedAccessOverlay';
+import { useQuery } from '@tanstack/react-query'; // NOVO IMPORT
+
+// Definir o tipo para a configuração do tenant
+interface TenantConfig {
+  permissions?: {
+    teacher?: { [key: string]: boolean };
+    secretary?: { [key: string]: boolean };
+  };
+  // Outras configurações existentes
+}
+
+const fetchTenantConfig = async (tenantId: string): Promise<TenantConfig | null> => {
+  const { data, error } = await supabase
+    .from('tenants')
+    .select('config')
+    .eq('id', tenantId)
+    .single();
+  if (error) throw new Error(error.message);
+  return data.config;
+};
 
 const AppLayout: React.FC = () => {
   const { user, session } = useAuth();
-  const { profile, isLoading, isSuperAdmin, isTenantSuspended } = useProfile(); // Usando isTenantSuspended
+  const { profile, isLoading, isSuperAdmin, isTenantSuspended } = useProfile();
   const [isSheetOpen, setIsSheetOpen] = useState(false);
   const navigate = useNavigate();
 
   useBackupMonitoring();
+
+  // Fetch das permissões do tenant
+  const { data: tenantConfig, isLoading: isLoadingTenantConfig } = useQuery<TenantConfig | null, Error>({
+    queryKey: ['tenantConfig', profile?.tenant_id],
+    queryFn: () => fetchTenantConfig(profile!.tenant_id!),
+    enabled: !!profile?.tenant_id && !isSuperAdmin, // Apenas para usuários de escola, não Super Admin
+  });
 
   const handleLogout = async () => {
     console.log("Tentando deslogar. Usuário atual:", user);
@@ -29,7 +56,6 @@ const AppLayout: React.FC = () => {
     if (!session) {
       console.warn("Nenhuma sessão ativa encontrada ao tentar deslogar. O usuário pode já estar deslogado ou a sessão é inválida.");
       toast.info("Você já está desconectado ou sua sessão expirou.");
-      // Garante o redirecionamento mesmo se nenhuma sessão for encontrada
       navigate('/', { replace: true });
       return;
     }
@@ -41,26 +67,23 @@ const AppLayout: React.FC = () => {
         console.error("Erro durante o signOut do Supabase:", error);
         toast.error("Erro ao Sair", { description: error.message });
         
-        // Fallback: Se o signOut do Supabase falhar, limpa manualmente o armazenamento local e recarrega
         console.warn("Supabase signOut falhou. Tentando fallback: limpando armazenamento local e recarregando a página.");
         localStorage.removeItem('sb-fhrxqkzswawlellkiaak-auth-token'); 
-        window.location.reload(); // Isso irá disparar uma reinicialização completa
+        window.location.reload();
       } else {
         toast.success("Você foi desconectado com sucesso.");
-        // O onAuthStateChange do Supabase deve lidar com a navegação para '/'
       }
     } catch (error: any) {
       console.error("Erro inesperado durante o signOut:", error);
       toast.error("Erro ao Sair", { description: error.message || "Ocorreu um erro inesperado." });
       
-      // Fallback para quaisquer erros inesperados
       console.warn("Erro inesperado durante o signOut. Tentando fallback: limpando armazenamento local e recarregando a página.");
       localStorage.removeItem('sb-fhrxqkzswawlellkiaak-auth-token'); 
       window.location.reload();
     }
   };
 
-  if (isLoading) {
+  if (isLoading || isLoadingTenantConfig) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -68,14 +91,15 @@ const AppLayout: React.FC = () => {
     );
   }
 
-  // BLOQUEIO DE ACESSO PARA TENANTS SUSPENSOS
   if (isTenantSuspended && !isSuperAdmin) {
-    // Super Admins podem ver o layout, mas usuários normais são bloqueados
     return <SuspendedAccessOverlay />;
   }
 
   const displayName = profile?.first_name || user?.email || 'Usuário';
   const roleDisplay = profile?.role ? profile.role.replace('_', ' ').toUpperCase() : 'N/A';
+
+  // Passar as permissões para o Sidebar
+  const permissions = tenantConfig?.permissions;
 
   return (
     <div className="flex min-h-screen flex-col bg-background lg:flex-row">
@@ -87,6 +111,7 @@ const AppLayout: React.FC = () => {
           roleDisplay={roleDisplay} 
           onLogout={handleLogout} 
           onCloseSheet={() => {}}
+          permissions={permissions} // PASSANDO AS PERMISSÕES
         />
       </div>
 
@@ -112,6 +137,7 @@ const AppLayout: React.FC = () => {
                 roleDisplay={roleDisplay} 
                 onLogout={handleLogout} 
                 onCloseSheet={() => setIsSheetOpen(false)}
+                permissions={permissions} // PASSANDO AS PERMISSÕES
               />
             </SheetContent>
           </Sheet>
