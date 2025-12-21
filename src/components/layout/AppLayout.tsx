@@ -135,7 +135,7 @@ const AppLayout: React.FC = () => {
           onLogout={handleLogout} 
           onCloseSheet={() => {}}
           permissions={permissions}
-          tenantName={tenantName} {/* NOVO: Passando o nome da escola */}
+          tenantName={tenantName} /* NOVO: Passando o nome da escola */
         />
       </div>
 
@@ -162,7 +162,7 @@ const AppLayout: React.FC = () => {
                 onLogout={handleLogout} 
                 onCloseSheet={() => setIsSheetOpen(false)}
                 permissions={permissions}
-                tenantName={tenantName} {/* NOVO: Passando o nome da escola */}
+                tenantName={tenantName} /* NOVO: Passando o nome da escola */
               />
             </SheetContent>
           </Sheet>

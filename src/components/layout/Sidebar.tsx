@@ -18,6 +18,7 @@ interface NavItemProps {
 interface NavigationItem extends NavItemProps {
   children?: NavigationItem[];
   featureKey?: string;
+  roles: UserRole[]; // Adicionado a propriedade 'roles'
 }
 
 interface SidebarProps {
@@ -158,12 +159,12 @@ const Sidebar: React.FC<SidebarProps> = ({ isSuperAdmin, displayName, roleDispla
   const filteredNavigationItems = navigationItems.filter(item => {
     // Se for um item pai com filhos, verifica se algum filho é visível
     if (item.children) {
-      const visibleChildren = item.children.filter(child => hasPermission(child.featureKey, child.roles as UserRole[]));
+      const visibleChildren = item.children.filter(child => hasPermission(child.featureKey, child.roles));
       // O item pai é visível se ele mesmo tiver permissão OU se tiver filhos visíveis
-      return hasPermission(item.featureKey, item.roles as UserRole[]) || visibleChildren.length > 0;
+      return hasPermission(item.featureKey, item.roles) || visibleChildren.length > 0;
     }
     // Se não tiver filhos, verifica a permissão do próprio item
-    return hasPermission(item.featureKey, item.roles as UserRole[]);
+    return hasPermission(item.featureKey, item.roles);
   });
 
   // Determina se um item pai deve estar ativo (se sua rota ou qualquer sub-rota estiver ativa)
@@ -237,7 +238,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isSuperAdmin, displayName, roleDispla
               {(openParent === item.to || (item.children && item.children.some(child => location.pathname.startsWith(child.to)))) && item.children && (
                 <div className="grid gap-1 pl-4">
                   {item.children
-                    .filter(child => hasPermission(child.featureKey, child.roles as UserRole[]))
+                    .filter(child => hasPermission(child.featureKey, child.roles))
                     .map((child) => (
                       <NavItem key={child.to} {...child} isSubItem={true} />
                     ))}
