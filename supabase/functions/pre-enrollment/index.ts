@@ -16,8 +16,8 @@ const corsHeaders = {
 
 async function generateNextRegistrationCode(supabaseAdmin: any, tenantId: string, attempt: number): Promise<string> {
     const now = new Date();
-    const year = now.getFullYear();
-    const prefix = String(year); // O prefixo agora é apenas o ano letivo (ex: 2024)
+    const year = now.getFullYear(); // Obtém o ano atual corretamente
+    const prefix = String(year); 
     console.log(`[generateNextRegistrationCode] Attempt ${attempt}: Generating code for tenant ${tenantId}, year ${year}`);
 
     const { data, error } = await supabaseAdmin
@@ -91,6 +91,7 @@ serve(async (req) => {
       attempts++;
       try {
         // 1. Gerar Código de Matrícula
+        // Chamando a função sem o parâmetro schoolYear, que agora é obtido internamente
         registration_code = await generateNextRegistrationCode(supabaseAdmin, tenant_id, attempts);
 
         // 2. Preparar Dados para Inserção
