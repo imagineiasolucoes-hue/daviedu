@@ -85,7 +85,7 @@ const SuperAdminMessageDisplay: React.FC = () => {
       <Alert 
         key={mostRecentMessage.id} 
         className={cn(
-          "w-full max-w-md mx-auto bg-white dark:bg-card text-foreground border-border shadow-lg relative pr-4 pb-4 rounded-xl",
+          "w-full max-w-md mx-auto bg-white text-foreground border-border shadow-lg relative pr-4 pb-4 rounded-xl", // Removed dark:bg-card
           mostRecentMessage.tenant_id === null ? "border-l-4 border-primary" : "border-l-2 border-primary" // Keep border-left for global/tenant distinction
         )}
       >
