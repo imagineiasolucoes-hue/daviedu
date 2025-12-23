@@ -156,6 +156,7 @@ serve(async (req) => {
           .single();
 
         if (studentInsertError) {
+          // Código 23505 é a violação de chave única
           if (studentInsertError.code === "23505") {
             console.warn(`[create-student-and-guardian] Tentativa ${attempts}: Código de matrícula duplicado ${registration_code}. Re-tentando...`);
             await new Promise(resolve => setTimeout(resolve, 100 * attempts)); 
