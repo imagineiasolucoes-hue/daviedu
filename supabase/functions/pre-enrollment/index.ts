@@ -58,6 +58,8 @@ serve(async (req) => {
   try {
     const body = await req.json();
     const { tenant_id, ...studentInfo } = body;
+    
+    console.log("Pre-enrollment received body:", JSON.stringify(body, null, 2)); // Log do corpo recebido
 
     // --- Validação Robusta ---
     if (!tenant_id) {
@@ -81,7 +83,14 @@ serve(async (req) => {
       tenant_id: tenant_id,
       registration_code: registration_code,
       status: "pre-enrolled",
+      // Garantir que campos opcionais sejam null se vazios
+      email: studentInfo.email || null,
+      // course_id e class_id são opcionais na pré-matrícula, mas se vierem, devem ser tratados
+      class_id: studentInfo.class_id || null,
+      course_id: studentInfo.course_id || null,
     };
+    
+    console.log("Pre-enrollment inserting data:", JSON.stringify(studentData, null, 2)); // Log dos dados a serem inseridos
 
     // --- Inserir no Banco de Dados ---
     const { data, error: insertError } = await supabaseAdmin
