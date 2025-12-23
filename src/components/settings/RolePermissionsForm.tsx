@@ -19,12 +19,12 @@ import { UserRole } from '@/hooks/useProfile'; // Importar UserRole
 
 // Definir as funcionalidades que podem ter permissões configuradas
 const features = [
-  { key: 'dashboard', label: 'Dashboard', roles: ['teacher', 'secretary'] },
+  { key: 'dashboard', label: 'Dashboard', roles: ['secretary'] }, // Removido 'teacher'
   { key: 'students', label: 'Gestão de Alunos', roles: ['secretary'] },
   { key: 'teachers', label: 'Gestão de Professores', roles: ['secretary'] },
   { key: 'classes', label: 'Gestão de Turmas', roles: ['secretary'] },
-  { key: 'courses', label: 'Gestão de Séries/Anos', roles: ['secretary'] },
-  { key: 'subjects', label: 'Gestão de Matérias e Períodos', roles: ['secretary'] },
+  { key: 'courses', label: 'Gestão de Séries/Anos', roles: ['secretary', 'teacher'] }, // Adicionado 'teacher'
+  { key: 'subjects', label: 'Gestão de Matérias e Períodos', roles: ['secretary', 'teacher'] }, // Adicionado 'teacher'
   { key: 'grades_entry', label: 'Lançamento de Notas', roles: ['teacher', 'secretary'] },
   { key: 'calendar', label: 'Calendário Acadêmico', roles: ['teacher', 'secretary'] },
   { key: 'documents', label: 'Gestão de Documentos', roles: ['teacher', 'secretary'] },

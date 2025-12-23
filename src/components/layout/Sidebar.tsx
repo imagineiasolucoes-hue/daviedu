@@ -91,20 +91,20 @@ const Sidebar: React.FC<SidebarProps> = ({ isSuperAdmin, displayName, roleDispla
   };
 
   const adminNavItems: NavigationItem[] = [
-    { to: "/dashboard", icon: <Home className="h-5 w-5" />, label: "Dashboard", onCloseSheet, featureKey: 'dashboard', roles: ['admin', 'secretary', 'teacher'] },
+    { to: "/dashboard", icon: <Home className="h-5 w-5" />, label: "Dashboard", onCloseSheet, featureKey: 'dashboard', roles: ['admin', 'secretary'] },
     {
       to: "/secretaria",
       icon: <FolderKanban className="h-5 w-5" />,
       label: "Secretaria",
       onCloseSheet: () => onCloseSheet(),
       featureKey: 'secretaria_group', // Chave para o grupo da secretaria
-      roles: ['admin', 'secretary'], // Apenas admin e secretary veem o grupo
+      roles: ['admin', 'secretary', 'teacher'], // Professores precisam ver o grupo para acessar sub-itens
       children: [
         { to: "/students", icon: <Users className="h-5 w-5" />, label: "Alunos", onCloseSheet, isSubItem: true, featureKey: 'students', roles: ['admin', 'secretary'] },
         { to: "/teachers", icon: <UserCheck className="h-5 w-5" />, label: "Professores", onCloseSheet, isSubItem: true, featureKey: 'teachers', roles: ['admin', 'secretary'] },
         { to: "/classes", icon: <BookOpen className="h-5 w-5" />, label: "Turmas", onCloseSheet, isSubItem: true, featureKey: 'classes', roles: ['admin', 'secretary'] },
-        { to: "/classes/courses", icon: <ListChecks className="h-5 w-5" />, label: "Séries/Anos", onCloseSheet, isSubItem: true, featureKey: 'courses', roles: ['admin', 'secretary'] },
-        { to: "/classes/subjects", icon: <BookMarked className="h-5 w-5" />, label: "Matérias", onCloseSheet, isSubItem: true, featureKey: 'subjects', roles: ['admin', 'secretary'] },
+        { to: "/classes/courses", icon: <ListChecks className="h-5 w-5" />, label: "Séries/Anos", onCloseSheet, isSubItem: true, featureKey: 'courses', roles: ['admin', 'secretary', 'teacher'] },
+        { to: "/classes/subjects", icon: <BookMarked className="h-5 w-5" />, label: "Matérias", onCloseSheet, isSubItem: true, featureKey: 'subjects', roles: ['admin', 'secretary', 'teacher'] },
         { to: "/grades/entry", icon: <GraduationCap className="h-5 w-5" />, label: "Lançar Notas", onCloseSheet, isSubItem: true, featureKey: 'grades_entry', roles: ['admin', 'secretary', 'teacher'] },
         { to: "/calendar", icon: <CalendarDays className="h-5 w-5" />, label: "Calendário", onCloseSheet, isSubItem: true, featureKey: 'calendar', roles: ['admin', 'secretary', 'teacher'] },
         { to: "/documents", icon: <FileText className="h-5 w-5" />, label: "Documentos", onCloseSheet, isSubItem: true, featureKey: 'documents', roles: ['admin', 'secretary', 'teacher'] },
