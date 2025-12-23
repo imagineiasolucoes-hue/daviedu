@@ -38,9 +38,10 @@ import StudentContract from "./components/documents/templates/StudentContract";
 import SecretariaPage from "./pages/SecretariaPage";
 import VerifyDocumentPage from "./pages/VerifyDocumentPage";
 import StudentPage from "./pages/StudentPage";
+import TeacherDashboard from "./pages/TeacherDashboard"; // NOVO IMPORT
 import SuperAdminMessageDisplay from "./components/super-admin/SuperAdminMessageDisplay";
 import SuperAdminMessagesPage from "./pages/super-admin/SuperAdminMessagesPage";
-import TermsPage from "./pages/TermsPage"; // NOVO IMPORT
+import TermsPage from "./pages/TermsPage";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -76,7 +77,7 @@ const App = () => {
               <Route path="/pre-matricula/:tenantId" element={<PreEnrollment />} />
               <Route path="/faq" element={<FAQPage />} />
               <Route path="/verify-document/:token" element={<VerifyDocumentPage />} />
-              <Route path="/terms" element={<TermsPage />} /> {/* NOVA ROTA */}
+              <Route path="/terms" element={<TermsPage />} />
 
               {/* Protected Routes */}
               <Route element={<ProtectedRoute />}>
@@ -84,7 +85,10 @@ const App = () => {
                 {/* Student Portal Route (No AppLayout) */}
                 <Route path="/student-portal" element={<StudentPage />} />
 
-                {/* AppLayout Routes (Admin, Secretary, Teacher, SuperAdmin) */}
+                {/* Teacher Dashboard Route (No AppLayout, ou com AppLayout mas sem o Dashboard principal) */}
+                <Route path="/teacher/dashboard" element={<AppLayout><TeacherDashboard /></AppLayout>} /> {/* NOVA ROTA */}
+
+                {/* AppLayout Routes (Admin, Secretary, SuperAdmin) */}
                 <Route element={<AppLayout />}>
                   <Route path="/dashboard" element={<Dashboard />} />
                   <Route path="/secretaria" element={<SecretariaPage />} />

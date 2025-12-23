@@ -151,6 +151,38 @@ const Sidebar: React.FC<SidebarProps> = ({ isSuperAdmin, displayName, roleDispla
   let navigationItems: NavigationItem[];
   if (isSuperAdmin) {
     navigationItems = superAdminNavItems;
+  } else if (isTeacher) { // Se for professor, ajusta os itens de navegação
+    navigationItems = [
+      { to: "/teacher/dashboard", icon: <Home className="h-5 w-5" />, label: "Meu Painel", onCloseSheet, featureKey: 'teacher_dashboard', roles: ['teacher'] },
+      {
+        to: "/secretaria", // O link pai ainda pode ser para secretaria, mas os filhos serão filtrados
+        icon: <FolderKanban className="h-5 w-5" />,
+        label: "Acadêmico", // Renomeado para professores
+        onCloseSheet: () => onCloseSheet(),
+        featureKey: 'secretaria_group', 
+        roles: ['teacher'], // Apenas professores veem este grupo
+        children: [
+          { to: "/grades/entry", icon: <GraduationCap className="h-5 w-5" />, label: "Lançar Notas", onCloseSheet, isSubItem: true, featureKey: 'grades_entry', roles: ['teacher'] },
+          { to: "/classes/subjects", icon: <BookMarked className="h-5 w-5" />, label: "Matérias e Períodos", onCloseSheet, isSubItem: true, featureKey: 'subjects', roles: ['teacher'] },
+          { to: "/classes/courses", icon: <ListChecks className="h-5 w-5" />, label: "Séries/Anos", onCloseSheet, isSubItem: true, featureKey: 'courses', roles: ['teacher'] },
+          { to: "/calendar", icon: <CalendarDays className="h-5 w-5" />, label: "Calendário", onCloseSheet, isSubItem: true, featureKey: 'calendar', roles: ['teacher'] },
+          { to: "/documents", icon: <FileText className="h-5 w-5" />, label: "Documentos", onCloseSheet, isSubItem: true, featureKey: 'documents', roles: ['teacher'] },
+        ],
+      },
+      {
+        to: "/settings",
+        icon: <Settings className="h-5 w-5" />,
+        label: "Configurações",
+        onCloseSheet: () => onCloseSheet(),
+        featureKey: 'settings_group', 
+        roles: ['teacher'], 
+        children: [
+          { to: "/settings?tab=profile", icon: <Users className="h-5 w-5" />, label: "Perfil", onCloseSheet, isSubItem: true, featureKey: 'settings_profile', roles: ['teacher'] },
+          { to: "/settings?tab=security", icon: <Lock className="h-5 w-5" />, label: "Segurança", onCloseSheet, isSubItem: true, featureKey: 'settings_security', roles: ['teacher'] },
+        ],
+      },
+      { to: "/faq", icon: <HelpCircle className="h-5 w-5" />, label: "Ajuda (FAQ)", variant: 'accent', onCloseSheet, featureKey: 'faq', roles: ['teacher'] },
+    ];
   } else {
     navigationItems = adminNavItems;
   }
