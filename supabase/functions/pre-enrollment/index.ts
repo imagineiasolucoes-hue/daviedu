@@ -99,7 +99,12 @@ serve(async (req) => {
           tenant_id: tenant_id,
           registration_code: registration_code,
           status: "pre-enrolled",
+          // Garante que birth_date seja null se for uma string vazia, para evitar erro de tipo DATE
+          birth_date: studentInfo.birth_date === "" ? null : studentInfo.birth_date,
+          // Garante que email seja null se for uma string vazia
+          email: studentInfo.email === "" ? null : studentInfo.email,
         };
+        console.log("[pre-enrollment] Student data to insert:", JSON.stringify(studentData, null, 2)); // Log dos dados a serem inseridos
 
         // 3. Inserir no Banco de Dados
         const { data, error: insertError } = await supabaseAdmin
