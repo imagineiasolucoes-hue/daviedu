@@ -84,7 +84,7 @@ serve(async (req) => {
 
     let registration_code: string = '';
     let studentId: string;
-    const maxRetries = 10; // Aumentado para 10
+    const maxRetries = 15; // Aumentado para 15
     let attempts = 0;
 
     // --- Loop de Re-tentativa para Inserção ---
@@ -120,7 +120,7 @@ serve(async (req) => {
           if (insertError.code === "23505") {
             console.warn(`[pre-enrollment] Tentativa ${attempts}: Código de matrícula duplicado ${registration_code}. Re-tentando...`);
             // Adiciona um atraso aleatório (jitter) para mitigar race conditions
-            const delay = Math.floor(Math.random() * 500) + 100; // 100ms a 600ms
+            const delay = Math.floor(Math.random() * 1000) + 100; // 100ms a 1100ms
             await new Promise(resolve => setTimeout(resolve, delay)); 
             continue;
           } else {
