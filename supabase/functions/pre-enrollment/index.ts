@@ -37,16 +37,21 @@ async function generateNextRegistrationCode(supabaseAdmin: any, tenantId: string
 
     if (data?.registration_code) {
         const lastCode = data.registration_code;
-        // Assume que o código é YYYYSSS (Ano + Sequência de 3 dígitos)
-        const lastSequenceStr = lastCode.substring(4); 
-        const lastSequence = parseInt(lastSequenceStr, 10);
+        // Assume que o código é YYYYSSSS (Ano + Sequência de 4 dígitos)
+        const sequenceStr = lastCode.substring(prefix.length); 
+        const lastSequence = parseInt(sequenceStr, 10);
 
         if (!isNaN(lastSequence)) {
             nextSequence = lastSequence + 1;
         }
     }
+    
+    // Garante que a sequência comece em 1000 se for muito baixa (para evitar colisões com códigos antigos de 3 dígitos)
+    if (nextSequence < 1000) {
+        nextSequence = 1000;
+    }
 
-    const nextSequenceStr = String(nextSequence).padStart(3, '0');
+    const nextSequenceStr = String(nextSequence).padStart(4, '0'); // Padronizado para 4 dígitos
     return `${prefix}${nextSequenceStr}`;
 }
 
