@@ -53,7 +53,7 @@ const PreEnrollment: React.FC = () => {
     resolver: zodResolver(preEnrollmentSchema),
     defaultValues: {
       full_name: "",
-      birth_date: "",
+      birth_date: "", // Inicializado como string vazia
       phone: "",
       email: null,
     },
