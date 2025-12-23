@@ -34,7 +34,7 @@ async function generateNextRegistrationCode(supabaseAdmin: any, tenantId: string
         throw new Error(`Falha ao buscar o último código de matrícula: ${error.message}`);
     }
 
-    let nextSequence = 1;
+    let nextSequence = 1000; // Começa em 1000 por padrão
 
     if (data?.registration_code) {
         const lastCode = data.registration_code;
@@ -46,21 +46,18 @@ async function generateNextRegistrationCode(supabaseAdmin: any, tenantId: string
             let lastSequence = parseInt(sequenceStr, 10);
             console.log(`[generateNextRegistrationCode] Attempt ${attempt}: Extracted sequence string: "${sequenceStr}", parsed last sequence: ${lastSequence}`);
 
-            if (!isNaN(lastSequence)) {
+            if (!isNaN(lastSequence) && lastSequence >= 1000) {
                 nextSequence = lastSequence + 1;
             } else {
-                console.warn(`[generateNextRegistrationCode] Attempt ${attempt}: Parsed sequence is NaN for code "${lastCode}". Starting sequence from 1.`);
-                nextSequence = 1; // Fallback para 1 se o parsing falhar
+                // Se o parsing falhar ou a sequência for menor que 1000 (código antigo), reinicia em 1000
+                console.warn(`[generateNextRegistrationCode] Attempt ${attempt}: Parsed sequence is invalid or too low (${lastSequence}). Starting sequence from 1000.`);
+                nextSequence = 1000; 
             }
         } else {
-            console.warn(`[generateNextRegistrationCode] Attempt ${attempt}: Last code "${lastCode}" does not start with prefix "${prefix}". Starting sequence from 1.`);
-            nextSequence = 1; // Fallback para 1 se o prefixo não corresponder
+            // Se o último código encontrado não for do ano atual, começa a contagem do ano atual em 1000
+            console.warn(`[generateNextRegistrationCode] Attempt ${attempt}: Last code "${lastCode}" does not start with prefix "${prefix}". Starting sequence from 1000.`);
+            nextSequence = 1000; 
         }
-    }
-    
-    // Garante que a sequência comece em 1000 se for muito baixa (para evitar colisões com códigos antigos de 3 dígitos)
-    if (nextSequence < 1000) {
-        nextSequence = 1000;
     }
     
     const nextSequenceStr = String(nextSequence).padStart(4, '0'); // Padronizado para 4 dígitos
@@ -76,7 +73,7 @@ serve(async (req) => {
 
   try {
     const body = await req.json();
-    console.log("[pre-enrollment] Incoming request body:", JSON.stringify(body, null, 2)); // Log do corpo da requisição
+    console.log("[pre-enrollment] Incoming request body:", JSON.stringify(body, null, 2));
 
     const { tenant_id, ...studentInfo } = body;
 
@@ -115,7 +112,7 @@ serve(async (req) => {
           // Garante que email seja null se for uma string vazia
           email: studentInfo.email === "" ? null : studentInfo.email,
         };
-        console.log("[pre-enrollment] Student data to insert:", JSON.stringify(studentData, null, 2)); // Log dos dados a serem inseridos
+        console.log("[pre-enrollment] Student data to insert:", JSON.stringify(studentData, null, 2));
 
         // 3. Inserir no Banco de Dados
         const { data, error: insertError } = await supabaseAdmin
@@ -159,7 +156,7 @@ serve(async (req) => {
   } catch (error) {
     // --- Capturar Todos os Erros ---
     const errorMessage = error instanceof Error ? error.message : "Ocorreu um erro inesperado.";
-    console.error("[pre-enrollment] Edge Function CATCH block error:", error); // Log do objeto de erro completo
+    console.error("[pre-enrollment] Edge Function CATCH block error:", error);
     return new Response(JSON.stringify({ error: errorMessage }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 400,
