@@ -14,9 +14,8 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-async function generateNextRegistrationCode(supabaseAdmin: any, tenantId: string, schoolYear: number, attempt: number): Promise<string> {
+async function generateNextRegistrationCode(supabaseAdmin: any, tenantId: string, schoolYear: number): Promise<string> {
     const prefix = String(schoolYear);
-    console.log(`[generateNextRegistrationCode] Attempt ${attempt}: Generating code for tenant ${tenantId}, year ${schoolYear}`);
 
     // Busca o último código de matrícula para o ano atual, ordenado de forma decrescente
     const { data, error } = await supabaseAdmin
@@ -29,7 +28,7 @@ async function generateNextRegistrationCode(supabaseAdmin: any, tenantId: string
         .maybeSingle();
 
     if (error) {
-        console.error(`[generateNextRegistrationCode] Error fetching last registration code (Attempt ${attempt}):`, error);
+        console.error(`[generateNextRegistrationCode] Error fetching last registration code:`, error);
         throw new Error(`Falha ao buscar o último código de matrícula: ${error.message}`);
     }
 
@@ -46,17 +45,14 @@ async function generateNextRegistrationCode(supabaseAdmin: any, tenantId: string
         }
     }
     
-    // Garante que a sequência comece em 1000 se for muito baixa (para evitar colisões com códigos antigos de 3 dígitos)
+    // Garante que a sequência comece em 1000 se for muito baixa
     if (nextSequence < 1000) {
         nextSequence = 1000;
     }
     
-    console.log(`[generateNextRegistrationCode] Attempt ${attempt}: Next sequence: ${nextSequence}`);
-
     // Usa 4 dígitos para a sequência
     const nextSequenceStr = String(nextSequence).padStart(4, '0');
     const newRegistrationCode = `${prefix}${nextSequenceStr}`;
-    console.log(`[generateNextRegistrationCode] Attempt ${attempts}: Generated new code: ${newRegistrationCode}`);
     return newRegistrationCode;
 }
 
@@ -124,8 +120,8 @@ serve(async (req) => {
     if (!tenant_id || !school_year || !studentInfo || !guardianInfo) {
       throw new Error("Dados incompletos para aluno, escola ou responsável.");
     }
-    if (!studentInfo.full_name || !studentInfo.birth_date || !studentInfo.class_id || !studentInfo.course_id) { 
-      throw new Error("Campos obrigatórios do aluno ausentes: nome, data de nascimento, turma e série/ano.");
+    if (!studentInfo.full_name || !studentInfo.birth_date || !studentInfo.class_id) { 
+      throw new Error("Campos obrigatórios do aluno ausentes: nome, data de nascimento e turma.");
     }
     if (!guardianInfo.guardian_full_name || !guardianInfo.guardian_relationship) {
       throw new Error("Campos obrigatórios do responsável ausentes: nome e parentesco.");
@@ -141,7 +137,7 @@ serve(async (req) => {
       attempts++;
       try {
         // 1. Gerar Código de Matrícula
-        registration_code = await generateNextRegistrationCode(supabaseAdmin, tenant_id, school_year, attempts);
+        registration_code = await generateNextRegistrationCode(supabaseAdmin, tenant_id, school_year);
 
         // 2. Preparar e Inserir Aluno
         const studentDataToInsert = {
@@ -149,7 +145,8 @@ serve(async (req) => {
           tenant_id: tenant_id,
           registration_code: registration_code,
           status: "active",
-          course_id: studentInfo.course_id,
+          // course_id pode ser null, então não é obrigatório aqui
+          course_id: studentInfo.course_id || null,
         };
 
         const { data: studentResult, error: studentInsertError } = await supabaseAdmin
@@ -233,9 +230,11 @@ serve(async (req) => {
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : "Ocorreu um erro inesperado.";
     console.error("Edge Function CATCH block error:", errorMessage);
+    // Retorna 400 para erros de validação ou 500 para erros internos
+    const status = errorMessage.includes("Permissão negada") || errorMessage.includes("Não autorizado") ? 403 : 400;
     return new Response(JSON.stringify({ error: errorMessage }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
-      status: 400,
+      status: status,
     });
   }
 });
