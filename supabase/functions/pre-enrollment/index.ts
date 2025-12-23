@@ -17,8 +17,9 @@ const corsHeaders = {
 async function generateNextRegistrationCode(supabaseAdmin: any, tenantId: string): Promise<string> {
     const now = new Date();
     const year = now.getFullYear();
-    const prefix = String(year); // O prefixo agora é apenas o ano letivo (ex: 2024)
+    const prefix = String(year);
 
+    // Busca o último código de matrícula para o ano atual, ordenado de forma decrescente
     const { data, error } = await supabaseAdmin
         .from("students")
         .select("registration_code")
@@ -29,7 +30,7 @@ async function generateNextRegistrationCode(supabaseAdmin: any, tenantId: string
         .maybeSingle();
 
     if (error) {
-        console.error("Error fetching last registration code:", error);
+        console.error(`[generateNextRegistrationCode] Error fetching last registration code:`, error);
         throw new Error(`Falha ao buscar o último código de matrícula: ${error.message}`);
     }
 
@@ -37,17 +38,24 @@ async function generateNextRegistrationCode(supabaseAdmin: any, tenantId: string
 
     if (data?.registration_code) {
         const lastCode = data.registration_code;
-        // Assume que o código é YYYYSSS (Ano + Sequência de 3 dígitos)
-        const lastSequenceStr = lastCode.substring(4); 
-        const lastSequence = parseInt(lastSequenceStr, 10);
+        // Extrai a parte da sequência (assumindo YYYYSSSS, onde SSSS é a sequência)
+        const sequenceStr = lastCode.substring(prefix.length); 
+        const lastSequence = parseInt(sequenceStr, 10);
 
         if (!isNaN(lastSequence)) {
             nextSequence = lastSequence + 1;
         }
     }
-
-    const nextSequenceStr = String(nextSequence).padStart(3, '0');
-    return `${prefix}${nextSequenceStr}`;
+    
+    // Garante que a sequência comece em 1000 se for muito baixa (para manter 4 dígitos)
+    if (nextSequence < 1000) {
+        nextSequence = 1000;
+    }
+    
+    // Usa 4 dígitos para a sequência
+    const nextSequenceStr = String(nextSequence).padStart(4, '0');
+    const newRegistrationCode = `${prefix}${nextSequenceStr}`;
+    return newRegistrationCode;
 }
 
 serve(async (req) => {
@@ -59,7 +67,7 @@ serve(async (req) => {
     const body = await req.json();
     const { tenant_id, ...studentInfo } = body;
     
-    console.log("Pre-enrollment received body:", JSON.stringify(body, null, 2)); // Log do corpo recebido
+    console.log("Pre-enrollment received body:", JSON.stringify(body, null, 2));
 
     // --- Validação Robusta ---
     if (!tenant_id) {
@@ -74,40 +82,71 @@ serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
     );
 
-    // --- Gerar Código de Matrícula ---
-    const registration_code = await generateNextRegistrationCode(supabaseAdmin, tenant_id);
+    let registration_code: string = '';
+    let studentId: string;
+    const maxRetries = 5; 
+    let attempts = 0;
 
-    // --- Preparar Dados para Inserção ---
-    const studentData = {
-      ...studentInfo,
-      tenant_id: tenant_id,
-      registration_code: registration_code,
-      status: "pre-enrolled",
-      // Garantir que campos opcionais sejam null se vazios
-      email: studentInfo.email || null,
-      // course_id e class_id são opcionais na pré-matrícula, mas se vierem, devem ser tratados
-      class_id: studentInfo.class_id || null,
-      course_id: studentInfo.course_id || null,
-    };
-    
-    console.log("Pre-enrollment inserting data:", JSON.stringify(studentData, null, 2)); // Log dos dados a serem inseridos
+    // --- Loop de Re-tentativa para Inserção ---
+    while (attempts < maxRetries) {
+      attempts++;
+      try {
+        // 1. Gerar Código de Matrícula
+        registration_code = await generateNextRegistrationCode(supabaseAdmin, tenant_id);
 
-    // --- Inserir no Banco de Dados ---
-    const { data, error: insertError } = await supabaseAdmin
-      .from("students")
-      .insert(studentData)
-      .select("registration_code")
-      .single();
+        // 2. Preparar Dados para Inserção
+        const studentData = {
+          ...studentInfo,
+          tenant_id: tenant_id,
+          registration_code: registration_code,
+          status: "pre-enrolled",
+          email: studentInfo.email || null,
+          class_id: studentInfo.class_id || null,
+          course_id: studentInfo.course_id || null,
+        };
+        
+        console.log(`Pre-enrollment inserting data (Attempt ${attempts}):`, JSON.stringify(studentData, null, 2));
 
-    if (insertError) {
-      console.error("Supabase Insert Error:", JSON.stringify(insertError, null, 2));
-      throw new Error(`Erro no banco de dados: ${insertError.message} (Código: ${insertError.code})`);
+        // 3. Inserir no Banco de Dados
+        const { data, error: insertError } = await supabaseAdmin
+          .from("students")
+          .insert(studentData)
+          .select("id, registration_code")
+          .single();
+
+        if (insertError) {
+          // Se o erro for de violação de chave única, tentamos novamente
+          if (insertError.code === "23505") {
+            console.warn(`[pre-enrollment] Tentativa ${attempts}: Código de matrícula duplicado ${registration_code}. Re-tentando...`);
+            await new Promise(resolve => setTimeout(resolve, 100 * attempts)); // Pequeno delay
+            continue;
+          } else {
+            // Outros erros de inserção
+            console.error("Supabase Insert Error:", JSON.stringify(insertError, null, 2));
+            throw new Error(`Erro no banco de dados: ${insertError.message} (Código: ${insertError.code})`);
+          }
+        }
+
+        studentId = data.id;
+        registration_code = data.registration_code;
+        break; // Sucesso, sai do loop
+      } catch (e) {
+        if (attempts === maxRetries) {
+          throw e; // Lança o erro se as tentativas acabarem
+        }
+        // Se for um erro que não é 23505, ele será lançado acima.
+        // Se for 23505, o loop continua.
+      }
+    }
+
+    if (!studentId) {
+        throw new Error("Falha ao gerar um código de matrícula único após várias tentativas.");
     }
 
     // --- Sucesso ---
     return new Response(JSON.stringify({
       success: true,
-      registration_code: data.registration_code,
+      registration_code: registration_code,
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 200,
