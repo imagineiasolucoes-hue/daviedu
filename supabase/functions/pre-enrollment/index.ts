@@ -14,10 +14,11 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-async function generateNextRegistrationCode(supabaseAdmin: any, tenantId: string): Promise<string> {
+async function generateNextRegistrationCode(supabaseAdmin: any, tenantId: string, attempt: number): Promise<string> {
     const now = new Date();
     const year = now.getFullYear();
     const prefix = String(year); // O prefixo agora é apenas o ano letivo (ex: 2024)
+    console.log(`[generateNextRegistrationCode] Attempt ${attempt}: Generating code for tenant ${tenantId}, year ${year}`);
 
     const { data, error } = await supabaseAdmin
         .from("students")
@@ -29,7 +30,7 @@ async function generateNextRegistrationCode(supabaseAdmin: any, tenantId: string
         .maybeSingle();
 
     if (error) {
-        console.error("Error fetching last registration code:", error);
+        console.error(`[generateNextRegistrationCode] Error fetching last registration code (Attempt ${attempt}):`, error);
         throw new Error(`Falha ao buscar o último código de matrícula: ${error.message}`);
     }
 
@@ -52,7 +53,9 @@ async function generateNextRegistrationCode(supabaseAdmin: any, tenantId: string
     }
 
     const nextSequenceStr = String(nextSequence).padStart(4, '0'); // Padronizado para 4 dígitos
-    return `${prefix}${nextSequenceStr}`;
+    const newRegistrationCode = `${prefix}${nextSequenceStr}`;
+    console.log(`[generateNextRegistrationCode] Attempt ${attempt}: Generated new code: ${newRegistrationCode}`);
+    return newRegistrationCode;
 }
 
 serve(async (req) => {
@@ -77,37 +80,63 @@ serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
     );
 
-    // --- Gerar Código de Matrícula ---
-    const registration_code = await generateNextRegistrationCode(supabaseAdmin, tenant_id);
+    let registration_code: string = '';
+    const maxRetries = 5; 
+    let attempts = 0;
 
-    // --- Preparar Dados para Inserção ---
-    const studentData = {
-      ...studentInfo,
-      tenant_id: tenant_id,
-      registration_code: registration_code,
-      status: "pre-enrolled",
-    };
+    // Loop de re-tentativa para geração e inserção do aluno
+    while (attempts < maxRetries) {
+      attempts++;
+      try {
+        // 1. Gerar Código de Matrícula
+        registration_code = await generateNextRegistrationCode(supabaseAdmin, tenant_id, attempts);
 
-    // --- Inserir no Banco de Dados ---
-    const { data, error: insertError } = await supabaseAdmin
-      .from("students")
-      .insert(studentData)
-      .select("registration_code")
-      .single();
+        // 2. Preparar Dados para Inserção
+        const studentData = {
+          ...studentInfo,
+          tenant_id: tenant_id,
+          registration_code: registration_code,
+          status: "pre-enrolled",
+        };
 
-    if (insertError) {
-      console.error("Supabase Insert Error:", JSON.stringify(insertError, null, 2));
-      throw new Error(`Erro no banco de dados: ${insertError.message} (Código: ${insertError.code})`);
+        // 3. Inserir no Banco de Dados
+        const { data, error: insertError } = await supabaseAdmin
+          .from("students")
+          .insert(studentData)
+          .select("registration_code")
+          .single();
+
+        if (insertError) {
+          if (insertError.code === "23505") { // Código de erro para violação de chave única
+            console.warn(`[pre-enrollment] Tentativa ${attempts}: Código de matrícula duplicado ${registration_code}. Re-tentando...`);
+            await new Promise(resolve => setTimeout(resolve, 100 * attempts)); // Pequeno delay antes de re-tentar
+            continue; // Tenta novamente
+          } else {
+            console.error("[pre-enrollment] Supabase Insert Error:", JSON.stringify(insertError, null, 2));
+            throw new Error(`Erro no banco de dados: ${insertError.message} (Código: ${insertError.code})`);
+          }
+        }
+
+        // Se chegou aqui, a inserção foi bem-sucedida, sai do loop
+        return new Response(JSON.stringify({
+          success: true,
+          registration_code: data.registration_code,
+        }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 200,
+        });
+
+      } catch (e) {
+        // Se o erro não for de violação de chave única ou se as tentativas acabaram, re-lança
+        if (attempts === maxRetries || !(e instanceof Error && e.message.includes("duplicate key value violates unique constraint"))) {
+          throw e;
+        }
+        console.warn(`[pre-enrollment] Tentativa ${attempts}: Erro durante a inserção do aluno. Re-tentando...`, e.message);
+      }
     }
 
-    // --- Sucesso ---
-    return new Response(JSON.stringify({
-      success: true,
-      registration_code: data.registration_code,
-    }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-      status: 200,
-    });
+    // Se o loop terminar sem sucesso após todas as tentativas
+    throw new Error("Falha ao gerar um código de matrícula único após várias tentativas.");
 
   } catch (error) {
     // --- Capturar Todos os Erros ---
