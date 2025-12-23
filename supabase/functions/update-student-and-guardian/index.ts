@@ -40,6 +40,7 @@ serve(async (req) => {
 
     const { data: userAuth, error: authError } = await supabaseAdmin.auth.getUser(token);
     if (authError || !userAuth.user) {
+      console.error("Auth Error:", authError?.message);
       return new Response(JSON.stringify({ error: "Não autorizado: Token inválido ou expirado." }), {
         status: 401,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -47,6 +48,7 @@ serve(async (req) => {
     }
     const userId = userAuth.user.id;
 
+    // Verificar se o usuário tem permissão (Admin ou Secretary)
     const { data: profileData, error: profileError } = await supabaseAdmin
         .from('profiles')
         .select('role, tenant_id')
@@ -54,6 +56,7 @@ serve(async (req) => {
         .single();
 
     if (profileError || !profileData || !['admin', 'secretary'].includes(profileData.role)) {
+        console.error("Permission Denied: User role not allowed to create students.", profileData?.role);
         return new Response(JSON.stringify({ error: "Permissão negada. Apenas administradores e secretários podem editar alunos." }), {
             status: 403, // Forbidden
             headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -61,6 +64,7 @@ serve(async (req) => {
     }
     
     if (profileData.tenant_id !== tenant_id) {
+        console.error("Security Alert: Tenant ID mismatch.", { userTenant: profileData.tenant_id, payloadTenant: tenant_id });
         return new Response(JSON.stringify({ error: "Erro de segurança: ID da escola não corresponde ao usuário logado." }), {
             status: 403, // Forbidden
             headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -72,23 +76,7 @@ serve(async (req) => {
       throw new Error("Dados incompletos para aluno, escola ou responsável.");
     }
 
-    // 1. Buscar o ID do responsável principal atual
-    const { data: linkData, error: linkFetchError } = await supabaseAdmin
-        .from('student_guardians')
-        .select('guardian_id')
-        .eq('student_id', student_id)
-        .eq('is_primary', true)
-        .maybeSingle();
-
-    if (linkFetchError) throw new Error(`Erro ao buscar responsável principal: ${linkFetchError.message}`);
-    
-    const guardianId = linkData?.guardian_id;
-    if (!guardianId) {
-        // Se não houver responsável principal, a edição falha (ou criamos um novo, mas por segurança, falhamos)
-        throw new Error("Responsável principal não encontrado para este aluno. Não é possível editar.");
-    }
-
-    // 2. Atualizar Aluno
+    // 1. Atualizar Aluno
     const studentUpdateData = {
         ...studentInfo,
         course_id: studentInfo.course_id || null,
@@ -120,24 +108,72 @@ serve(async (req) => {
       throw new Error(`Erro ao atualizar aluno: ${studentUpdateError.message}`);
     }
 
-    // 3. Atualizar Responsável Principal
-    const guardianUpdateData = {
-      full_name: guardianInfo.guardian_full_name,
-      phone: guardianInfo.guardian_phone || null,
-      email: guardianInfo.guardian_email || null,
-      cpf: guardianInfo.guardian_cpf || null,
-      relationship: guardianInfo.guardian_relationship,
+    // 2. Gerenciar Responsável Principal
+    let currentGuardianId: string | null = null;
+
+    // Tenta encontrar um responsável principal existente para este aluno
+    const { data: existingGuardianLink, error: fetchLinkError } = await supabaseAdmin
+        .from('student_guardians')
+        .select('guardian_id')
+        .eq('student_id', student_id)
+        .eq('is_primary', true)
+        .maybeSingle();
+
+    if (fetchLinkError) {
+        console.error("Error fetching existing guardian link:", fetchLinkError);
+        throw new Error(`Erro ao buscar vínculo do responsável: ${fetchLinkError.message}`);
+    }
+
+    currentGuardianId = existingGuardianLink?.guardian_id || null;
+
+    const guardianDataToProcess = {
+        full_name: guardianInfo.guardian_full_name,
+        phone: guardianInfo.guardian_phone || null,
+        email: guardianInfo.guardian_email || null,
+        cpf: guardianInfo.guardian_cpf || null,
+        relationship: guardianInfo.guardian_relationship,
+        tenant_id: tenant_id, // Garante que o tenant_id seja passado para a criação de um novo responsável
     };
 
-    const { error: guardianUpdateError } = await supabaseAdmin
-      .from("guardians")
-      .update(guardianUpdateData)
-      .eq("id", guardianId)
-      .eq("tenant_id", tenant_id); // Security check
+    if (currentGuardianId) {
+        // Se o responsável principal existe, atualiza
+        const { error: guardianUpdateError } = await supabaseAdmin
+            .from("guardians")
+            .update(guardianDataToProcess)
+            .eq("id", currentGuardianId)
+            .eq("tenant_id", tenant_id); // Security check
 
-    if (guardianUpdateError) {
-      console.error("Supabase Guardian Update Error:", guardianUpdateError);
-      throw new Error(`Erro ao atualizar responsável: ${guardianUpdateError.message}`);
+        if (guardianUpdateError) {
+            console.error("Supabase Guardian Update Error:", guardianUpdateError);
+            throw new Error(`Erro ao atualizar responsável: ${guardianUpdateError.message}`);
+        }
+    } else {
+        // Se não existe responsável principal, cria um novo e o vincula
+        const { data: newGuardianResult, error: guardianInsertError } = await supabaseAdmin
+            .from("guardians")
+            .insert(guardianDataToProcess)
+            .select("id")
+            .single();
+
+        if (guardianInsertError) {
+            console.error("Supabase Guardian Insert Error:", guardianInsertError);
+            throw new Error(`Erro ao cadastrar novo responsável: ${guardianInsertError.message}`);
+        }
+        currentGuardianId = newGuardianResult.id;
+
+        // Vincula o novo responsável como principal
+        const { error: linkNewGuardianError } = await supabaseAdmin
+            .from("student_guardians")
+            .insert({
+                student_id: student_id,
+                guardian_id: currentGuardianId,
+                is_primary: true,
+            });
+
+        if (linkNewGuardianError) {
+            console.error("Supabase Link New Guardian Error:", linkNewGuardianError);
+            throw new Error(`Erro ao vincular novo responsável ao aluno: ${linkNewGuardianError.message}`);
+        }
     }
 
     return new Response(JSON.stringify({ success: true, studentId: student_id }), {
