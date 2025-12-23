@@ -84,7 +84,7 @@ serve(async (req) => {
 
     let registration_code: string = '';
     let studentId: string;
-    const maxRetries = 5; 
+    const maxRetries = 10; // Aumentado para 10
     let attempts = 0;
 
     // --- Loop de Re-tentativa para Inserção ---
@@ -119,7 +119,9 @@ serve(async (req) => {
           // Se o erro for de violação de chave única, tentamos novamente
           if (insertError.code === "23505") {
             console.warn(`[pre-enrollment] Tentativa ${attempts}: Código de matrícula duplicado ${registration_code}. Re-tentando...`);
-            await new Promise(resolve => setTimeout(resolve, 100 * attempts)); // Pequeno delay
+            // Adiciona um atraso aleatório (jitter) para mitigar race conditions
+            const delay = Math.floor(Math.random() * 500) + 100; // 100ms a 600ms
+            await new Promise(resolve => setTimeout(resolve, delay)); 
             continue;
           } else {
             // Outros erros de inserção
@@ -137,6 +139,10 @@ serve(async (req) => {
         }
         // Se for um erro que não é 23505, ele será lançado acima.
         // Se for 23505, o loop continua.
+        console.error(`[pre-enrollment] Tentativa ${attempts}: Erro inesperado no loop.`, e.message);
+        if (!(e instanceof Error && e.message.includes("duplicate key value violates unique constraint"))) {
+            await new Promise(resolve => setTimeout(resolve, 100)); 
+        }
       }
     }
 
