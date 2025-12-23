@@ -74,7 +74,11 @@ const PreEnrollment: React.FC = () => {
         body: JSON.stringify(submissionData),
       });
 
-      if (edgeFunctionError) throw new Error(edgeFunctionError.message);
+      if (edgeFunctionError) {
+        // Tenta extrair a mensagem de erro do corpo da resposta da Edge Function
+        const detailedError = edgeFunctionError.context?.data?.error || edgeFunctionError.message;
+        throw new Error(detailedError);
+      }
       
       const response = edgeFunctionData as { error?: string, success?: boolean, registration_code?: string };
       if (response.error) throw new Error(response.error);
@@ -91,6 +95,7 @@ const PreEnrollment: React.FC = () => {
 
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : "Ocorreu um erro inesperado.";
+      console.error("Frontend Submission Error:", errorMessage); // Log do erro no frontend
       toast.error("Erro no Envio", { description: errorMessage });
     } finally {
       setIsSubmitting(false);
