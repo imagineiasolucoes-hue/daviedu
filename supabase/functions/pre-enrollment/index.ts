@@ -18,7 +18,7 @@ async function generateNextRegistrationCode(supabaseAdmin: any, tenantId: string
     const now = new Date();
     const year = now.getFullYear(); // Obtém o ano atual corretamente
     const prefix = String(year); 
-    console.log(`[generateNextRegistrationCode] Attempt ${attempt}: Generating code for tenant ${tenantId}, year ${year}`);
+    console.log(`[generateNextRegistrationCode] Attempt ${attempt}: Generating code for tenant ${tenantId}, year ${year}, prefix ${prefix}`);
 
     const { data, error } = await supabaseAdmin
         .from("students")
@@ -38,12 +38,23 @@ async function generateNextRegistrationCode(supabaseAdmin: any, tenantId: string
 
     if (data?.registration_code) {
         const lastCode = data.registration_code;
-        // Assume que o código é YYYYSSSS (Ano + Sequência de 4 dígitos)
-        const sequenceStr = lastCode.substring(prefix.length); 
-        const lastSequence = parseInt(sequenceStr, 10);
+        console.log(`[generateNextRegistrationCode] Attempt ${attempt}: Last code found: "${lastCode}"`);
+        
+        // Garante que o lastCode comece com o prefixo do ano atual
+        if (lastCode.startsWith(prefix)) {
+            const sequenceStr = lastCode.substring(prefix.length);
+            let lastSequence = parseInt(sequenceStr, 10);
+            console.log(`[generateNextRegistrationCode] Attempt ${attempt}: Extracted sequence string: "${sequenceStr}", parsed last sequence: ${lastSequence}`);
 
-        if (!isNaN(lastSequence)) {
-            nextSequence = lastSequence + 1;
+            if (!isNaN(lastSequence)) {
+                nextSequence = lastSequence + 1;
+            } else {
+                console.warn(`[generateNextRegistrationCode] Attempt ${attempt}: Parsed sequence is NaN for code "${lastCode}". Starting sequence from 1.`);
+                nextSequence = 1; // Fallback para 1 se o parsing falhar
+            }
+        } else {
+            console.warn(`[generateNextRegistrationCode] Attempt ${attempt}: Last code "${lastCode}" does not start with prefix "${prefix}". Starting sequence from 1.`);
+            nextSequence = 1; // Fallback para 1 se o prefixo não corresponder
         }
     }
     
@@ -51,7 +62,7 @@ async function generateNextRegistrationCode(supabaseAdmin: any, tenantId: string
     if (nextSequence < 1000) {
         nextSequence = 1000;
     }
-
+    
     const nextSequenceStr = String(nextSequence).padStart(4, '0'); // Padronizado para 4 dígitos
     const newRegistrationCode = `${prefix}${nextSequenceStr}`;
     console.log(`[generateNextRegistrationCode] Attempt ${attempt}: Generated new code: ${newRegistrationCode}`);
@@ -91,7 +102,6 @@ serve(async (req) => {
       attempts++;
       try {
         // 1. Gerar Código de Matrícula
-        // Chamando a função sem o parâmetro schoolYear, que agora é obtido internamente
         registration_code = await generateNextRegistrationCode(supabaseAdmin, tenant_id, attempts);
 
         // 2. Preparar Dados para Inserção
@@ -116,7 +126,7 @@ serve(async (req) => {
 
         if (insertError) {
           if (insertError.code === "23505") { // Código de erro para violação de chave única
-            console.warn(`[pre-enrollment] Tentativa ${attempts}: Código de matrícula duplicado ${registration_code}. Re-tentando...`);
+            console.warn(`[pre-enrollment] Tentativa ${attempts}: Código de matrícula duplicado "${registration_code}". Re-tentando...`);
             await new Promise(resolve => setTimeout(resolve, 100 * attempts)); // Pequeno delay antes de re-tentar
             continue; // Tenta novamente
           } else {
