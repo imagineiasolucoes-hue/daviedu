@@ -129,14 +129,14 @@ serve(async (req) => {
 
     let studentId: string;
     let registration_code: string = '';
-    const maxRetries = 15; // Aumentado para 15
+    const maxRetries = 5; 
     let attempts = 0;
 
     // Loop de re-tentativa para geração e inserção do aluno
     while (attempts < maxRetries) {
       attempts++;
       try {
-        // 1. Gerar Código de Matrícula (CHAMADO DENTRO DO LOOP)
+        // 1. Gerar Código de Matrícula
         registration_code = await generateNextRegistrationCode(supabaseAdmin, tenant_id, school_year);
 
         // 2. Preparar e Inserir Aluno
@@ -145,6 +145,7 @@ serve(async (req) => {
           tenant_id: tenant_id,
           registration_code: registration_code,
           status: "active",
+          // course_id pode ser null, então não é obrigatório aqui
           course_id: studentInfo.course_id || null,
         };
 
@@ -158,9 +159,7 @@ serve(async (req) => {
           // Código 23505 é a violação de chave única
           if (studentInsertError.code === "23505") {
             console.warn(`[create-student-and-guardian] Tentativa ${attempts}: Código de matrícula duplicado ${registration_code}. Re-tentando...`);
-            // Adiciona um atraso aleatório (jitter)
-            const delay = Math.floor(Math.random() * 1000) + 100; 
-            await new Promise(resolve => setTimeout(resolve, delay)); 
+            await new Promise(resolve => setTimeout(resolve, 100 * attempts)); 
             continue;
           } else {
             console.error("[create-student-and-guardian] Supabase Student Insert Error:", JSON.stringify(studentInsertError, null, 2));
@@ -171,17 +170,10 @@ serve(async (req) => {
         studentId = studentResult.id;
         break;
       } catch (e) {
-        // Se o erro for uma exceção lançada pelo código (e não um erro de inserção 23505), relança
-        if (e instanceof Error && !e.message.includes("duplicate key value violates unique constraint")) {
-            throw e;
+        if (attempts === maxRetries || !(e instanceof Error && e.message.includes("duplicate key value violates unique constraint"))) {
+          throw e;
         }
-        
-        // Se for o erro de chave única, e não for a última tentativa, o loop continua.
-        if (attempts === maxRetries) {
-          throw new Error("Falha ao gerar um código de matrícula único após várias tentativas.");
-        }
-        console.error(`[create-student-and-guardian] Tentativa ${attempts}: Erro inesperado no loop.`, e.message);
-        await new Promise(resolve => setTimeout(resolve, 100)); 
+        console.warn(`[create-student-and-guardian] Tentativa ${attempts}: Erro durante a inserção do aluno. Re-tentando...`, e.message);
       }
     }
 

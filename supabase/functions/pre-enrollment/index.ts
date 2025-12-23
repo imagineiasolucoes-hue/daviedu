@@ -84,14 +84,14 @@ serve(async (req) => {
 
     let registration_code: string = '';
     let studentId: string;
-    const maxRetries = 15; 
+    const maxRetries = 15; // Aumentado para 15
     let attempts = 0;
 
     // --- Loop de Re-tentativa para Inserção ---
     while (attempts < maxRetries) {
       attempts++;
       try {
-        // 1. Gerar Código de Matrícula (CHAMADO DENTRO DO LOOP)
+        // 1. Gerar Código de Matrícula
         registration_code = await generateNextRegistrationCode(supabaseAdmin, tenant_id);
 
         // 2. Preparar Dados para Inserção
@@ -101,6 +101,7 @@ serve(async (req) => {
           registration_code: registration_code,
           status: "pre-enrolled",
           email: studentInfo.email || null,
+          // Garante que class_id e course_id sejam NULL se não estiverem no payload (o que é esperado na pré-matrícula)
           class_id: studentInfo.class_id || null, 
           course_id: studentInfo.course_id || null,
         };
@@ -115,11 +116,11 @@ serve(async (req) => {
           .single();
 
         if (insertError) {
-          // Se o erro for de violação de chave única (23505), tentamos novamente
+          // Se o erro for de violação de chave única, tentamos novamente
           if (insertError.code === "23505") {
             console.warn(`[pre-enrollment] Tentativa ${attempts}: Código de matrícula duplicado ${registration_code}. Re-tentando...`);
-            // Adiciona um atraso aleatório (jitter)
-            const delay = Math.floor(Math.random() * 1000) + 100; 
+            // Adiciona um atraso aleatório (jitter) para mitigar race conditions
+            const delay = Math.floor(Math.random() * 1000) + 100; // 100ms a 1100ms
             await new Promise(resolve => setTimeout(resolve, delay)); 
             continue;
           } else {
@@ -133,19 +134,15 @@ serve(async (req) => {
         registration_code = data.registration_code;
         break; // Sucesso, sai do loop
       } catch (e) {
-        // Se o erro for uma exceção lançada pelo código (e não um erro de inserção 23505), relança
-        if (e instanceof Error && !e.message.includes("duplicate key value violates unique constraint")) {
-            throw e;
-        }
-        
-        // Se for o erro de chave única, e não for a última tentativa, o loop continua.
         if (attempts === maxRetries) {
-          throw new Error("Falha ao gerar um código de matrícula único após várias tentativas.");
+          throw e; // Lança o erro se as tentativas acabarem
         }
-        // Se for um erro inesperado no loop (que não seja 23505), ele será lançado acima.
+        // Se for um erro que não é 23505, ele será lançado acima.
         // Se for 23505, o loop continua.
         console.error(`[pre-enrollment] Tentativa ${attempts}: Erro inesperado no loop.`, e.message);
-        await new Promise(resolve => setTimeout(resolve, 100)); 
+        if (!(e instanceof Error && e.message.includes("duplicate key value violates unique constraint"))) {
+            await new Promise(resolve => setTimeout(resolve, 100)); 
+        }
       }
     }
 
