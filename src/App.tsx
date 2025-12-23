@@ -35,10 +35,11 @@ import ReportCard from "./components/documents/templates/ReportCard";
 import StudentTranscript from "./components/documents/templates/StudentTranscript";
 import MonthlyFeeCollection from "./components/documents/templates/MonthlyFeeCollection";
 import StudentContract from "./components/documents/templates/StudentContract";
+import FinanceReportPDF from "./components/finance/FinanceReportPDF"; // NOVO IMPORT
 import SecretariaPage from "./pages/SecretariaPage";
 import VerifyDocumentPage from "./pages/VerifyDocumentPage";
 import StudentPage from "./pages/StudentPage";
-import TeacherDashboard from "./pages/TeacherDashboard"; // NOVO IMPORT
+import TeacherDashboard from "./pages/TeacherDashboard";
 import SuperAdminMessageDisplay from "./components/super-admin/SuperAdminMessageDisplay";
 import SuperAdminMessagesPage from "./pages/super-admin/SuperAdminMessagesPage";
 import TermsPage from "./pages/TermsPage";
@@ -88,7 +89,7 @@ const App = () => {
                 {/* AppLayout Routes (Admin, Secretary, SuperAdmin, Teacher) */}
                 <Route element={<AppLayout />}>
                   <Route path="/dashboard" element={<Dashboard />} />
-                  <Route path="/teacher/dashboard" element={<TeacherDashboard />} /> {/* ADICIONADO AQUI */}
+                  <Route path="/teacher/dashboard" element={<TeacherDashboard />} />
                   <Route path="/secretaria" element={<SecretariaPage />} />
                   <Route path="/students" element={<StudentsPage />} />
                   <Route path="/teachers" element={<TeachersPage />} />
@@ -120,6 +121,7 @@ const App = () => {
                   <Route path="/documents/generate/report_card/:entityId" element={<ReportCard />} />
                   <Route path="/documents/generate/monthly_fee_collection/:entityId" element={<MonthlyFeeCollection />} />
                   <Route path="/documents/generate/contract/:entityId" element={<StudentContract />} />
+                  <Route path="/documents/generate/finance_report/:year/:month" element={<FinanceReportPDF />} /> {/* NOVA ROTA */}
                 </Route>
 
               </Route>
