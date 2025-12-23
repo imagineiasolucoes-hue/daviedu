@@ -2,7 +2,7 @@ import React from 'react';
 import { useProfile } from '@/hooks/useProfile';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { Loader2, GraduationCap, BookOpen, ClipboardList, CalendarDays, FileText, User, ArrowRight } from 'lucide-react';
+import { Loader2, GraduationCap, BookOpen, ClipboardList, CalendarDays, FileText, User, ArrowRight, BookMarked } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Link, Navigate } from 'react-router-dom';

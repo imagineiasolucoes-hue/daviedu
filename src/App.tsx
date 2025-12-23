@@ -85,12 +85,10 @@ const App = () => {
                 {/* Student Portal Route (No AppLayout) */}
                 <Route path="/student-portal" element={<StudentPage />} />
 
-                {/* Teacher Dashboard Route (No AppLayout, ou com AppLayout mas sem o Dashboard principal) */}
-                <Route path="/teacher/dashboard" element={<AppLayout><TeacherDashboard /></AppLayout>} /> {/* NOVA ROTA */}
-
-                {/* AppLayout Routes (Admin, Secretary, SuperAdmin) */}
+                {/* AppLayout Routes (Admin, Secretary, SuperAdmin, Teacher) */}
                 <Route element={<AppLayout />}>
                   <Route path="/dashboard" element={<Dashboard />} />
+                  <Route path="/teacher/dashboard" element={<TeacherDashboard />} /> {/* ADICIONADO AQUI */}
                   <Route path="/secretaria" element={<SecretariaPage />} />
                   <Route path="/students" element={<StudentsPage />} />
                   <Route path="/teachers" element={<TeachersPage />} />
