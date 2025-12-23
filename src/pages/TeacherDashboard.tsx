@@ -28,7 +28,7 @@ interface TeacherDetails {
   teacher_classes: TeacherClassAssignment[];
 }
 
-const fetchTeacherDetails = async (employeeId: string): Promise<TeacherDetails> => {
+const fetchTeacherDetails = async (employeeId: string): Promise<TeacherDetails | null> => {
   const { data, error } = await supabase
     .from('employees')
     .select(`
@@ -47,16 +47,16 @@ const fetchTeacherDetails = async (employeeId: string): Promise<TeacherDetails> 
       )
     `)
     .eq('id', employeeId)
-    .single();
+    .maybeSingle(); // Alterado para maybeSingle()
   if (error) throw new Error(error.message);
-  return data as unknown as TeacherDetails;
+  return data as unknown as TeacherDetails | null;
 };
 
 const TeacherDashboard: React.FC = () => {
   const { profile, isLoading: isProfileLoading, isTeacher } = useProfile();
   const employeeId = profile?.employee_id;
 
-  const { data: teacherDetails, isLoading: isLoadingTeacherDetails, error: teacherError } = useQuery<TeacherDetails, Error>({
+  const { data: teacherDetails, isLoading: isLoadingTeacherDetails, error: teacherError } = useQuery<TeacherDetails | null, Error>({
     queryKey: ['teacherDetails', employeeId],
     queryFn: () => fetchTeacherDetails(employeeId!),
     enabled: !!employeeId && isTeacher,
