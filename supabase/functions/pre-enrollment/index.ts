@@ -101,7 +101,8 @@ serve(async (req) => {
           registration_code: registration_code,
           status: "pre-enrolled",
           email: studentInfo.email || null,
-          class_id: studentInfo.class_id || null,
+          // Garante que class_id e course_id sejam NULL se não estiverem no payload (o que é esperado na pré-matrícula)
+          class_id: studentInfo.class_id || null, 
           course_id: studentInfo.course_id || null,
         };
         
