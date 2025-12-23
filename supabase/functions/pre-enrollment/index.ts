@@ -65,6 +65,8 @@ serve(async (req) => {
 
   try {
     const body = await req.json();
+    console.log("[pre-enrollment] Incoming request body:", JSON.stringify(body, null, 2)); // Log do corpo da requisição
+
     const { tenant_id, ...studentInfo } = body;
 
     // --- Validação Robusta ---
@@ -141,7 +143,7 @@ serve(async (req) => {
   } catch (error) {
     // --- Capturar Todos os Erros ---
     const errorMessage = error instanceof Error ? error.message : "Ocorreu um erro inesperado.";
-    console.error("Edge Function CATCH block error:", errorMessage);
+    console.error("[pre-enrollment] Edge Function CATCH block error:", error); // Log do objeto de erro completo
     return new Response(JSON.stringify({ error: errorMessage }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 400,
