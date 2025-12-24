@@ -43,7 +43,7 @@ const fetchActiveMessages = async (tenantId: string | null, userRole: UserRole):
 };
 
 const SuperAdminMessageDisplay: React.FC = () => {
-  const { profile, isSchoolUser, isLoading: isProfileLoading } = useProfile();
+  const { profile, isLoading: isProfileLoading } = useProfile(); // Removido isSchoolUser daqui
   const tenantId = profile?.tenant_id;
   const userRole = profile?.role;
   const [dismissedMessages, setDismissedMessages] = useState<string[]>([]);
@@ -58,7 +58,8 @@ const SuperAdminMessageDisplay: React.FC = () => {
   const { data: messages, isLoading: isLoadingMessages } = useQuery<SuperAdminMessage[], Error>({
     queryKey: ['superAdminMessages', tenantId, userRole],
     queryFn: () => fetchActiveMessages(tenantId, userRole!),
-    enabled: !!userRole && isSchoolUser && !isProfileLoading,
+    // A query agora é habilitada se o perfil e a função do usuário estiverem carregados
+    enabled: !!userRole && !isProfileLoading, 
     refetchInterval: 60000,
   });
 
@@ -68,7 +69,8 @@ const SuperAdminMessageDisplay: React.FC = () => {
     localStorage.setItem(DISMISSED_MESSAGES_KEY, JSON.stringify(newDismissed));
   };
 
-  if (isLoadingMessages || isProfileLoading || !isSchoolUser || !messages || messages.length === 0) {
+  // Retorna null se o perfil ainda estiver carregando, ou se não houver mensagens ativas
+  if (isProfileLoading || !userRole || isLoadingMessages || !messages || messages.length === 0) {
     return null;
   }
 
