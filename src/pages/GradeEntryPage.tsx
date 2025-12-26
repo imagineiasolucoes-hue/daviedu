@@ -78,8 +78,8 @@ const gradeEntrySchema = z.object({
   courseId: z.string().uuid("Selecione uma Série/Ano.").optional().nullable(),
   classId: z.string().uuid("Selecione uma turma.").nullable(),
   subjectName: z.string().min(1, "Selecione uma matéria."),
-  assessmentType: z.string().optional().nullable(), 
-  period: z.string().min(1, "Selecione o período da avaliação."), 
+  assessmentType: z.string().optional().nullable(),
+  period: z.string().min(1, "Selecione o período da avaliação."),
   grades: z.array(z.object({
     studentId: z.string().uuid(),
     gradeValue: z.coerce.number().min(0, "A nota deve ser 0 ou maior.").max(10, "A nota máxima é 10.").optional().nullable(),
@@ -111,10 +111,8 @@ const fetchClassesForGradeEntry = async (tenantId: string, employeeId: string | 
 
     if (assignmentError) throw new Error(assignmentError.message);
 
-    // O Supabase retorna 'classes' como um objeto aninhado (ClassWithCourses | null)
     const rawAssignments: TeacherAssignmentResult[] = assignments as unknown as TeacherAssignmentResult[];
 
-    // Filtra e mapeia para obter apenas as turmas únicas
     const uniqueClassesMap = new Map<string, ClassWithCourses>();
     rawAssignments.forEach(a => {
       if (a.classes && !uniqueClassesMap.has(a.classes.id)) {
@@ -227,7 +225,7 @@ const GradeEntryPage: React.FC = () => {
   const { profile, isLoading: isProfileLoading, isTeacher, isAdmin, isSecretary } = useProfile();
   const queryClient = useQueryClient();
   const tenantId = profile?.tenant_id;
-  const teacherEmployeeId = profile?.employee_id; 
+  const teacherEmployeeId = profile?.employee_id;
 
   // --- Form Setup ---
   const form = useForm<GradeEntryFormData>({
@@ -236,7 +234,7 @@ const GradeEntryPage: React.FC = () => {
       courseId: null,
       classId: null,
       subjectName: '',
-      assessmentType: null, 
+      assessmentType: null,
       period: '',
       grades: [],
     },
@@ -255,36 +253,36 @@ const GradeEntryPage: React.FC = () => {
   });
 
   // --- Data Fetching ---
-  const { data: allClassesForEntry, isLoading: isLoadingClassesForEntry } = useQuery<ClassWithCourses[], Error>({
+  const { data: allClassesForEntry, isLoading: isLoadingClassesForEntry, error: classesForEntryError } = useQuery<ClassWithCourses[], Error>({
     queryKey: ['classesForGradeEntry', tenantId, teacherEmployeeId, isTeacher, isAdmin],
     queryFn: () => fetchClassesForGradeEntry(tenantId!, teacherEmployeeId, isTeacher),
     enabled: !!tenantId && (isTeacher || isAdmin || isSecretary),
   });
 
-  const { data: students, isLoading: isLoadingStudents } = useQuery<Student[], Error>({
+  const { data: students, isLoading: isLoadingStudents, error: studentsError } = useQuery<Student[], Error>({
     queryKey: ['studentsInClass', selectedClassId, tenantId],
     queryFn: () => fetchStudentsByClass(selectedClassId!, tenantId!),
     enabled: !!selectedClassId && !!tenantId,
   });
 
-  const { data: subjects, isLoading: isLoadingSubjects } = useQuery<Subject[], Error>({
+  const { data: subjects, isLoading: isLoadingSubjects, error: subjectsError } = useQuery<Subject[], Error>({
     queryKey: ['subjects', tenantId],
     queryFn: () => fetchSubjects(tenantId!),
     enabled: !!tenantId,
   });
 
-  const { data: assessmentTypes, isLoading: isLoadingAssessmentTypes } = useQuery<AssessmentType[], Error>({
+  const { data: assessmentTypes, isLoading: isLoadingAssessmentTypes, error: assessmentTypesError } = useQuery<AssessmentType[], Error>({
     queryKey: ['assessmentTypes', tenantId],
     queryFn: () => fetchAssessmentTypes(tenantId!),
     enabled: !!tenantId,
   });
 
-  const { data: academicPeriods, isLoading: isLoadingAcademicPeriods } = useQuery<AcademicPeriod[], Error>({
+  const { data: academicPeriods, isLoading: isLoadingAcademicPeriods, error: academicPeriodsError } = useQuery<AcademicPeriod[], Error>({
     queryKey: ['academicPeriods', tenantId],
     queryFn: () => fetchAcademicPeriods(tenantId!),
     enabled: !!tenantId,
   });
-  
+
   // --- Grade History Query ---
   const { data: gradeHistory, isLoading: isLoadingGradeHistory, error: gradeHistoryError } = useQuery<GradeHistoryItem[], Error>({
     queryKey: ['gradeHistory', tenantId, selectedClassId, selectedCourseId, historyFilters],
@@ -294,7 +292,7 @@ const GradeEntryPage: React.FC = () => {
 
 
   // --- Memoized Data Filtering ---
-  
+
   // 1. Detalhes da Turma Selecionada
   const selectedClassDetails = useMemo(() => {
     return allClassesForEntry?.find(c => c.id === selectedClassId) || null;
@@ -303,7 +301,7 @@ const GradeEntryPage: React.FC = () => {
   // 2. Available Courses (filtered by selected class)
   const availableCoursesInClass = useMemo(() => {
     if (!selectedClassDetails) return [];
-    
+
     return selectedClassDetails.class_courses
       .map(cc => cc.courses)
       .filter(c => c !== null) as Course[];
@@ -311,16 +309,16 @@ const GradeEntryPage: React.FC = () => {
 
   // Determine if course selection is required
   const isCourseSelectionRequired = !!selectedClassId && availableCoursesInClass.length > 0;
-  
+
   // Determine if the form is ready to submit (all critical fields selected)
-  const isFormReady = !!selectedClassId && 
-                      !!selectedSubjectName && 
+  const isFormReady = !!selectedClassId &&
+                      !!selectedSubjectName &&
                       !!selectedPeriod &&
-                      (isCourseSelectionRequired ? !!selectedCourseId && selectedCourseId !== 'none' : true) && 
+                      (isCourseSelectionRequired ? !!selectedCourseId && selectedCourseId !== 'none' : true) &&
                       (students?.length ?? 0) > 0;
 
   // --- Effects for Form Synchronization ---
-  
+
   // Reset courseId and period when class changes
   useEffect(() => {
     if (selectedClassId) {
@@ -341,17 +339,17 @@ const GradeEntryPage: React.FC = () => {
       form.setValue('grades', []);
     }
   }, [students, form]);
-  
+
   // --- Submission Logic ---
   const onSubmit = async (data: GradeEntryFormData) => {
     // CRITICAL VALIDATION 1: Permissions
-    if (!tenantId || (!teacherEmployeeId && !isAdmin && !isSecretary)) { 
+    if (!tenantId || (!teacherEmployeeId && !isAdmin && !isSecretary)) {
       toast.error("Erro de Permissão", { description: "Seu perfil não está vinculado a um funcionário/professor. Apenas administradores e secretários podem lançar notas." });
       return;
     }
-    
+
     const currentEmployeeId = profile?.employee_id;
-    
+
     // Determine the teacher_id for the grade entry based on user role
     let gradeTeacherId: string | null = null;
     if (isTeacher) {
@@ -365,7 +363,7 @@ const GradeEntryPage: React.FC = () => {
         // The RLS policy allows them to insert if auth.uid() matches their profile.id AND tenant_id matches.
         // Setting teacher_id to null for them is fine, or they could select a teacher.
         // For simplicity, we'll set it to null if they are not a teacher.
-        gradeTeacherId = null; 
+        gradeTeacherId = null;
     } else {
         toast.error("Erro de Permissão", { description: "Você não tem permissão para lançar notas." });
         return;
@@ -377,13 +375,13 @@ const GradeEntryPage: React.FC = () => {
         toast.error("Erro de Validação", { description: "Selecione a Série/Ano para a qual as notas se aplicam." });
         return;
     }
-    
+
     // Ensure courseId is null if not required (for DB consistency)
     const finalCourseId = isCourseSelectionRequired && data.courseId !== 'none' ? data.courseId : null;
 
     // CRITICAL VALIDATION 3: Grades to Insert
     const gradesToInsert = data.grades
-      .filter(g => g.gradeValue !== null && g.gradeValue !== undefined) 
+      .filter(g => g.gradeValue !== null && g.gradeValue !== undefined)
       .map(g => ({
         tenant_id: tenantId,
         student_id: g.studentId,
@@ -391,17 +389,17 @@ const GradeEntryPage: React.FC = () => {
         course_id: finalCourseId, // Use the conditionally determined course ID
         subject_name: data.subjectName,
         grade_value: g.gradeValue,
-        assessment_type: data.assessmentType || null, 
+        assessment_type: data.assessmentType || null,
         period: data.period, // Academic Period Name (e.g., "1º Bimestre")
         teacher_id: gradeTeacherId, // Usando o teacher_id determinado condicionalmente
-        date_recorded: new Date().toISOString().split('T')[0], 
+        date_recorded: new Date().toISOString().split('T')[0],
       }));
 
     if (gradesToInsert.length === 0) {
       toast.warning("Nenhuma nota para salvar", { description: "Preencha pelo menos uma nota para submeter." });
       return;
     }
-    
+
     console.log("Payload para inserção de notas:", JSON.stringify(gradesToInsert, null, 2)); // DEBUG
 
     // CRITICAL FUNCTION: Database Insertion
@@ -413,25 +411,25 @@ const GradeEntryPage: React.FC = () => {
       if (error) throw new Error(error.message);
 
       toast.success("Notas lançadas com sucesso!");
-      queryClient.invalidateQueries({ queryKey: ['studentGrades'] }); 
-      
+      queryClient.invalidateQueries({ queryKey: ['studentGrades'] });
+
       // Invalidate academicSummary for each student whose grades were updated
       const uniqueStudentIds = [...new Set(gradesToInsert.map(g => g.student_id))];
       uniqueStudentIds.forEach(studentId => {
         queryClient.invalidateQueries({ queryKey: ['academicSummary', studentId] });
       });
-      
+
       // Invalidate grade history
       queryClient.invalidateQueries({ queryKey: ['gradeHistory', tenantId, selectedClassId, selectedCourseId, historyFilters] });
 
       // Reset form state, keeping the current selection context
       form.reset({
         courseId: data.courseId,
-        classId: data.classId, 
+        classId: data.classId,
         subjectName: data.subjectName,
         assessmentType: null, // Reset assessment type
         period: data.period,
-        grades: students?.map(s => ({ studentId: s.id, gradeValue: null })) || [], 
+        grades: students?.map(s => ({ studentId: s.id, gradeValue: null })) || [],
       });
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : "Ocorreu um erro inesperado.";
@@ -445,6 +443,16 @@ const GradeEntryPage: React.FC = () => {
   // --- Loading and Permission Checks ---
   const isLoading = isProfileLoading || isLoadingClassesForEntry || isLoadingStudents || isLoadingSubjects || isLoadingAssessmentTypes || isLoadingAcademicPeriods;
   const isLoadingAll = isLoading || isLoadingGradeHistory;
+
+  // Collect all errors from queries
+  const allQueryErrors = [
+    classesForEntryError,
+    studentsError,
+    subjectsError,
+    assessmentTypesError,
+    academicPeriodsError,
+    gradeHistoryError,
+  ].filter(Boolean);
 
   if (isLoadingAll) {
     return (
@@ -468,6 +476,36 @@ const GradeEntryPage: React.FC = () => {
           <CardContent>
             <p className="text-destructive">
               Você não tem permissão para acessar esta página. Apenas professores, administradores e secretários podem lançar notas.
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  // NEW: Centralized error display for all queries
+  if (allQueryErrors.length > 0) {
+    return (
+      <div className="space-y-6">
+        <h1 className="text-3xl font-bold flex items-center gap-2">
+          <ClipboardList className="h-8 w-8 text-primary" />
+          Lançamento de Notas
+        </h1>
+        <Card>
+          <CardHeader>
+            <CardTitle>Erro ao Carregar Dados</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-destructive">
+              Ocorreu um erro ao carregar os dados necessários para esta página:
+            </p>
+            <ul className="list-disc list-inside text-destructive mt-2">
+              {allQueryErrors.map((err, index) => (
+                <li key={index}>{err?.message || "Erro desconhecido"}</li>
+              ))}
+            </ul>
+            <p className="text-muted-foreground mt-4">
+              Por favor, tente recarregar a página. Se o problema persistir, entre em contato com o suporte.
             </p>
           </CardContent>
         </Card>
@@ -524,14 +562,14 @@ const GradeEntryPage: React.FC = () => {
   ) => {
     const isDataEmpty = !data || data.length === 0;
     const isDisabled = isLoading || isDataEmpty;
-    
+
     // Mapeia null/undefined para 'none' para o Select (que não aceita string vazia ou null/undefined)
     const displayValue = currentValue === null || currentValue === undefined || currentValue === '' ? 'none' : currentValue;
 
     return (
       <div className="space-y-2">
         <Label htmlFor={id}>{label}</Label>
-        <Select 
+        <Select
           onValueChange={(value) => onValueChange(value === 'none' ? null : value)} // Converte 'none' para null
           value={displayValue}
           disabled={isDisabled}
@@ -571,7 +609,7 @@ const GradeEntryPage: React.FC = () => {
         <ClipboardList className="h-8 w-8 text-primary" />
         Lançamento de Notas
       </h1>
-      
+
       <Card>
         <CardHeader>
           <CardTitle>Registrar Notas de Avaliação</CardTitle>
@@ -583,11 +621,11 @@ const GradeEntryPage: React.FC = () => {
               {/* CAMPO 1: Turma */}
               <div className="space-y-2">
                 <Label htmlFor="classId">Turma</Label>
-                <Select 
+                <Select
                   onValueChange={(value) => {
                     // Turma não é opcional, mas pode ser nula no formulário (null)
                     form.setValue('classId', value === 'none' ? null : value);
-                  }} 
+                  }}
                   value={form.watch('classId') ?? 'none'} // Mapeia null para 'none'
                   disabled={isLoadingClassesForEntry || allClassesForEntry.length === 0}
                 >
@@ -609,8 +647,8 @@ const GradeEntryPage: React.FC = () => {
               {/* CAMPO 2: Série / Ano (Condicional) */}
               <div className="space-y-2">
                 <Label htmlFor="courseId">Série / Ano</Label>
-                <Select 
-                  onValueChange={(value) => form.setValue('courseId', value === 'none' ? null : value)} 
+                <Select
+                  onValueChange={(value) => form.setValue('courseId', value === 'none' ? null : value)}
                   value={form.watch('courseId') ?? 'none'} // Mapeia null para 'none'
                   disabled={!selectedClassId || availableCoursesInClass.length === 0}
                 >
@@ -725,9 +763,9 @@ const GradeEntryPage: React.FC = () => {
             )}
             {form.formState.errors.grades && <p className="text-sm text-destructive mt-2">{form.formState.errors.grades.message}</p>}
 
-            <Button 
-              type="submit" 
-              className="w-full mt-6" 
+            <Button
+              type="submit"
+              className="w-full mt-6"
               disabled={form.formState.isSubmitting || !isFormReady}
             >
               {form.formState.isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
