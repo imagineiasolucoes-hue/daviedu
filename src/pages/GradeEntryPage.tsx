@@ -6,15 +6,17 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useProfile } from '@/hooks/useProfile';
 import { toast } from 'sonner';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Loader2, ClipboardList, GraduationCap, BookOpen } from 'lucide-react';
+import { Loader2, ClipboardList, GraduationCap, BookOpen, Search, Filter, XCircle } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 import { Link } from 'react-router-dom';
+import { format } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
 
 // --- Tipos de Dados ---
 interface Course {
@@ -58,6 +60,17 @@ interface ClassWithCourses {
 interface TeacherAssignmentResult {
   class_id: string;
   classes: ClassWithCourses | null; // Corrigido para ser um objeto ClassWithCourses ou null
+}
+
+// Tipo para itens do histórico de notas
+interface GradeHistoryItem {
+  id: string;
+  grade_value: number;
+  assessment_type: string | null;
+  period: string;
+  date_recorded: string;
+  subject_name: string;
+  students: { full_name: string; registration_code: string } | null;
 }
 
 // --- Schemas de Validação ---
@@ -172,6 +185,44 @@ const fetchAcademicPeriods = async (tenantId: string): Promise<AcademicPeriod[]>
   return data;
 };
 
+const fetchGradeHistory = async (tenantId: string, classId: string | null, courseId: string | null, filters: { studentName: string; subjectName: string; period: string }): Promise<GradeHistoryItem[]> => {
+  if (!classId || !tenantId) return [];
+
+  let query = supabase
+    .from('grades')
+    .select(`
+      id,
+      grade_value,
+      assessment_type,
+      period,
+      date_recorded,
+      subject_name,
+      students (full_name, registration_code)
+    `)
+    .eq('tenant_id', tenantId)
+    .eq('class_id', classId);
+
+  if (courseId && courseId !== 'none') { // Adicionado 'none' para lidar com o valor padrão do Select
+    query = query.eq('course_id', courseId);
+  }
+  if (filters.studentName) {
+    query = query.ilike('students.full_name', `%${filters.studentName}%`);
+  }
+  if (filters.subjectName && filters.subjectName !== 'all') {
+    query = query.eq('subject_name', filters.subjectName);
+  }
+  if (filters.period && filters.period !== 'all') {
+    query = query.eq('period', filters.period);
+  }
+
+  query = query.order('date_recorded', { ascending: false }); // Most recent first
+
+  const { data, error } = await query;
+  if (error) throw new Error(error.message);
+  return data as unknown as GradeHistoryItem[];
+};
+
+
 const GradeEntryPage: React.FC = () => {
   const { profile, isLoading: isProfileLoading, isTeacher, isAdmin, isSecretary } = useProfile();
   const queryClient = useQueryClient();
@@ -195,6 +246,13 @@ const GradeEntryPage: React.FC = () => {
   const selectedCourseId = form.watch('courseId');
   const selectedSubjectName = form.watch('subjectName');
   const selectedPeriod = form.watch('period');
+
+  // --- State for Grade History Filters ---
+  const [historyFilters, setHistoryFilters] = useState({
+    studentName: '',
+    subjectName: 'all',
+    period: 'all',
+  });
 
   // --- Data Fetching ---
   const { data: allClassesForEntry, isLoading: isLoadingClassesForEntry } = useQuery<ClassWithCourses[], Error>({
@@ -226,6 +284,14 @@ const GradeEntryPage: React.FC = () => {
     queryFn: () => fetchAcademicPeriods(tenantId!),
     enabled: !!tenantId,
   });
+  
+  // --- Grade History Query ---
+  const { data: gradeHistory, isLoading: isLoadingGradeHistory, error: gradeHistoryError } = useQuery<GradeHistoryItem[], Error>({
+    queryKey: ['gradeHistory', tenantId, selectedClassId, selectedCourseId, historyFilters],
+    queryFn: () => fetchGradeHistory(tenantId!, selectedClassId, selectedCourseId, historyFilters),
+    enabled: !!tenantId && !!selectedClassId,
+  });
+
 
   // --- Memoized Data Filtering ---
   
@@ -250,7 +316,7 @@ const GradeEntryPage: React.FC = () => {
   const isFormReady = !!selectedClassId && 
                       !!selectedSubjectName && 
                       !!selectedPeriod &&
-                      (isCourseSelectionRequired ? !!selectedCourseId : true) && 
+                      (isCourseSelectionRequired ? !!selectedCourseId && selectedCourseId !== 'none' : true) && 
                       (students?.length ?? 0) > 0;
 
   // --- Effects for Form Synchronization ---
@@ -307,7 +373,7 @@ const GradeEntryPage: React.FC = () => {
 
 
     // CRITICAL VALIDATION 2: Conditional Course Selection
-    if (isCourseSelectionRequired && !data.courseId) {
+    if (isCourseSelectionRequired && (!data.courseId || data.courseId === 'none')) {
         toast.error("Erro de Validação", { description: "Selecione a Série/Ano para a qual as notas se aplicam." });
         return;
     }
@@ -355,6 +421,9 @@ const GradeEntryPage: React.FC = () => {
         queryClient.invalidateQueries({ queryKey: ['academicSummary', studentId] });
       });
       
+      // Invalidate grade history
+      queryClient.invalidateQueries({ queryKey: ['gradeHistory', tenantId, selectedClassId, selectedCourseId, historyFilters] });
+
       // Reset form state, keeping the current selection context
       form.reset({
         courseId: data.courseId,
@@ -375,8 +444,9 @@ const GradeEntryPage: React.FC = () => {
 
   // --- Loading and Permission Checks ---
   const isLoading = isProfileLoading || isLoadingClassesForEntry || isLoadingStudents || isLoadingSubjects || isLoadingAssessmentTypes || isLoadingAcademicPeriods;
+  const isLoadingAll = isLoading || isLoadingGradeHistory;
 
-  if (isLoading) {
+  if (isLoadingAll) {
     return (
       <div className="flex items-center justify-center h-full min-h-[50vh]">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -491,6 +561,9 @@ const GradeEntryPage: React.FC = () => {
 
   const currentSelectedClassName = selectedClassDetails ? `${selectedClassDetails.name} (${selectedClassDetails.school_year})` : '';
 
+  const hasActiveHistoryFilters = useMemo(() => {
+    return historyFilters.studentName !== '' || historyFilters.subjectName !== 'all' || historyFilters.period !== 'all';
+  }, [historyFilters]);
 
   return (
     <div className="space-y-6">
@@ -663,6 +736,111 @@ const GradeEntryPage: React.FC = () => {
           </form>
         </CardContent>
       </Card>
+
+      {/* Seção de Histórico de Notas Lançadas */}
+      {selectedClassId && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <BookOpen className="h-5 w-5 text-primary" />
+              Histórico de Notas Lançadas
+            </CardTitle>
+            <CardDescription>
+              Visualize e filtre as notas já registradas para os alunos desta turma.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {/* Filter inputs for history */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+              <div className="space-y-2">
+                <Label htmlFor="historyFilterStudentName">Nome do Aluno</Label>
+                <Input
+                  id="historyFilterStudentName"
+                  placeholder="Buscar por nome..."
+                  value={historyFilters.studentName}
+                  onChange={(e) => setHistoryFilters(prev => ({ ...prev, studentName: e.target.value }))}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="historyFilterSubject">Matéria</Label>
+                <Select
+                  value={historyFilters.subjectName}
+                  onValueChange={(value) => setHistoryFilters(prev => ({ ...prev, subjectName: value }))}
+                >
+                  <SelectTrigger id="historyFilterSubject">
+                    <SelectValue placeholder="Todas as Matérias" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Todas as Matérias</SelectItem>
+                    {subjects?.map((s) => (
+                      <SelectItem key={s.id} value={s.name}>{s.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="historyFilterPeriod">Período</Label>
+                <Select
+                  value={historyFilters.period}
+                  onValueChange={(value) => setHistoryFilters(prev => ({ ...prev, period: value }))}
+                >
+                  <SelectTrigger id="historyFilterPeriod">
+                    <SelectValue placeholder="Todos os Períodos" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Todos os Períodos</SelectItem>
+                    {academicPeriods?.map((p) => (
+                      <SelectItem key={p.id} value={p.name}>{p.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            {hasActiveHistoryFilters && (
+              <Button variant="outline" onClick={() => setHistoryFilters({ studentName: '', subjectName: 'all', period: 'all' })} className="mb-4">
+                <XCircle className="mr-2 h-4 w-4" /> Limpar Filtros
+              </Button>
+            )}
+
+            {isLoadingGradeHistory ? (
+              <div className="flex justify-center items-center h-32">
+                <Loader2 className="h-6 w-6 animate-spin text-primary" />
+              </div>
+            ) : gradeHistory && gradeHistory.length > 0 ? (
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Aluno</TableHead>
+                      <TableHead>Matrícula</TableHead>
+                      <TableHead>Matéria</TableHead>
+                      <TableHead>Período</TableHead>
+                      <TableHead>Tipo</TableHead>
+                      <TableHead className="text-right">Nota</TableHead>
+                      <TableHead>Data</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {gradeHistory.map((grade) => (
+                      <TableRow key={grade.id}>
+                        <TableCell className="font-medium">{grade.students?.full_name || 'N/A'}</TableCell>
+                        <TableCell className="text-muted-foreground">{grade.students?.registration_code || 'N/A'}</TableCell>
+                        <TableCell>{grade.subject_name}</TableCell>
+                        <TableCell>{grade.period}</TableCell>
+                        <TableCell>{grade.assessment_type || 'N/A'}</TableCell>
+                        <TableCell className="text-right font-bold">{grade.grade_value?.toFixed(1)}</TableCell>
+                        <TableCell>{format(new Date(grade.date_recorded), 'dd/MM/yyyy', { locale: ptBR })}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            ) : (
+              <p className="text-center py-8 text-muted-foreground">Nenhuma nota encontrada para os filtros aplicados.</p>
+            )}
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 };
