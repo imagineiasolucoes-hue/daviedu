@@ -11,6 +11,7 @@ import { SaasNotification } from '@/types/saas-notifications';
 import NotificationCard from './NotificationCard';
 import { Link } from 'react-router-dom';
 import { toast } from 'sonner';
+import { useAuth } from '@/components/auth/SessionContextProvider'; // Added this import
 
 // Mock de notificações lidas (para simular estado no cliente)
 const getReadNotifications = (): Set<string> => {

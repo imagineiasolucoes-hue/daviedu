@@ -94,6 +94,10 @@ const CreateEditNotificationSheet: React.FC<CreateEditNotificationSheetProps> = 
 
   useEffect(() => {
     if (isEditing && notification) {
+      // Ensure target_role is compatible with the schema enum
+      // If notification.target_role is 'super_admin', it should be treated as null for the form
+      const roleToSet = notification.target_role === 'super_admin' ? null : notification.target_role;
+
       form.reset({
         title: notification.title,
         content: notification.content,
@@ -101,7 +105,7 @@ const CreateEditNotificationSheet: React.FC<CreateEditNotificationSheetProps> = 
         external_link: notification.external_link || null,
         is_global: notification.is_global,
         target_tenant_id: notification.target_tenant_id || null,
-        target_role: notification.target_role || null,
+        target_role: roleToSet,
       });
     } else if (!isEditing) {
       form.reset({
@@ -275,7 +279,7 @@ const CreateEditNotificationSheet: React.FC<CreateEditNotificationSheetProps> = 
                       <User className="h-4 w-4" /> Função Específica (Opcional)
                     </Label>
                     <Select 
-                      onValueChange={(value) => form.setValue('target_role', value === "none" ? null : value as UserRole)} 
+                      onValueChange={(value) => form.setValue('target_role', value === "none" ? null : value as NotificationFormData['target_role'])} 
                       value={form.watch('target_role') || 'none'}
                     >
                       <SelectTrigger id="target_role">
