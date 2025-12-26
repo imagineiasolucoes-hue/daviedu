@@ -78,7 +78,8 @@ const TeacherDashboard: React.FC = () => {
                 <Link to={action.to}>
                   <action.icon className="h-6 w-6 mb-1 text-muted-foreground" />
                   <span className="font-semibold text-sm">{action.label}</span>
-                  <p className="text-xs text-muted-foreground mt-1">{action.description}</p>
+                  {/* A descrição será visível apenas em telas médias e maiores */}
+                  <p className="text-xs text-muted-foreground mt-1 hidden md:block">{action.description}</p>
                 </Link>
               </Button>
             ))}
