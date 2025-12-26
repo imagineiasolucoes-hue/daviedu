@@ -6,7 +6,7 @@ import { Loader2 } from 'lucide-react';
 
 const ProtectedRoute: React.FC = () => {
   const { user, isLoading: isAuthLoading } = useAuth();
-  const { profile, isLoading: isProfileLoading, isStudent } = useProfile(); // isTeacher and isSuperAdmin are no longer needed for redirection logic here
+  const { profile, isLoading: isProfileLoading, isStudent, isTeacher } = useProfile(); // Adicionado isTeacher
 
   const isLoading = isAuthLoading || isProfileLoading;
 
@@ -38,6 +38,12 @@ const ProtectedRoute: React.FC = () => {
     return <Navigate to="/student-portal" replace />;
   }
   
+  // 2. Redirecionamento para Professor
+  // Se for professor, redireciona para o painel do professor, a menos que já esteja lá.
+  if (isTeacher && window.location.pathname !== '/teacher/dashboard' && window.location.pathname !== '/grades/entry' && window.location.pathname !== '/calendar' && window.location.pathname !== '/settings' && window.location.pathname !== '/faq') {
+    return <Navigate to="/teacher/dashboard" replace />;
+  }
+
   // Se for Admin, Secretary, Teacher ou Super Admin, renderiza as rotas filhas (que usam AppLayout)
   return <Outlet />;
 };

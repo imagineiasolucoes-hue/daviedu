@@ -38,6 +38,7 @@ import StudentContract from "./components/documents/templates/StudentContract";
 import SecretariaPage from "./pages/SecretariaPage";
 import VerifyDocumentPage from "./pages/VerifyDocumentPage";
 import StudentPage from "./pages/StudentPage";
+import TeacherDashboard from "./pages/TeacherDashboard"; // NOVO IMPORT
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -82,6 +83,10 @@ const App = () => {
                 <Route element={<AppLayout />}>
                   <Route path="/dashboard" element={<Dashboard />} />
                   <Route path="/secretaria" element={<SecretariaPage />} />
+                  
+                  {/* Teacher Dashboard */}
+                  <Route path="/teacher/dashboard" element={<TeacherDashboard />} />
+
                   <Route path="/students" element={<StudentsPage />} />
                   <Route path="/teachers" element={<TeachersPage />} />
                   <Route path="/classes" element={<ClassesPage />} /> 

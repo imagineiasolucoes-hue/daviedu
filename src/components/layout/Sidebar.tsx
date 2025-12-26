@@ -55,8 +55,8 @@ interface SidebarProps {
 
 const Sidebar: React.FC<SidebarProps> = ({ isSuperAdmin, displayName, roleDisplay, onLogout, onCloseSheet }) => {
   const location = useLocation();
-  const { isTeacher, isAdmin, isSecretary } = useProfile(); // isTeacher is still used to determine if the user is a teacher, but not for exclusive navigation
-  const [openParent, setOpenParent] = useState<string | null>(null); // Estado para controlar qual item pai está aberto
+  const { isTeacher, isAdmin, isSecretary } = useProfile(); 
+  const [openParent, setOpenParent] = useState<string | null>(null); 
 
   // Função para alternar a abertura de um item pai
   const toggleParent = (path: string) => {
@@ -67,6 +67,14 @@ const Sidebar: React.FC<SidebarProps> = ({ isSuperAdmin, displayName, roleDispla
   const isParentActive = (item: NavigationItem) => {
     return location.pathname === item.to || (item.children && item.children.some(child => location.pathname.startsWith(child.to)));
   };
+
+  const teacherNavItems: NavigationItem[] = [
+    { to: "/teacher/dashboard", icon: <LayoutDashboard className="h-5 w-5" />, label: "Dashboard", onCloseSheet },
+    { to: "/grades/entry", icon: <GraduationCap className="h-5 w-5" />, label: "Lançar Notas", onCloseSheet },
+    { to: "/calendar", icon: <CalendarDays className="h-5 w-5" />, label: "Calendário", onCloseSheet },
+    { to: "/settings", icon: <Settings className="h-5 w-5" />, label: "Configurações", onCloseSheet },
+    { to: "/faq", icon: <HelpCircle className="h-5 w-5" />, label: "Ajuda (FAQ)", variant: 'accent', onCloseSheet },
+  ];
 
   const adminNavItems: NavigationItem[] = [
     { to: "/dashboard", icon: <Home className="h-5 w-5" />, label: "Dashboard", onCloseSheet },
@@ -107,10 +115,11 @@ const Sidebar: React.FC<SidebarProps> = ({ isSuperAdmin, displayName, roleDispla
     { to: "/backup", icon: <HardDrive className="h-5 w-5" />, label: "Backup Global", onCloseSheet },
   ];
 
-  // Professores e outros usuários escolares agora usam a navegação principal (adminNavItems)
   let navigationItems: NavigationItem[];
   if (isSuperAdmin) {
     navigationItems = superAdminNavItems;
+  } else if (isTeacher) {
+    navigationItems = teacherNavItems;
   } else {
     navigationItems = adminNavItems;
   }
