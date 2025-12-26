@@ -285,6 +285,20 @@ const GradeEntryPage: React.FC = () => {
     enabled: !!tenantId && !!selectedClassId,
   });
 
+  // --- Loading and Permission Checks ---
+  const isLoading = isProfileLoading || isLoadingClassesForEntry || isLoadingStudents || isLoadingSubjects || isLoadingAssessmentTypes || isLoadingAcademicPeriods;
+  const isLoadingAll = isLoading || isLoadingGradeHistory;
+
+  // Collect all errors from queries
+  const allQueryErrors = [
+    classesForEntryError,
+    studentsError,
+    subjectsError,
+    assessmentTypesError,
+    academicPeriodsError,
+    gradeHistoryError,
+  ].filter(Boolean);
+
 
   // --- Memoized Data Filtering ---
 
@@ -334,19 +348,6 @@ const GradeEntryPage: React.FC = () => {
       form.setValue('grades', []);
     }
   }, [students, form]);
-
-  // Log para depuração
-  useEffect(() => {
-    console.log("GradeEntryPage Status:", {
-      isLoading,
-      isProfileLoading,
-      tenantId,
-      isTeacher,
-      selectedClassId,
-      classesForEntryCount: allClassesForEntry?.length,
-      queryErrors: allQueryErrors.map(e => e?.message),
-    });
-  }, [isLoading, isProfileLoading, tenantId, isTeacher, selectedClassId, allClassesForEntry, allQueryErrors]);
 
 
   // --- Submission Logic ---
@@ -448,20 +449,8 @@ const GradeEntryPage: React.FC = () => {
     }
   };
 
-  // --- Loading and Permission Checks ---
-  const isLoading = isProfileLoading || isLoadingClassesForEntry || isLoadingStudents || isLoadingSubjects || isLoadingAssessmentTypes || isLoadingAcademicPeriods;
-  const isLoadingAll = isLoading || isLoadingGradeHistory;
-
-  // Collect all errors from queries
-  const allQueryErrors = [
-    classesForEntryError,
-    studentsError,
-    subjectsError,
-    assessmentTypesError,
-    academicPeriodsError,
-    gradeHistoryError,
-  ].filter(Boolean);
-
+  // --- Conditional Rendering ---
+  
   if (isLoadingAll) {
     return (
       <div className="flex items-center justify-center h-full min-h-[50vh]">
