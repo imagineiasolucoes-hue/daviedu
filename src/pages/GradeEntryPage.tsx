@@ -285,8 +285,23 @@ const GradeEntryPage: React.FC = () => {
     }
     
     const currentEmployeeId = profile?.employee_id;
-    if (!currentEmployeeId) {
-        toast.error("Erro de Perfil", { description: "Seu perfil não está vinculado a um registro de funcionário (employee_id) para lançar notas." });
+    
+    // Determine the teacher_id for the grade entry based on user role
+    let gradeTeacherId: string | null = null;
+    if (isTeacher) {
+        if (!currentEmployeeId) {
+            toast.error("Erro de Perfil", { description: "Seu perfil de professor não está vinculado a um registro de funcionário (employee_id)." });
+            return;
+        }
+        gradeTeacherId = currentEmployeeId;
+    } else if (isAdmin || isSecretary) {
+        // Admins and Secretaries can submit grades without being a 'teacher' themselves.
+        // The RLS policy allows them to insert if auth.uid() matches their profile.id AND tenant_id matches.
+        // Setting teacher_id to null for them is fine, or they could select a teacher.
+        // For simplicity, we'll set it to null if they are not a teacher.
+        gradeTeacherId = null; 
+    } else {
+        toast.error("Erro de Permissão", { description: "Você não tem permissão para lançar notas." });
         return;
     }
 
@@ -312,7 +327,7 @@ const GradeEntryPage: React.FC = () => {
         grade_value: g.gradeValue,
         assessment_type: data.assessmentType || null, 
         period: data.period, // Academic Period Name (e.g., "1º Bimestre")
-        teacher_id: currentEmployeeId, // Usando o employee_id do usuário logado
+        teacher_id: gradeTeacherId, // Usando o teacher_id determinado condicionalmente
         date_recorded: new Date().toISOString().split('T')[0], 
       }));
 
@@ -320,6 +335,8 @@ const GradeEntryPage: React.FC = () => {
       toast.warning("Nenhuma nota para salvar", { description: "Preencha pelo menos uma nota para submeter." });
       return;
     }
+    
+    console.log("Payload para inserção de notas:", JSON.stringify(gradesToInsert, null, 2)); // DEBUG
 
     // CRITICAL FUNCTION: Database Insertion
     try {
@@ -332,6 +349,12 @@ const GradeEntryPage: React.FC = () => {
       toast.success("Notas lançadas com sucesso!");
       queryClient.invalidateQueries({ queryKey: ['studentGrades'] }); 
       
+      // Invalidate academicSummary for each student whose grades were updated
+      const uniqueStudentIds = [...new Set(gradesToInsert.map(g => g.student_id))];
+      uniqueStudentIds.forEach(studentId => {
+        queryClient.invalidateQueries({ queryKey: ['academicSummary', studentId] });
+      });
+      
       // Reset form state, keeping the current selection context
       form.reset({
         courseId: data.courseId,
@@ -343,7 +366,7 @@ const GradeEntryPage: React.FC = () => {
       });
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : "Ocorreu um erro inesperado.";
-      console.error("Error submitting grades:", error);
+      console.error("Error submitting grades:", error); // DEBUG
       toast.error("Erro ao Lançar Notas", {
         description: errorMessage,
       });
@@ -450,7 +473,7 @@ const GradeEntryPage: React.FC = () => {
             {/* O SelectItem para valor nulo/opcional DEVE ter um valor de string não vazia, usamos 'none' */}
             {isOptional && <SelectItem value="none">Nenhum</SelectItem>}
             {/* Se não for opcional, o item 'none' é o placeholder, mas não deve ser selecionável se houver dados */}
-            {!isOptional && <SelectItem value="none" disabled={!isDataEmpty}>{placeholder}</SelectItem>}
+            {!isOptional && <SelectItem value="none" disabled={!isDataEmpty}>Selecione</SelectItem>}
             {data?.map(item => (
               <SelectItem key={item.id} value={item.name}>{item.name}</SelectItem>
             ))}
