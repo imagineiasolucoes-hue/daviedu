@@ -56,12 +56,6 @@ interface ClassWithCourses {
   }[];
 }
 
-// Tipo para o resultado da query teacher_classes
-interface TeacherAssignmentResult {
-  class_id: string;
-  classes: ClassWithCourses | null; // Corrigido para ser um objeto ClassWithCourses ou null
-}
-
 // Tipo para itens do histórico de notas
 interface GradeHistoryItem {
   id: string;
@@ -111,12 +105,13 @@ const fetchClassesForGradeEntry = async (tenantId: string, employeeId: string | 
 
     if (assignmentError) throw new Error(assignmentError.message);
 
-    const rawAssignments: TeacherAssignmentResult[] = assignments as unknown as TeacherAssignmentResult[];
+    const rawAssignments = (assignments || []) as any[];
 
     const uniqueClassesMap = new Map<string, ClassWithCourses>();
     rawAssignments.forEach(a => {
-      if (a.classes && !uniqueClassesMap.has(a.classes.id)) {
-        uniqueClassesMap.set(a.classes.id, a.classes);
+      // a.classes é o objeto aninhado da turma
+      if (a.classes && a.classes.id && !uniqueClassesMap.has(a.classes.id)) {
+        uniqueClassesMap.set(a.classes.id, a.classes as ClassWithCourses);
       }
     });
     return Array.from(uniqueClassesMap.values());
@@ -340,6 +335,20 @@ const GradeEntryPage: React.FC = () => {
     }
   }, [students, form]);
 
+  // Log para depuração
+  useEffect(() => {
+    console.log("GradeEntryPage Status:", {
+      isLoading,
+      isProfileLoading,
+      tenantId,
+      isTeacher,
+      selectedClassId,
+      classesForEntryCount: allClassesForEntry?.length,
+      queryErrors: allQueryErrors.map(e => e?.message),
+    });
+  }, [isLoading, isProfileLoading, tenantId, isTeacher, selectedClassId, allClassesForEntry, allQueryErrors]);
+
+
   // --- Submission Logic ---
   const onSubmit = async (data: GradeEntryFormData) => {
     // CRITICAL VALIDATION 1: Permissions
@@ -362,7 +371,6 @@ const GradeEntryPage: React.FC = () => {
         // Admins and Secretaries can submit grades without being a 'teacher' themselves.
         // The RLS policy allows them to insert if auth.uid() matches their profile.id AND tenant_id matches.
         // Setting teacher_id to null for them is fine, or they could select a teacher.
-        // For simplicity, we'll set it to null if they are not a teacher.
         gradeTeacherId = null;
     } else {
         toast.error("Erro de Permissão", { description: "Você não tem permissão para lançar notas." });
