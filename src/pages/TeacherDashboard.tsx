@@ -11,14 +11,16 @@ const teacherActions = [
     label: 'Lançamento de Notas',
     icon: GraduationCap,
     to: '/grades/entry',
-    description: 'Registre notas e avaliações dos alunos nas suas turmas.',
+    // Texto dividido em duas linhas com <br />
+    description: <>Registre notas e avaliações dos alunos<br/>nas suas turmas.</>,
     variant: 'default' as const,
   },
   {
     label: 'Calendário Acadêmico',
     icon: CalendarDays,
     to: '/calendar',
-    description: 'Visualize eventos, feriados e datas importantes da escola.',
+    // Texto dividido em duas linhas com <br />
+    description: <>Visualize eventos, feriados e datas<br/>importantes da escola.</>,
     variant: 'outline' as const,
   },
   // Ações futuras podem ser adicionadas aqui, como 'Minhas Turmas' ou 'Diário de Classe'
@@ -78,7 +80,7 @@ const TeacherDashboard: React.FC = () => {
                 <Link to={action.to}>
                   <action.icon className="h-6 w-6 mb-1 text-muted-foreground" />
                   <span className="font-semibold text-sm">{action.label}</span>
-                  {/* Removido 'hidden md:block' e adicionado 'w-full' para garantir que o texto quebre a linha */}
+                  {/* A descrição agora usa <br /> para forçar a quebra de linha e 'w-full' para ocupar o espaço */}
                   <p className="text-xs text-muted-foreground mt-1 w-full">{action.description}</p>
                 </Link>
               </Button>
