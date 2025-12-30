@@ -5,7 +5,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Loader2, GraduationCap, BookOpen, ClipboardList, CalendarDays, FileText, User, ArrowRight, BookMarked } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Link, Navigate } from 'react-router-dom';
+import { Link, Navigate, useNavigate } from 'react-router-dom';
 import { Badge } from '@/components/ui/badge';
 
 interface TeacherClassAssignment {
@@ -55,6 +55,7 @@ const fetchTeacherDetails = async (employeeId: string): Promise<TeacherDetails |
 const TeacherDashboard: React.FC = () => {
   const { profile, isLoading: isProfileLoading, isTeacher } = useProfile();
   const employeeId = profile?.employee_id;
+  const navigate = useNavigate();
 
   const { data: teacherDetails, isLoading: isLoadingTeacherDetails, error: teacherError } = useQuery<TeacherDetails | null, Error>({
     queryKey: ['teacherDetails', employeeId],
@@ -122,41 +123,29 @@ const TeacherDashboard: React.FC = () => {
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-            <Button asChild variant="outline" className="h-auto p-4 flex flex-col items-center justify-center gap-2 text-center">
-              <Link to="/grades/entry" key="grades-entry">
-                <GraduationCap className="h-6 w-6 text-muted-foreground" />
-                <span className="font-semibold text-sm mt-1">Lançar Notas</span>
-              </Link>
+            <Button variant="outline" className="h-auto p-4 flex flex-col items-center justify-center gap-2 text-center" onClick={() => navigate('/grades/entry')}>
+              <GraduationCap className="h-6 w-6 text-muted-foreground" />
+              <span className="font-semibold text-sm mt-1">Lançar Notas</span>
             </Button>
-            <Button asChild variant="outline" className="h-auto p-4 flex flex-col items-center justify-center gap-2 text-center">
-              <Link to="/classes/subjects" key="classes-subjects">
-                <BookMarked className="h-6 w-6 text-muted-foreground" />
-                <span className="font-semibold text-sm mt-1">Matérias e Períodos</span>
-              </Link>
+            <Button variant="outline" className="h-auto p-4 flex flex-col items-center justify-center gap-2 text-center" onClick={() => navigate('/classes/subjects')}>
+              <BookMarked className="h-6 w-6 text-muted-foreground" />
+              <span className="font-semibold text-sm mt-1">Matérias e Períodos</span>
             </Button>
-            <Button asChild variant="outline" className="h-auto p-4 flex flex-col items-center justify-center gap-2 text-center">
-              <Link to="/classes/courses" key="classes-courses">
-                <BookOpen className="h-6 w-6 text-muted-foreground" />
-                <span className="font-semibold text-sm mt-1">Séries/Anos</span>
-              </Link>
+            <Button variant="outline" className="h-auto p-4 flex flex-col items-center justify-center gap-2 text-center" onClick={() => navigate('/classes/courses')}>
+              <BookOpen className="h-6 w-6 text-muted-foreground" />
+              <span className="font-semibold text-sm mt-1">Séries/Anos</span>
             </Button>
-            <Button asChild variant="outline" className="h-auto p-4 flex flex-col items-center justify-center gap-2 text-center">
-              <Link to="/calendar" key="calendar">
-                <CalendarDays className="h-6 w-6 text-muted-foreground" />
-                <span className="font-semibold text-sm mt-1">Calendário</span>
-              </Link>
+            <Button variant="outline" className="h-auto p-4 flex flex-col items-center justify-center gap-2 text-center" onClick={() => navigate('/calendar')}>
+              <CalendarDays className="h-6 w-6 text-muted-foreground" />
+              <span className="font-semibold text-sm mt-1">Calendário</span>
             </Button>
-            <Button asChild variant="outline" className="h-auto p-4 flex flex-col items-center justify-center gap-2 text-center">
-              <Link to="/documents" key="documents">
-                <FileText className="h-6 w-6 text-muted-foreground" />
-                <span className="font-semibold text-sm mt-1">Documentos</span>
-              </Link>
+            <Button variant="outline" className="h-auto p-4 flex flex-col items-center justify-center gap-2 text-center" onClick={() => navigate('/documents')}>
+              <FileText className="h-6 w-6 text-muted-foreground" />
+              <span className="font-semibold text-sm mt-1">Documentos</span>
             </Button>
-            <Button asChild variant="outline" className="h-auto p-4 flex flex-col items-center justify-center gap-2 text-center">
-              <Link to="/settings?tab=profile" key="settings-profile">
-                <User className="h-6 w-6 text-muted-foreground" />
-                <span className="font-semibold text-sm mt-1">Meu Perfil</span>
-              </Link>
+            <Button variant="outline" className="h-auto p-4 flex flex-col items-center justify-center gap-2 text-center" onClick={() => navigate('/settings?tab=profile')}>
+              <User className="h-6 w-6 text-muted-foreground" />
+              <span className="font-semibold text-sm mt-1">Meu Perfil</span>
             </Button>
           </div>
         </CardContent>
