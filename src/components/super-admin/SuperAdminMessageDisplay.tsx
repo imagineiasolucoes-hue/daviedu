@@ -127,19 +127,21 @@ const SuperAdminMessageDisplay: React.FC = () => {
         </Button>
         
         {mostRecentMessage.image_url && (
-          <div className="mb-3 -mx-4 -mt-4 h-32 overflow-hidden rounded-t-xl">
-            <img src={mostRecentMessage.image_url} alt="Notificação" className="w-full h-full object-cover" />
+          <div className="mb-3 -mx-4 -mt-4 aspect-square overflow-hidden rounded-t-xl"> {/* Changed to aspect-square */}
+            <img src={mostRecentMessage.image_url} alt="Notificação" className="w-full h-full object-cover" /> {/* Image fills the square */}
           </div>
         )}
 
-        <div className="flex items-start gap-3">
-          <ShieldAlert className="h-4 w-4 text-primary mt-1 flex-shrink-0" />
-          <div>
-            <AlertTitle className="font-bold text-base">{mostRecentMessage.title}</AlertTitle>
-            <AlertDescription className="text-sm mt-1">
-              {mostRecentMessage.content}
-            </AlertDescription>
+        <div className="flex flex-col gap-2"> {/* Changed to flex-col for text below image */}
+          <div className="flex items-start gap-3">
+            <ShieldAlert className="h-4 w-4 text-primary mt-1 flex-shrink-0" />
+            <div>
+              <AlertTitle className="font-bold text-base">{mostRecentMessage.title}</AlertTitle>
+            </div>
           </div>
+          <AlertDescription className="text-sm mt-1">
+            {mostRecentMessage.content}
+          </AlertDescription>
         </div>
         
         {mostRecentMessage.link_url && (
