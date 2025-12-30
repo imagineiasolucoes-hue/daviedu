@@ -55,44 +55,12 @@ const fetchProfile = async (userId: string): Promise<Profile | null> => {
   delete (profile as any).tenants; // Remove a propriedade aninhada
 
   // 3. Se o perfil é de um professor/admin, garante que o employee_id esteja preenchido
-  if ((profile.role === 'teacher' || profile.role === 'admin' || profile.role === 'secretary') && profile.tenant_id) {
-    // Se o employee_id já estiver no perfil, usamos ele.
-    if (!profile.employee_id) {
-        console.log(`[useProfile] Attempting to link employee_id for user ${userId} with role ${profile.role}`); // DEBUG
-        
-        // Busca o registro de funcionário (employee) vinculado a este user_id e tenant_id
-        const { data: employeeData, error: employeeError } = await supabase
-          .from('employees')
-          .select('id')
-          .eq('user_id', userId)
-          .eq('tenant_id', profile.tenant_id) 
-          .maybeSingle();
-
-        if (employeeError) {
-          console.error("[useProfile] Error finding employee for profile linking:", employeeError); // DEBUG
-        } else if (employeeData) {
-          console.log(`[useProfile] Found employee_id ${employeeData.id} for user ${userId}. Updating profile.`); // DEBUG
-          
-          // Atualiza o perfil no banco de dados (para persistir o employee_id)
-          const { error: updateError } = await supabase
-            .from('profiles')
-            .update({ employee_id: employeeData.id })
-            .eq('id', userId);
-
-          if (updateError) {
-            console.error("[useProfile] Error updating profile with employee_id:", updateError); // DEBUG
-          } else {
-            // Atualiza o objeto profile em memória para a sessão atual
-            profile = { ...profile, employee_id: employeeData.id };
-          }
-        } else {
-          console.warn(`[useProfile] No employee record found for user ${userId} with role ${profile.role}.`); // DEBUG
-        }
-    }
-  }
-  
-  console.log(`[useProfile] Final profile for ${userId}:`, profile); // DEBUG
-  return profile;
+  // NOTE: Employee linking (writing profiles.employee_id) was intentionally removed from this fetch function
+  // to avoid side effects and refetch loops. Employee linking should be performed by a separate one-time
+  // process (see useEnsureEmployeeLink hook) so fetchProfile remains a pure read operation.
+   
+   console.log(`[useProfile] Final profile for ${userId}:`, profile); // DEBUG
+   return profile;
 };
 
 export const useProfile = () => {

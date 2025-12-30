@@ -14,6 +14,7 @@ import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
 import SuspendedAccessOverlay from '@/components/auth/SuspendedAccessOverlay';
 import { useQuery } from '@tanstack/react-query';
+import useEnsureEmployeeLink from '@/hooks/useEnsureEmployeeLink';
 
 // Definir o tipo para a configuração do tenant
 interface TenantConfig {
@@ -53,6 +54,8 @@ const fetchTenantName = async (tenantId: string): Promise<string | null> => {
 const AppLayout: React.FC = () => {
   const { user, session } = useAuth();
   const { profile, isLoading, isSuperAdmin, isTenantSuspended } = useProfile();
+  // Ensure employee profile linking is attempted once after profile is loaded
+  useEnsureEmployeeLink(profile);
   const [isSheetOpen, setIsSheetOpen] = useState(false);
   const navigate = useNavigate();
 
