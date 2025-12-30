@@ -32,15 +32,18 @@ const ProtectedRoute: React.FC = () => {
     );
   }
 
-  // 1. Redirecionamento para Aluno
-  // Se for estudante, redireciona para o portal do aluno, a menos que já esteja lá.
-  if (isStudent && window.location.pathname !== '/student-portal') {
+  // Only perform role-based automatic redirects when the user is at a generic entry path.
+  // This prevents forcing navigation away when users click internal links (e.g., /grades/entry).
+  const path = window.location.pathname;
+  const isGenericEntryPath = path === '/' || path === '/dashboard' || path === '/login';
+
+  // 1. Redirecionamento para Aluno (only from generic entry paths)
+  if (isStudent && isGenericEntryPath) {
     return <Navigate to="/student-portal" replace />;
   }
   
-  // 2. Redirecionamento para Professor
-  // Se for professor, redireciona para o painel do professor, a menos que já esteja lá.
-  if (isTeacher && window.location.pathname !== '/teacher/dashboard') {
+  // 2. Redirecionamento para Professor (only from generic entry paths)
+  if (isTeacher && isGenericEntryPath) {
     return <Navigate to="/teacher/dashboard" replace />;
   }
 
