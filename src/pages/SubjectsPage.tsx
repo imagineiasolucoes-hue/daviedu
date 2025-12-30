@@ -45,15 +45,14 @@ const SubjectsPage: React.FC = () => {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [selectedSubject, setSelectedSubject] = useState<Subject | null>(null);
 
-  // Restrição de acesso: Apenas Admin e Secretary podem gerenciar matérias
-  if (!isProfileLoading && !isAdmin && !isSecretary) {
-    return <Navigate to="/dashboard" replace />;
-  }
+  // Nota: Não redirecionamos professores aqui; professores podem visualizar as matérias em modo somente leitura.
+  // Os controles de gerenciamento abaixo só serão exibidos para Admins/Secretaries.
 
   const { data: subjects, isLoading: isLoadingSubjects, error } = useQuery<Subject[], Error>({
     queryKey: ['subjects', tenantId],
     queryFn: () => fetchSubjects(tenantId!),
-    enabled: !!tenantId && (isAdmin || isSecretary),
+    // Always enable read for the tenant so teachers can view; mutations remain restricted
+    enabled: !!tenantId,
   });
 
   const deleteMutation = useMutation({
@@ -102,11 +101,14 @@ const SubjectsPage: React.FC = () => {
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h1 className="text-3xl font-bold">Gestão de Matérias</h1>
-        <div className="flex gap-2">
-          <AcademicPeriodSheet />
-          <AssessmentTypeSheet />
-          <SubjectSheet />
-        </div>
+        {/* Management controls only visible to Admin / Secretary */}
+        {(isAdmin || isSecretary) && (
+          <div className="flex gap-2">
+            <AcademicPeriodSheet />
+            <AssessmentTypeSheet />
+            <SubjectSheet />
+          </div>
+        )}
       </div>
       
       <Card>
@@ -130,14 +132,19 @@ const SubjectsPage: React.FC = () => {
                   <TableRow key={subject.id}>
                     <TableCell className="font-medium">{subject.name}</TableCell>
                     <TableCell className="text-right">
-                      <Button 
-                        variant="ghost" 
-                        size="icon" 
-                        onClick={() => handleDelete(subject)}
-                        disabled={deleteMutation.isPending}
-                      >
-                        <Trash2 className="h-4 w-4 text-destructive" />
-                      </Button>
+                      {/* Delete only shown to Admin/Secretary */}
+                      {(isAdmin || isSecretary) ? (
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          onClick={() => handleDelete(subject)}
+                          disabled={deleteMutation.isPending}
+                        >
+                          <Trash2 className="h-4 w-4 text-destructive" />
+                        </Button>
+                      ) : (
+                        <span className="text-xs text-muted-foreground">Somente visualização</span>
+                      )}
                     </TableCell>
                   </TableRow>
                 ))}
