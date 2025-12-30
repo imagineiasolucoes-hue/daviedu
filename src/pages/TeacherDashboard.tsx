@@ -123,37 +123,37 @@ const TeacherDashboard: React.FC = () => {
         <CardContent>
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
             <Button asChild variant="outline" className="h-auto p-4 flex flex-col items-center justify-center gap-2 text-center">
-              <Link to="/grades/entry">
+              <Link to="/grades/entry" key="grades-entry">
                 <GraduationCap className="h-6 w-6 text-muted-foreground" />
                 <span className="font-semibold text-sm mt-1">Lançar Notas</span>
               </Link>
             </Button>
             <Button asChild variant="outline" className="h-auto p-4 flex flex-col items-center justify-center gap-2 text-center">
-              <Link to="/classes/subjects">
+              <Link to="/classes/subjects" key="classes-subjects">
                 <BookMarked className="h-6 w-6 text-muted-foreground" />
                 <span className="font-semibold text-sm mt-1">Matérias e Períodos</span>
               </Link>
             </Button>
             <Button asChild variant="outline" className="h-auto p-4 flex flex-col items-center justify-center gap-2 text-center">
-              <Link to="/classes/courses">
+              <Link to="/classes/courses" key="classes-courses">
                 <BookOpen className="h-6 w-6 text-muted-foreground" />
                 <span className="font-semibold text-sm mt-1">Séries/Anos</span>
               </Link>
             </Button>
             <Button asChild variant="outline" className="h-auto p-4 flex flex-col items-center justify-center gap-2 text-center">
-              <Link to="/calendar">
+              <Link to="/calendar" key="calendar">
                 <CalendarDays className="h-6 w-6 text-muted-foreground" />
                 <span className="font-semibold text-sm mt-1">Calendário</span>
               </Link>
             </Button>
             <Button asChild variant="outline" className="h-auto p-4 flex flex-col items-center justify-center gap-2 text-center">
-              <Link to="/documents">
+              <Link to="/documents" key="documents">
                 <FileText className="h-6 w-6 text-muted-foreground" />
                 <span className="font-semibold text-sm mt-1">Documentos</span>
               </Link>
             </Button>
             <Button asChild variant="outline" className="h-auto p-4 flex flex-col items-center justify-center gap-2 text-center">
-              <Link to="/settings?tab=profile">
+              <Link to="/settings?tab=profile" key="settings-profile">
                 <User className="h-6 w-6 text-muted-foreground" />
                 <span className="font-semibold text-sm mt-1">Meu Perfil</span>
               </Link>
