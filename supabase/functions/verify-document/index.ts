@@ -14,6 +14,14 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+async function sha256hex(message: string) {
+  const encoder = new TextEncoder();
+  const data = encoder.encode(message);
+  const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -31,11 +39,14 @@ serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
     );
 
-    // 1. Buscar o document_id usando o token
+    // Compute hash of provided token and query by token_hash
+    const token_hash = await sha256hex(token);
+
+    // 1. Buscar o document_id usando the token_hash
     const { data: tokenData, error: tokenError } = await supabaseAdmin
       .from('document_verification_tokens')
       .select('document_id, is_active')
-      .eq('token', token)
+      .eq('token_hash', token_hash)
       .single();
 
     if (tokenError || !tokenData || !tokenData.is_active) {
