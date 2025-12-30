@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useProfile, UserRole } from '@/hooks/useProfile';
 import { toast } from 'sonner';
@@ -18,7 +18,7 @@ interface SuperAdminMessage {
   image_url: string | null;
 }
 
-const DISMISSED_MESSAGES_KEY = 'dismissed_sa_messages';
+// Removed DISMISSED_MESSAGES_KEY as dismissal is now handled via profile in DB
 
 const fetchActiveMessages = async (tenantId: string | null, userRole: UserRole): Promise<SuperAdminMessage[]> => {
   const { data, error } = await supabase
@@ -42,36 +42,63 @@ const fetchActiveMessages = async (tenantId: string | null, userRole: UserRole):
 };
 
 const SuperAdminMessageDisplay: React.FC = () => {
-  const { profile, isSchoolUser, isLoading: isProfileLoading } = useProfile();
+  const { profile, isSchoolUser, isLoading: isProfileLoading, refetch: refetchProfile } = useProfile();
   const tenantId = profile?.tenant_id;
   const userRole = profile?.role;
-  const [dismissedMessages, setDismissedMessages] = useState<string[]>([]);
+  const userId = profile?.id;
 
-  useEffect(() => {
-    const storedDismissed = localStorage.getItem(DISMISSED_MESSAGES_KEY);
-    if (storedDismissed) {
-      setDismissedMessages(JSON.parse(storedDismissed));
-    }
-  }, []);
+  const queryClient = useQueryClient();
 
   const { data: messages, isLoading: isLoadingMessages } = useQuery<SuperAdminMessage[], Error>({
     queryKey: ['superAdminMessages', tenantId, userRole],
     queryFn: () => fetchActiveMessages(tenantId, userRole!),
-    enabled: !!userRole && isSchoolUser && !isProfileLoading,
+    // Enable if user is authenticated and profile is loaded, regardless of isSchoolUser for global messages
+    enabled: !!userRole && !isProfileLoading,
     refetchInterval: 60000,
   });
 
+  const dismissMutation = useMutation({
+    mutationFn: async (messageId: string) => {
+      if (!userId) throw new Error("User not authenticated.");
+      
+      const currentDismissedIds = profile?.dismissed_sa_messages_ids || [];
+      const newDismissedIds = [...new Set([...currentDismissedIds, messageId])]; // Add new ID, ensure uniqueness
+
+      const { error } = await supabase
+        .from('profiles')
+        .update({ dismissed_sa_messages_ids: newDismissedIds })
+        .eq('id', userId);
+
+      if (error) throw new Error(error.message);
+      return newDismissedIds;
+    },
+    onSuccess: (newDismissedIds) => {
+      // Optimistically update the profile data in cache
+      queryClient.setQueryData(['profile', userId], (oldProfile: any) => {
+        if (oldProfile) {
+          return { ...oldProfile, dismissed_sa_messages_ids: newDismissedIds };
+        }
+        return oldProfile;
+      });
+      // No need to refetch profile, as we updated cache. Invalidate messages to re-filter.
+      queryClient.invalidateQueries({ queryKey: ['superAdminMessages', tenantId, userRole] });
+    },
+    onError: (error) => {
+      toast.error("Erro ao dispensar mensagem", { description: error.message });
+    },
+  });
+
   const handleDismiss = (messageId: string) => {
-    const newDismissed = [...dismissedMessages, messageId];
-    setDismissedMessages(newDismissed);
-    localStorage.setItem(DISMISSED_MESSAGES_KEY, JSON.stringify(newDismissed));
+    dismissMutation.mutate(messageId);
   };
 
-  if (isLoadingMessages || isProfileLoading || !isSchoolUser || !messages || messages.length === 0) {
+  if (isLoadingMessages || isProfileLoading || !userRole || !messages || messages.length === 0) {
     return null;
   }
 
-  const activeMessages = messages.filter(msg => !dismissedMessages.includes(msg.id));
+  // Filter messages based on profile's dismissed_sa_messages_ids
+  const dismissedByProfile = profile?.dismissed_sa_messages_ids || [];
+  const activeMessages = messages.filter(msg => !dismissedByProfile.includes(msg.id));
 
   if (activeMessages.length === 0) {
     return null;
@@ -85,8 +112,8 @@ const SuperAdminMessageDisplay: React.FC = () => {
       <Alert 
         key={mostRecentMessage.id} 
         className={cn(
-          "w-full max-w-md mx-auto bg-white text-foreground border-border shadow-lg relative pr-4 pb-4 rounded-xl", // Removed dark:bg-card
-          mostRecentMessage.tenant_id === null ? "border-l-4 border-primary" : "border-l-2 border-primary" // Keep border-left for global/tenant distinction
+          "w-full max-w-md mx-auto bg-white text-foreground border-border shadow-lg relative pr-4 pb-4 rounded-xl",
+          mostRecentMessage.tenant_id === null ? "border-l-4 border-primary" : "border-l-2 border-primary"
         )}
       >
         <Button 
@@ -94,6 +121,7 @@ const SuperAdminMessageDisplay: React.FC = () => {
           size="icon" 
           className="absolute top-2 right-2 h-6 w-6 text-muted-foreground hover:bg-muted z-10"
           onClick={() => handleDismiss(mostRecentMessage.id)}
+          disabled={dismissMutation.isPending}
         >
           <X className="h-4 w-4" />
         </Button>

@@ -18,6 +18,7 @@ export interface Profile {
   employee_id?: string | null; // ID do funcionário, se o perfil for de um professor
   tenant_status?: TenantStatus; // NOVO CAMPO
   trial_expires_at?: string | null; // NOVO CAMPO
+  dismissed_sa_messages_ids?: string[]; // NOVO CAMPO: IDs das mensagens de super admin dispensadas
 }
 
 const fetchProfile = async (userId: string): Promise<Profile | null> => {
@@ -25,7 +26,7 @@ const fetchProfile = async (userId: string): Promise<Profile | null> => {
   // 1. Busca o perfil existente, incluindo o employee_id e dados do tenant
   const { data: profileData, error: profileError } = await supabase
     .from('profiles')
-    .select('*, tenants(status, trial_expires_at)') // Busca status E data de expiração
+    .select('*, tenants(status, trial_expires_at), dismissed_sa_messages_ids') // Busca status, data de expiração E mensagens dispensadas
     .eq('id', userId)
     .maybeSingle();
 
