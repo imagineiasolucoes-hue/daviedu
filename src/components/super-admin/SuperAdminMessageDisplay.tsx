@@ -92,7 +92,14 @@ const SuperAdminMessageDisplay: React.FC = () => {
     dismissMutation.mutate(messageId);
   };
 
+  console.log("SuperAdminMessageDisplay - Profile:", profile);
+  console.log("SuperAdminMessageDisplay - userRole:", userRole);
+  console.log("SuperAdminMessageDisplay - isLoadingMessages:", isLoadingMessages);
+  console.log("SuperAdminMessageDisplay - isProfileLoading:", isProfileLoading);
+  console.log("SuperAdminMessageDisplay - messages:", messages);
+
   if (isLoadingMessages || isProfileLoading || !userRole || !messages || messages.length === 0) {
+    console.log("SuperAdminMessageDisplay - Returning null due to initial conditions.");
     return null;
   }
 
@@ -100,7 +107,11 @@ const SuperAdminMessageDisplay: React.FC = () => {
   const dismissedByProfile = profile?.dismissed_sa_messages_ids || [];
   const activeMessages = messages.filter(msg => !dismissedByProfile.includes(msg.id));
 
+  console.log("SuperAdminMessageDisplay - dismissedByProfile:", dismissedByProfile);
+  console.log("SuperAdminMessageDisplay - activeMessages:", activeMessages);
+
   if (activeMessages.length === 0) {
+    console.log("SuperAdminMessageDisplay - Returning null as no active messages.");
     return null;
   }
 
