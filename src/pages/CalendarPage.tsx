@@ -17,6 +17,9 @@ import { useProfile } from "@/hooks/useProfile";
 import { toast } from "sonner";
 import { Switch } from "@/components/ui/switch";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import { Copy, Share2 } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 interface AcademicEvent {
   id: string;
@@ -38,6 +41,24 @@ const eventTypes = [
   "Evento Escolar",
   "Outro",
 ];
+
+// Helper function to get a color for each event type
+const getEventTypeColor = (type: string) => {
+  switch (type) {
+    case "Feriado":
+      return "bg-red-500";
+    case "Prova":
+      return "bg-blue-500";
+    case "Reunião":
+      return "bg-green-500";
+    case "Prazo":
+      return "bg-yellow-500";
+    case "Evento Escolar":
+      return "bg-purple-500";
+    default:
+      return "bg-gray-500";
+  }
+};
 
 const CalendarPage = () => {
   const { profile, isLoading: isProfileLoading } = useProfile();
@@ -333,66 +354,106 @@ const CalendarPage = () => {
         </div>
       </div>
 
-      <div className="flex">
-        <div className="w-full">
-          <Calendar
-            mode="single"
-            selected={date}
-            onSelect={setDate}
-            className="rounded-md border"
-            components={{
-              DayContent: ({ date: day }) => {
-                const dayEvents = getEventsForDate(day);
-                return (
-                  <div className="relative text-center">
-                    {day.getDate()}
-                    {dayEvents.length > 0 && (
-                      <div className="absolute bottom-0 left-1/2 -translate-x-1/2 flex gap-1">
-                        {dayEvents.map((event) => (
-                          <span
-                            key={event.id}
-                            className="h-1 w-1 rounded-full bg-blue-500"
-                            title={event.title}
-                          ></span>
-                        ))}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="lg:col-span-2">
+          <Card>
+            <CardHeader>
+              <CardTitle>Visão Geral do Calendário</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <Calendar
+                mode="single"
+                selected={date}
+                onSelect={setDate}
+                className="rounded-md border w-full"
+                components={{
+                  DayContent: ({ date: day }) => {
+                    const dayEvents = getEventsForDate(day);
+                    return (
+                      <div className="relative text-center h-full flex flex-col items-center justify-center">
+                        <span className="text-sm font-medium">{day.getDate()}</span>
+                        {dayEvents.length > 0 && (
+                          <div className="flex flex-wrap justify-center gap-1 mt-1">
+                            {dayEvents.map((event) => (
+                              <Badge
+                                key={event.id}
+                                className={cn(
+                                  "h-auto px-1 py-0.5 text-xs font-normal",
+                                  getEventTypeColor(event.type)
+                                )}
+                                title={event.title}
+                              >
+                                {event.type}
+                              </Badge>
+                            ))}
+                          </div>
+                        )}
                       </div>
-                    )}
-                  </div>
-                );
-              },
-            }}
-          />
+                    );
+                  },
+                }}
+              />
+            </CardContent>
+          </Card>
         </div>
-        <div className="w-1/2 pl-4">
-          <h2 className="text-2xl font-semibold mb-4">Eventos para {date ? format(date, "PPP") : "a data selecionada"}</h2>
-          {getEventsForDate(date || new Date()).length === 0 ? (
-            <p className="text-muted-foreground">Nenhum evento para esta data.</p>
-          ) : (
-            <div className="space-y-2">
-              {getEventsForDate(date || new Date()).map((event) => (
-                <div key={event.id} className="border p-3 rounded-md shadow-sm flex justify-between items-center">
-                  <div>
-                    <h3 className="font-medium">{event.title}</h3>
-                    <p className="text-sm text-muted-foreground">{event.type}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {format(new Date(event.start_date), "dd/MM/yyyy HH:mm")}
-                      {event.end_date && ` - ${format(new Date(event.end_date), "dd/MM/yyyy HH:mm")}`}
-                    </p>
-                  </div>
-                  <div className="flex gap-2">
-                    {event.is_public && (
-                      <Button variant="ghost" size="icon" onClick={() => handleShareEvent(event.id)}>
-                        <Share2 className="h-4 w-4" />
-                      </Button>
-                    )}
-                    <Button variant="ghost" size="icon" onClick={() => openEditEventSheet(event)}>
-                      <Edit className="h-4 w-4" />
-                    </Button>
-                  </div>
+
+        <div className="lg:col-span-1">
+          <Card>
+            <CardHeader>
+              <CardTitle>Eventos para {date ? format(date, "PPP") : "a data selecionada"}</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {getEventsForDate(date || new Date()).length === 0 ? (
+                <p className="text-muted-foreground">Nenhum evento para esta data.</p>
+              ) : (
+                <div className="space-y-2">
+                  {getEventsForDate(date || new Date()).map((event) => (
+                    <div key={event.id} className="border p-3 rounded-md shadow-sm flex flex-col gap-2">
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <h3 className="font-medium">{event.title}</h3>
+                          <Badge className={cn("mt-1", getEventTypeColor(event.type))}>
+                            {event.type}
+                          </Badge>
+                        </div>
+                        <div className="flex gap-1">
+                          {event.is_public && (
+                            <Button variant="ghost" size="icon" onClick={() => handleShareEvent(event.id)}>
+                              <Share2 className="h-4 w-4" />
+                            </Button>
+                          )}
+                          <Button variant="ghost" size="icon" onClick={() => openEditEventSheet(event)}>
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </div>
+                      <p className="text-sm text-muted-foreground">
+                        {format(new Date(event.start_date), "dd/MM/yyyy HH:mm")}
+                        {event.end_date && ` - ${format(new Date(event.end_date), "dd/MM/yyyy HH:mm")}`}
+                      </p>
+                      {event.description && (
+                        <p className="text-sm text-gray-600 line-clamp-2">{event.description}</p>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          <Card className="mt-6">
+            <CardHeader>
+              <CardTitle>Legenda de Tipos de Evento</CardTitle>
+            </CardHeader>
+            <CardContent className="grid grid-cols-2 gap-2">
+              {eventTypes.map((type) => (
+                <div key={type} className="flex items-center gap-2">
+                  <span className={cn("h-3 w-3 rounded-full", getEventTypeColor(type))}></span>
+                  <span className="text-sm">{type}</span>
                 </div>
               ))}
-            </div>
-          )}
+            </CardContent>
+          </Card>
         </div>
       </div>
 
