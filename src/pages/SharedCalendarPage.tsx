@@ -5,6 +5,7 @@ import { format } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
+import { parseISO } from "date-fns";
 
 interface AcademicEvent {
   id: string;
@@ -133,11 +134,11 @@ const SharedCalendarPage = () => {
             <h3 className="text-xl font-medium">{event.title}</h3>
             <p className="text-sm text-muted-foreground">Tipo: {event.type}</p>
             <p className="text-sm text-muted-foreground">
-              Início: {format(new Date(event.start_date), "dd/MM/yyyy HH:mm")}
+              Início: {format(parseISO(event.start_date), "dd/MM/yyyy HH:mm")}
             </p>
             {event.end_date && (
               <p className="text-sm text-muted-foreground">
-                Término: {format(new Date(event.end_date), "dd/MM/yyyy HH:mm")}
+                Término: {format(parseISO(event.end_date), "dd/MM/yyyy HH:mm")}
               </p>
             )}
             <p className="text-base mt-2">{event.description || "Nenhuma descrição fornecida."}</p>

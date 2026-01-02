@@ -9,7 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { format } from "date-fns";
+import { format, parseISO } from "date-fns";
 import { CalendarIcon, PlusCircle, Trash2, Edit, Copy, Share2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
@@ -273,7 +273,7 @@ const CalendarPage = () => {
   const getEventsForDate = (day: Date) => {
     return filteredEvents.filter(
       (event) =>
-        format(new Date(event.start_date), "yyyy-MM-dd") === format(day, "yyyy-MM-dd")
+        format(parseISO(event.start_date), "yyyy-MM-dd") === format(day, "yyyy-MM-dd")
     );
   };
 
@@ -427,13 +427,10 @@ const CalendarPage = () => {
                           </Button>
                         </div>
                       </div>
-                      <p className="text-sm text-muted-foreground">
-                        {format(new Date(event.start_date), "dd/MM/yyyy HH:mm")}
-                        {event.end_date && ` - ${format(new Date(event.end_date), "dd/MM/yyyy HH:mm")}`}
+                      <p className="text-xs text-muted-foreground">
+                        {format(parseISO(event.start_date), "dd/MM/yyyy HH:mm")}
+                        {event.end_date && ` - ${format(parseISO(event.end_date), "dd/MM/yyyy HH:mm")}`}
                       </p>
-                      {event.description && (
-                        <p className="text-sm text-gray-600 line-clamp-2">{event.description}</p>
-                      )}
                     </div>
                   ))}
                 </div>
@@ -486,23 +483,23 @@ const CalendarPage = () => {
                     )}
                   >
                     <CalendarIcon className="mr-2 h-4 w-4" />
-                    {form.start_date ? format(new Date(form.start_date), "dd/MM/yyyy HH:mm") : <span>Selecionar data e hora</span>}
+                    {form.start_date ? format(parseISO(form.start_date), "dd/MM/yyyy HH:mm") : <span>Selecionar data e hora</span>}
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-auto p-0">
                   <Calendar
                     mode="single"
-                    selected={form.start_date ? new Date(form.start_date) : undefined}
+                    selected={form.start_date ? parseISO(form.start_date) : undefined}
                     onSelect={(d) => handleDateChange("start_date", d)}
                     initialFocus
                   />
                   <div className="p-3 border-t">
                     <Input
                       type="time"
-                      value={form.start_date ? format(new Date(form.start_date), "HH:mm") : ""}
+                      value={form.start_date ? format(parseISO(form.start_date), "HH:mm") : ""}
                       onChange={(e) => {
                         const [hours, minutes] = e.target.value.split(":");
-                        const newDate = form.start_date ? new Date(form.start_date) : new Date();
+                        const newDate = form.start_date ? parseISO(form.start_date) : new Date();
                         newDate.setHours(parseInt(hours));
                         newDate.setMinutes(parseInt(minutes));
                         handleDateChange("start_date", newDate);
@@ -524,23 +521,23 @@ const CalendarPage = () => {
                     )}
                   >
                     <CalendarIcon className="mr-2 h-4 w-4" />
-                    {form.end_date ? format(new Date(form.end_date), "dd/MM/yyyy HH:mm") : <span>Selecionar data e hora</span>}
+                    {form.end_date ? format(parseISO(form.end_date), "dd/MM/yyyy HH:mm") : <span>Selecionar data e hora</span>}
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-auto p-0">
                   <Calendar
                     mode="single"
-                    selected={form.end_date ? new Date(form.end_date) : undefined}
+                    selected={form.end_date ? parseISO(form.end_date) : undefined}
                     onSelect={(d) => handleDateChange("end_date", d)}
                     initialFocus
                   />
                   <div className="p-3 border-t">
                     <Input
                       type="time"
-                      value={form.end_date ? format(new Date(form.end_date), "HH:mm") : ""}
+                      value={form.end_date ? format(parseISO(form.end_date), "HH:mm") : ""}
                       onChange={(e) => {
                         const [hours, minutes] = e.target.value.split(":");
-                        const newDate = form.end_date ? new Date(form.end_date) : new Date();
+                        const newDate = form.end_date ? parseISO(form.end_date) : new Date();
                         newDate.setHours(parseInt(hours));
                         newDate.setMinutes(parseInt(minutes));
                         handleDateChange("end_date", newDate);
