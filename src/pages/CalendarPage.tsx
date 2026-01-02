@@ -425,7 +425,7 @@ const CalendarPage = () => {
                     )}
                   >
                     <CalendarIcon className="mr-2 h-4 w-4" />
-                    {form.start_date ? format(new Date(form.start_date), "PPP HH:mm") : <span>Selecionar data e hora</span>}
+                    {form.start_date ? format(new Date(form.start_date), "dd/MM/yyyy HH:mm") : <span>Selecionar data e hora</span>}
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-auto p-0">
@@ -463,7 +463,7 @@ const CalendarPage = () => {
                     )}
                   >
                     <CalendarIcon className="mr-2 h-4 w-4" />
-                    {form.end_date ? format(new Date(form.end_date), "PPP HH:mm") : <span>Selecionar data e hora</span>}
+                    {form.end_date ? format(new Date(form.end_date), "dd/MM/yyyy HH:mm") : <span>Selecionar data e hora</span>}
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-auto p-0">
