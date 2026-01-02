@@ -10,11 +10,13 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { format } from "date-fns";
-import { CalendarIcon, PlusCircle, Trash2, Edit } from "lucide-react";
+import { CalendarIcon, PlusCircle, Trash2, Edit, Copy, Share2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { useProfile } from "@/hooks/useProfile";
 import { toast } from "sonner";
+import { Switch } from "@/components/ui/switch";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 
 interface AcademicEvent {
   id: string;
@@ -24,6 +26,7 @@ interface AcademicEvent {
   start_date: string;
   end_date: string | null;
   type: string;
+  is_public: boolean;
   created_at: string;
 }
 
@@ -49,10 +52,13 @@ const CalendarPage = () => {
     start_date: "",
     end_date: "",
     type: "",
+    is_public: false,
   });
   const [filterType, setFilterType] = useState<string>("all");
   const [filterDate, setFilterDate] = useState<Date | undefined>(undefined);
-  const [viewMode, setViewMode] = useState<"month" | "year">("month"); // New state for view mode
+  const [viewMode, setViewMode] = useState<"month" | "year">("month");
+  const [isShareDialogOpen, setIsShareDialogOpen] = useState(false);
+  const [shareLink, setShareLink] = useState("");
 
   const tenantId = profile?.tenant_id;
 
@@ -114,6 +120,10 @@ const CalendarPage = () => {
     setForm((prev) => ({ ...prev, type: value }));
   };
 
+  const handlePublicToggle = (checked: boolean) => {
+    setForm((prev) => ({ ...prev, is_public: checked }));
+  };
+
   const handleSaveEvent = async () => {
     if (!tenantId) {
       toast.error("Tenant ID não encontrado. Não é possível salvar o evento.");
@@ -127,6 +137,7 @@ const CalendarPage = () => {
       start_date: form.start_date,
       end_date: form.end_date || null,
       type: form.type,
+      is_public: form.is_public,
     };
 
     let error = null;
@@ -172,6 +183,30 @@ const CalendarPage = () => {
     }
   };
 
+  const handleShareEvent = async (eventId: string) => {
+    try {
+      const { data, error } = await supabase.functions.invoke('generate-calendar-share-token', {
+        body: JSON.stringify({ event_id: eventId }),
+      });
+
+      if (error) {
+        throw new Error(error.message);
+      }
+
+      const token = data.token;
+      const origin = window.location.origin;
+      setShareLink(`${origin}/shared-calendar/${token}`);
+      setIsShareDialogOpen(true);
+    } catch (error: any) {
+      toast.error("Erro ao gerar link de compartilhamento: " + error.message);
+    }
+  };
+
+  const copyShareLink = () => {
+    navigator.clipboard.writeText(shareLink);
+    toast.success("Link copiado para a área de transferência!");
+  };
+
   const resetForm = () => {
     setForm({
       title: "",
@@ -179,6 +214,7 @@ const CalendarPage = () => {
       start_date: "",
       end_date: "",
       type: "",
+      is_public: false,
     });
     setCurrentEvent(null);
   };
@@ -196,6 +232,7 @@ const CalendarPage = () => {
       start_date: event.start_date,
       end_date: event.end_date || "",
       type: event.type,
+      is_public: event.is_public,
     });
     setIsSheetOpen(true);
   };
@@ -342,9 +379,16 @@ const CalendarPage = () => {
                       {event.end_date && ` - ${format(new Date(event.end_date), "dd/MM/yyyy HH:mm")}`}
                     </p>
                   </div>
-                  <Button variant="ghost" size="icon" onClick={() => openEditEventSheet(event)}>
-                    <Edit className="h-4 w-4" />
-                  </Button>
+                  <div className="flex gap-2">
+                    {event.is_public && (
+                      <Button variant="ghost" size="icon" onClick={() => handleShareEvent(event.id)}>
+                        <Share2 className="h-4 w-4" />
+                      </Button>
+                    )}
+                    <Button variant="ghost" size="icon" onClick={() => openEditEventSheet(event)}>
+                      <Edit className="h-4 w-4" />
+                    </Button>
+                  </div>
                 </div>
               ))}
             </div>
@@ -460,6 +504,14 @@ const CalendarPage = () => {
                 </SelectContent>
               </Select>
             </div>
+            <div className="flex items-center space-x-2">
+              <Switch
+                id="is_public"
+                checked={form.is_public}
+                onCheckedChange={handlePublicToggle}
+              />
+              <Label htmlFor="is_public">Tornar evento público (compartilhável)</Label>
+            </div>
             <Button type="submit">{currentEvent ? "Salvar Alterações" : "Adicionar Evento"}</Button>
             {currentEvent && (
               <Button variant="destructive" onClick={() => handleDeleteEvent(currentEvent.id)}>
@@ -469,6 +521,26 @@ const CalendarPage = () => {
           </form>
         </SheetContent>
       </Sheet>
+
+      <Dialog open={isShareDialogOpen} onOpenChange={setIsShareDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Compartilhar Evento</DialogTitle>
+            <DialogDescription>
+              Copie o link abaixo para compartilhar este evento público.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex items-center space-x-2">
+            <Input value={shareLink} readOnly />
+            <Button onClick={copyShareLink}>
+              <Copy className="h-4 w-4" />
+            </Button>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsShareDialogOpen(false)}>Fechar</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
