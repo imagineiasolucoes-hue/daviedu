@@ -17,7 +17,6 @@ import { useProfile } from "@/hooks/useProfile";
 import { toast } from "sonner";
 import { Switch } from "@/components/ui/switch";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
-import { Copy, Share2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
@@ -150,6 +149,10 @@ const CalendarPage = () => {
       toast.error("Tenant ID não encontrado. Não é possível salvar o evento.");
       return;
     }
+    if (!profile || (!profile.isAdmin && !profile.isSecretary)) {
+      toast.error("Você não tem permissão para adicionar ou editar eventos.");
+      return;
+    }
 
     const eventData = {
       tenant_id: tenantId,
@@ -189,6 +192,10 @@ const CalendarPage = () => {
 
   const handleDeleteEvent = async (eventId: string) => {
     if (!confirm("Tem certeza que deseja excluir este evento?")) return;
+    if (!profile || (!profile.isAdmin && !profile.isSecretary)) {
+      toast.error("Você não tem permissão para excluir eventos.");
+      return;
+    }
 
     const { error } = await supabase
       .from("academic_events")
