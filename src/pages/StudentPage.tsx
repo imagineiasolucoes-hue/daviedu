@@ -22,6 +22,7 @@ interface StudentInfo {
   classes: { name: string; school_year: number } | null;
   courses: { name: string } | null;
   tenant_id: string;
+  tenants: { name: string } | null;
 }
 
 const fetchStudentInfo = async (userId: string, tenantId: string): Promise<StudentInfo | null> => {
@@ -37,7 +38,8 @@ const fetchStudentInfo = async (userId: string, tenantId: string): Promise<Stude
       birth_date,
       tenant_id,
       classes (name, school_year),
-      courses (name)
+      courses (name),
+      tenants (name)
     `)
     .eq('user_id', userId)
     .eq('tenant_id', tenantId)
@@ -124,7 +126,12 @@ const StudentPage: React.FC = () => {
       <header className="w-full py-4 px-6 border-b border-border/50 bg-background/90 backdrop-blur-sm sticky top-0 z-50 flex justify-between items-center">
         <div className="flex items-center gap-2">
           <GraduationCap className="h-6 w-6 text-primary" />
-          <h1 className="text-xl font-bold">Portal do Aluno</h1>
+          <div className="flex flex-col">
+            <h1 className="text-xl font-bold">Portal do Aluno</h1>
+            {studentInfo?.tenants?.name && (
+              <p className="text-sm text-muted-foreground">{studentInfo.tenants.name}</p>
+            )}
+          </div>
         </div>
         <Button variant="ghost" onClick={handleLogout}>
           <LogOut className="mr-2 h-4 w-4" />
