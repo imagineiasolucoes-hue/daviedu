@@ -30,12 +30,6 @@ const secretaryActions = [
     description: 'Aprovar novas solicitações.',
   },
   {
-    label: 'Calendário',
-    icon: CalendarDays,
-    to: '/calendar',
-    description: 'Ver e gerenciar eventos.',
-  },
-  {
     label: 'Documentos',
     icon: FileText,
     to: '/documents',
