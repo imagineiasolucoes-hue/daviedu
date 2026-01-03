@@ -107,6 +107,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isSuperAdmin, displayName, roleDispla
         { to: "/classes/subjects", icon: <BookMarked className="h-5 w-5" />, label: "Matérias", onCloseSheet, isSubItem: true, featureKey: 'subjects', roles: ['admin', 'secretary', 'teacher'] },
         { to: "/grades/entry", icon: <GraduationCap className="h-5 w-5" />, label: "Lançar Notas", onCloseSheet, isSubItem: true, featureKey: 'grades_entry', roles: ['admin', 'secretary', 'teacher'] },
         { to: "/documents", icon: <FileText className="h-5 w-5" />, label: "Documentos", onCloseSheet, isSubItem: true, featureKey: 'documents', roles: ['admin', 'secretary', 'teacher'] },
+        { to: "/class-diary/admin-overview", icon: <ClipboardList className="h-5 w-5" />, label: "Diário de Classe (Admin)", onCloseSheet, isSubItem: true, featureKey: 'class_diary_admin', roles: ['admin', 'secretary'] }, // NOVO
       ],
     },
     {
@@ -165,6 +166,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isSuperAdmin, displayName, roleDispla
           { to: "/classes/subjects", icon: <BookMarked className="h-5 w-5" />, label: "Matérias e Períodos", onCloseSheet, isSubItem: true, featureKey: 'subjects', roles: ['teacher'] },
           { to: "/classes/courses", icon: <ListChecks className="h-5 w-5" />, label: "Séries/Anos", onCloseSheet, isSubItem: true, featureKey: 'courses', roles: ['teacher'] },
           { to: "/documents", icon: <FileText className="h-5 w-5" />, label: "Documentos", onCloseSheet, isSubItem: true, featureKey: 'documents', roles: ['teacher'] },
+          { to: "/class-diary/teacher", icon: <ClipboardList className="h-5 w-5" />, label: "Meu Diário de Classe", onCloseSheet, isSubItem: true, featureKey: 'class_diary_teacher', roles: ['teacher'] }, // NOVO
         ],
       },
       {

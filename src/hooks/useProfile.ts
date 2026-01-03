@@ -19,6 +19,7 @@ export interface Profile {
   tenant_status?: TenantStatus; // NOVO CAMPO
   trial_expires_at?: string | null; // NOVO CAMPO
   dismissed_sa_messages_ids?: string[]; // NOVO CAMPO: IDs das mensagens de super admin dispensadas
+  isGuardian?: boolean; // NOVO CAMPO: Indica se o perfil está associado a um guardião
 }
 
 const fetchProfile = async (userId: string): Promise<Profile | null> => {
@@ -55,10 +56,18 @@ const fetchProfile = async (userId: string): Promise<Profile | null> => {
   }
   delete (profile as any).tenants; // Remove a propriedade aninhada
 
-  // 3. Se o perfil é de um professor/admin, garante que o employee_id esteja preenchido
-  // NOTE: Employee linking (writing profiles.employee_id) was intentionally removed from this fetch function
-  // to avoid side effects and refetch loops. Employee linking should be performed by a separate one-time
-  // process (see useEnsureEmployeeLink hook) so fetchProfile remains a pure read operation.
+  // 3. Verifica se o usuário é um guardião
+  const { data: guardianData, error: guardianError } = await supabase
+    .from('guardians')
+    .select('id')
+    .eq('user_id', userId)
+    .maybeSingle();
+
+  if (guardianError) {
+    console.error("[useProfile] Supabase fetch guardian error:", guardianError);
+    // Não lança erro, apenas registra e assume que não é guardião
+  }
+  profile.isGuardian = !!guardianData; // Define isGuardian com base na existência de dados de guardião
    
    console.log(`[useProfile] Final profile for ${userId}:`, profile); // DEBUG
    return profile;
@@ -82,6 +91,7 @@ export const useProfile = () => {
   const isStudent = profile?.role === 'student'; // NOVO: Flag para estudante
   const isSchoolUser = profile?.tenant_id !== null;
   const isTenantSuspended = profile?.tenant_status === 'suspended'; 
+  const isGuardian = profile?.isGuardian; // Exposto
 
   return {
     profile,
@@ -95,5 +105,6 @@ export const useProfile = () => {
     isStudent, // Exposto
     isSchoolUser,
     isTenantSuspended, 
+    isGuardian, // Exposto
   };
 };

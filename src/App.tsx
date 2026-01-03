@@ -42,6 +42,8 @@ import TeacherDashboard from "./pages/TeacherDashboard";
 import SuperAdminMessageDisplay from "./components/super-admin/SuperAdminMessageDisplay";
 import SuperAdminMessagesPage from "./pages/super-admin/SuperAdminMessagesPage";
 import TermsPage from "./pages/TermsPage";
+import TeacherClassDiaryPage from "./pages/TeacherClassDiaryPage"; // NOVO IMPORT
+import AdminClassDiaryOverviewPage from "./pages/AdminClassDiaryOverviewPage"; // NOVO IMPORT
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -103,6 +105,10 @@ const App = () => {
                   
                   {/* Grade Entry (Acessível por Admin/Secretary/Teacher) */}
                   <Route path="/grades/entry" element={<GradeEntryPage />} />
+
+                  {/* Diário de Classe */}
+                  <Route path="/class-diary/teacher" element={<TeacherClassDiaryPage />} /> {/* Rota para professores */}
+                  <Route path="/class-diary/admin-overview" element={<AdminClassDiaryOverviewPage />} /> {/* Rota para administradores */}
                   
                   {/* Super Admin Routes */}
                   <Route element={<SuperAdminProtectedRoute />}>
