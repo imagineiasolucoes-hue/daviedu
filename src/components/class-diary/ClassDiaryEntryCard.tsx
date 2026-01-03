@@ -2,7 +2,7 @@ import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { format, parseISO } from 'date-fns';
 import { Button } from '@/components/ui/button';
-import { Edit, Trash2, UserCheck, ClipboardList, MessageSquare } from 'lucide-react';
+import { Edit, Trash2, UserCheck, ClipboardList, MessageSquare, BookOpen } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 
 interface ClassDiaryEntryCardProps {
