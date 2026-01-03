@@ -9,6 +9,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { format, parseISO } from 'date-fns';
 import { cn } from '@/lib/utils';
 import ClassDiaryEntryCard from '@/components/class-diary/ClassDiaryEntryCard';
+import { Button } from '@/components/ui/button';
 
 interface StudentInfo {
   id: string;
