@@ -8,7 +8,6 @@ import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { format, parseISO } from 'date-fns';
 import { cn } from '@/lib/utils';
-import ClassDiaryEntryCard from '@/components/class-diary/ClassDiaryEntryCard';
 import { Button } from '@/components/ui/button';
 
 interface StudentInfo {
@@ -39,7 +38,6 @@ const StudentClassDiarySection: React.FC<StudentClassDiarySectionProps> = ({ stu
   const { profile, isLoading: isProfileLoading } = useProfile();
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [entries, setEntries] = useState<ClassDiaryEntry[]>([]);
-  const [studentsInClass, setStudentsInClass] = useState<{ id: string; full_name: string }[]>([]);
   const [isLoadingEntries, setIsLoadingEntries] = useState(false);
 
   const tenantId = profile?.tenant_id;
@@ -47,10 +45,9 @@ const StudentClassDiarySection: React.FC<StudentClassDiarySectionProps> = ({ stu
   const classId = studentInfo.class_id;
 
   useEffect(() => {
-    const fetchEntriesAndStudents = async () => {
+    const fetchEntries = async () => {
       if (!classId || !tenantId || !studentId) {
         setEntries([]);
-        setStudentsInClass([]);
         return;
       }
 
@@ -73,25 +70,10 @@ const StudentClassDiarySection: React.FC<StudentClassDiarySectionProps> = ({ stu
         setEntries(entriesData || []);
       }
 
-      // Fetch students for the selected class (needed for attendance display)
-      const { data: studentsData, error: studentsError } = await supabase
-        .from('students')
-        .select('id, full_name')
-        .eq('class_id', classId)
-        .eq('tenant_id', tenantId)
-        .order('full_name', { ascending: true });
-
-      if (studentsError) {
-        toast.error("Erro ao carregar alunos da turma: " + studentsError.message);
-        setStudentsInClass([]);
-      } else {
-        setStudentsInClass(studentsData || []);
-      }
-
       setIsLoadingEntries(false);
     };
 
-    fetchEntriesAndStudents();
+    fetchEntries();
   }, [classId, tenantId, studentId, selectedDate]);
 
   if (isProfileLoading) {
@@ -115,7 +97,7 @@ const StudentClassDiarySection: React.FC<StudentClassDiarySectionProps> = ({ stu
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h2 className="text-xl font-bold flex items-center gap-2">
-          <CalendarDays className="h-5 w-5" /> Diário de Classe
+          <CalendarDays className="h-5 w-5" /> Minha Frequência
         </h2>
         <Popover>
           <PopoverTrigger asChild>
@@ -143,35 +125,42 @@ const StudentClassDiarySection: React.FC<StudentClassDiarySectionProps> = ({ stu
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-lg">Entradas para {format(selectedDate, 'PPP')}</CardTitle>
+          <CardTitle className="text-lg">Frequência em {format(selectedDate, 'PPP')}</CardTitle>
         </CardHeader>
         <CardContent>
           {isLoadingEntries ? (
             <div className="flex items-center justify-center p-8">
               <Loader2 className="h-8 w-8 animate-spin text-primary" />
-              <p className="ml-2">Carregando entradas...</p>
+              <p className="ml-2">Carregando registros de frequência...</p>
             </div>
           ) : entries.length === 0 ? (
-            <p className="text-muted-foreground">Nenhuma entrada de diário para esta data.</p>
+            <p className="text-muted-foreground">Nenhum registro de frequência para esta data.</p>
           ) : (
             <div className="space-y-4">
-              {entries.map(entry => (
-                <Card key={entry.id} className="border p-4">
-                  <div className="flex justify-between items-start mb-2">
-                    <div>
-                      <p className="text-sm text-muted-foreground">
-                        <span className="font-semibold">Professor:</span> {entry.employees?.full_name || 'N/A'}
-                      </p>
+              {entries.map(entry => {
+                const studentAttendance = entry.attendance?.find(a => a.student_id === studentId);
+                const statusText = studentAttendance ? (
+                  studentAttendance.status === 'present' ? 'Presente' :
+                  studentAttendance.status === 'absent' ? 'Ausente' :
+                  'Atraso'
+                ) : 'Não Registrado';
+
+                const statusColor = studentAttendance ? (
+                  studentAttendance.status === 'present' ? 'text-green-600' :
+                  studentAttendance.status === 'absent' ? 'text-red-600' :
+                  'text-yellow-600'
+                ) : 'text-muted-foreground';
+
+                return (
+                  <Card key={entry.id} className="border p-4">
+                    <div className="flex justify-between items-center mb-2">
+                      <p className="text-sm font-semibold">Data: {format(parseISO(entry.entry_date), 'dd/MM/yyyy')}</p>
+                      <p className="text-sm text-muted-foreground">Professor: {entry.employees?.full_name || 'N/A'}</p>
                     </div>
-                    <p className="text-sm text-muted-foreground">{format(parseISO(entry.entry_date), 'dd/MM/yyyy')}</p>
-                  </div>
-                  <ClassDiaryEntryCard
-                    entry={entry}
-                    students={studentsInClass}
-                    showActions={false} // Alunos apenas visualizam, sem edição/exclusão
-                  />
-                </Card>
-              ))}
+                    <p className="text-base">Status: <span className={cn("font-bold", statusColor)}>{statusText}</span></p>
+                  </Card>
+                );
+              })}
             </div>
           )}
         </CardContent>
