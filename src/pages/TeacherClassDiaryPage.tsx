@@ -13,6 +13,7 @@ import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { format, parseISO } from 'date-fns';
 import { cn } from '@/lib/utils';
+import { CalendarIcon } from 'lucide-react';
 
 interface ClassData {
   id: string;
