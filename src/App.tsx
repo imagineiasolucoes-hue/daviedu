@@ -23,7 +23,6 @@ import FinancePage from "./pages/FinancePage";
 import RevenuesPage from "./pages/RevenuesPage";
 import ExpensesPage from "./pages/ExpensesPage";
 import SettingsPage from "./pages/SettingsPage";
-import CalendarPage from "./pages/CalendarPage";
 import DocumentsPage from "./pages/DocumentsPage";
 import TeachersPage from "./pages/TeachersPage";
 import CoursesPage from "./pages/CoursesPage"; 
@@ -43,7 +42,6 @@ import TeacherDashboard from "./pages/TeacherDashboard";
 import SuperAdminMessageDisplay from "./components/super-admin/SuperAdminMessageDisplay";
 import SuperAdminMessagesPage from "./pages/super-admin/SuperAdminMessagesPage";
 import TermsPage from "./pages/TermsPage";
-import SharedCalendarPage from "./pages/SharedCalendarPage"; // Import the new page
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -80,7 +78,6 @@ const App = () => {
               <Route path="/faq" element={<FAQPage />} />
               <Route path="/verify-document/:token" element={<VerifyDocumentPage />} />
               <Route path="/terms" element={<TermsPage />} />
-              <Route path="/shared-calendar/:token" element={<SharedCalendarPage />} /> {/* NEW: Shared Calendar Route */}
 
               {/* Protected Routes */}
               <Route element={<ProtectedRoute />}>
@@ -98,7 +95,6 @@ const App = () => {
                   <Route path="/classes" element={<ClassesPage />} /> 
                   <Route path="/classes/courses" element={<CoursesPage />} /> 
                   <Route path="/classes/subjects" element={<SubjectsPage />} />
-                  <Route path="/calendar" element={<CalendarPage />} />
                   <Route path="/documents" element={<DocumentsPage />} />
                   <Route path="/finance" element={<FinancePage />} />
                   <Route path="/revenues" element={<RevenuesPage />} />
