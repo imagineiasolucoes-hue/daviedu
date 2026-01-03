@@ -161,7 +161,7 @@ const StudentClassDiarySection: React.FC<StudentClassDiarySectionProps> = ({ stu
           <Button variant="ghost" size="icon" onClick={() => setCurrentMonth(subMonths(currentMonth, 1))}>
             <ChevronLeft className="h-4 w-4" />
           </Button>
-          <span className="font-semibold text-lg">
+          <span className="font-semibold text-lg whitespace-nowrap">
             {format(currentMonth, 'MMMM yyyy', { locale: ptBR })}
           </span>
           <Button variant="ghost" size="icon" onClick={() => setCurrentMonth(addMonths(currentMonth, 1))}>
@@ -181,33 +181,32 @@ const StudentClassDiarySection: React.FC<StudentClassDiarySectionProps> = ({ stu
               <p className="ml-2">Carregando registros de frequência...</p>
             </div>
           ) : (
-            <div className="grid grid-cols-7 gap-2 text-center">
-              {weekdays.map(day => (
-                <div key={day} className="font-semibold text-sm text-muted-foreground">
-                  {day}
-                </div>
-              ))}
-              {emptyDaysBefore.map(key => (
-                <div key={key} className="h-16 w-full"></div> // Espaços vazios para alinhar o calendário
-              ))}
-              {daysInMonth.map(day => {
-                const dateKey = format(day, 'yyyy-MM-dd');
-                const dayAttendance = attendanceByDay[dateKey];
-                const status = dayAttendance?.status || 'not_recorded';
-                const teacherName = dayAttendance?.teacher; // Se tivéssemos consolidado o professor
-
-                return (
-                  <div key={dateKey} className={cn(
-                    "h-16 w-full flex flex-col items-center justify-center rounded-md border",
-                    getStatusColorClass(status)
-                  )}>
-                    <span className="text-sm font-bold">{format(day, 'd')}</span>
-                    <span className="text-xs">{getStatusText(status)}</span>
-                    {/* Se quisermos mostrar o professor, precisaríamos de uma lógica de consolidação mais complexa */}
-                    {/* {teacherName && <span className="text-xs text-gray-500">{teacherName}</span>} */}
+            <div className="overflow-x-auto">
+              <div className="min-w-[320px] grid grid-cols-7 gap-1 text-center">
+                {weekdays.map(day => (
+                  <div key={day} className="font-semibold text-sm text-muted-foreground p-1">
+                    {day}
                   </div>
-                );
-              })}
+                ))}
+                {emptyDaysBefore.map(key => (
+                  <div key={key} className="h-12 w-full"></div>
+                ))}
+                {daysInMonth.map(day => {
+                  const dateKey = format(day, 'yyyy-MM-dd');
+                  const dayAttendance = attendanceByDay[dateKey];
+                  const status = dayAttendance?.status || 'not_recorded';
+                  
+                  return (
+                    <div key={dateKey} className={cn(
+                      "h-12 w-full flex flex-col items-center justify-center rounded-md border p-1",
+                      getStatusColorClass(status)
+                    )}>
+                      <span className="text-xs font-bold">{format(day, 'd')}</span>
+                      <span className="text-[0.6rem] leading-none">{getStatusText(status)}</span>
+                    </div>
+                  );
+                })}
+              </div>
             </div>
           )}
         </CardContent>

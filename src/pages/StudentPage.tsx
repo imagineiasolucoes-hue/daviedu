@@ -141,7 +141,7 @@ const StudentPage: React.FC = () => {
 
       <main className="flex-grow p-4 md:p-8 max-w-4xl mx-auto w-full space-y-6">
         <Tabs defaultValue="overview" className="w-full">
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4">
             <TabsTrigger value="overview">Visão Geral</TabsTrigger>
             <TabsTrigger value="class-diary">Diário de Classe</TabsTrigger>
             <TabsTrigger value="grades">Notas</TabsTrigger>
