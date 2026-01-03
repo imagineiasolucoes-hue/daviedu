@@ -4,11 +4,8 @@ import { useProfile } from '@/hooks/useProfile';
 import { toast } from 'sonner';
 import { Loader2, CalendarDays, CalendarIcon } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Calendar } from '@/components/ui/calendar';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { format, parseISO } from 'date-fns';
+import { format, parseISO, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay } from 'date-fns';
 import { cn } from '@/lib/utils';
-import { Button } from '@/components/ui/button';
 
 interface StudentInfo {
   id: string;
@@ -36,9 +33,9 @@ interface StudentClassDiarySectionProps {
 
 const StudentClassDiarySection: React.FC<StudentClassDiarySectionProps> = ({ studentInfo }) => {
   const { profile, isLoading: isProfileLoading } = useProfile();
-  const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [entries, setEntries] = useState<ClassDiaryEntry[]>([]);
   const [isLoadingEntries, setIsLoadingEntries] = useState(false);
+  const [currentMonth, setCurrentMonth] = useState<Date>(new Date());
 
   const tenantId = profile?.tenant_id;
   const studentId = studentInfo.id;
@@ -52,15 +49,21 @@ const StudentClassDiarySection: React.FC<StudentClassDiarySectionProps> = ({ stu
       }
 
       setIsLoadingEntries(true);
-      const formattedDate = format(selectedDate, 'yyyy-MM-dd');
+      
+      const monthStart = startOfMonth(currentMonth);
+      const monthEnd = endOfMonth(currentMonth);
 
-      // Fetch entries for the student's class and selected date
+      const formattedMonthStart = format(monthStart, 'yyyy-MM-dd');
+      const formattedMonthEnd = format(monthEnd, 'yyyy-MM-dd');
+
+      // Fetch entries for the student's class for the entire current month
       const { data: entriesData, error: entriesError } = await supabase
         .from('class_diary_entries')
         .select('*, employees(full_name)')
         .eq('class_id', classId)
         .eq('tenant_id', tenantId)
-        .eq('entry_date', formattedDate)
+        .gte('entry_date', formattedMonthStart) // Filtra do início do mês
+        .lte('entry_date', formattedMonthEnd)   // Filtra até o fim do mês
         .order('entry_date', { ascending: false });
 
       if (entriesError) {
@@ -74,7 +77,7 @@ const StudentClassDiarySection: React.FC<StudentClassDiarySectionProps> = ({ stu
     };
 
     fetchEntries();
-  }, [classId, tenantId, studentId, selectedDate]);
+  }, [classId, tenantId, studentId, currentMonth]);
 
   if (isProfileLoading) {
     return (
@@ -93,39 +96,29 @@ const StudentClassDiarySection: React.FC<StudentClassDiarySectionProps> = ({ stu
     );
   }
 
+  // Agrupar entradas por dia
+  const entriesByDay: { [key: string]: ClassDiaryEntry[] } = {};
+  entries.forEach(entry => {
+    const dateKey = format(parseISO(entry.entry_date), 'yyyy-MM-dd');
+    if (!entriesByDay[dateKey]) {
+      entriesByDay[dateKey] = [];
+    }
+    entriesByDay[dateKey].push(entry);
+  });
+
+  const daysInMonth = eachDayOfInterval({ start: startOfMonth(currentMonth), end: endOfMonth(currentMonth) });
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h2 className="text-xl font-bold flex items-center gap-2">
-          <CalendarDays className="h-5 w-5" /> Minha Frequência
+          <CalendarDays className="h-5 w-5" /> Minha Frequência - {format(currentMonth, 'MMMM yyyy')}
         </h2>
-        <Popover>
-          <PopoverTrigger asChild>
-            <Button
-              variant={"outline"}
-              className={cn(
-                "w-[180px] justify-start text-left font-normal",
-                !selectedDate && "text-muted-foreground"
-              )}
-            >
-              <CalendarIcon className="mr-2 h-4 w-4" />
-              {selectedDate ? format(selectedDate, "PPP") : <span>Selecione uma data</span>}
-            </Button>
-          </PopoverTrigger>
-          <PopoverContent className="w-auto p-0">
-            <Calendar
-              mode="single"
-              selected={selectedDate}
-              onSelect={(date) => date && setSelectedDate(date)}
-              initialFocus
-            />
-          </PopoverContent>
-        </Popover>
       </div>
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-lg">Frequência em {format(selectedDate, 'PPP')}</CardTitle>
+          <CardTitle className="text-lg">Frequência do Mês</CardTitle>
         </CardHeader>
         <CardContent>
           {isLoadingEntries ? (
@@ -133,31 +126,46 @@ const StudentClassDiarySection: React.FC<StudentClassDiarySectionProps> = ({ stu
               <Loader2 className="h-8 w-8 animate-spin text-primary" />
               <p className="ml-2">Carregando registros de frequência...</p>
             </div>
-          ) : entries.length === 0 ? (
-            <p className="text-muted-foreground">Nenhum registro de frequência para esta data.</p>
           ) : (
             <div className="space-y-4">
-              {entries.map(entry => {
-                const studentAttendance = entry.attendance?.find(a => a.student_id === studentId);
-                const statusText = studentAttendance ? (
-                  studentAttendance.status === 'present' ? 'Presente' :
-                  studentAttendance.status === 'absent' ? 'Ausente' :
-                  'Atraso'
-                ) : 'Não Registrado';
-
-                const statusColor = studentAttendance ? (
-                  studentAttendance.status === 'present' ? 'text-green-600' :
-                  studentAttendance.status === 'absent' ? 'text-red-600' :
-                  'text-yellow-600'
-                ) : 'text-muted-foreground';
+              {daysInMonth.map(day => {
+                const formattedDay = format(day, 'dd/MM/yyyy');
+                const dayEntries = entriesByDay[format(day, 'yyyy-MM-dd')] || [];
 
                 return (
-                  <Card key={entry.id} className="border p-4">
-                    <div className="flex justify-between items-center mb-2">
-                      <p className="text-sm font-semibold">Data: {format(parseISO(entry.entry_date), 'dd/MM/yyyy')}</p>
-                      <p className="text-sm text-muted-foreground">Professor: {entry.employees?.full_name || 'N/A'}</p>
-                    </div>
-                    <p className="text-base">Status: <span className={cn("font-bold", statusColor)}>{statusText}</span></p>
+                  <Card key={formattedDay} className="border p-4">
+                    <CardHeader className="p-0 pb-2">
+                      <CardTitle className="text-base">{formattedDay}</CardTitle>
+                    </CardHeader>
+                    <CardContent className="p-0">
+                      {dayEntries.length === 0 ? (
+                        <p className="text-muted-foreground text-sm">Nenhuma aula registrada.</p>
+                      ) : (
+                        <div className="space-y-2">
+                          {dayEntries.map(entry => {
+                            const studentAttendance = entry.attendance?.find(a => a.student_id === studentId);
+                            const statusText = studentAttendance ? (
+                              studentAttendance.status === 'present' ? 'Presente' :
+                              studentAttendance.status === 'absent' ? 'Ausente' :
+                              'Atraso'
+                            ) : 'Não Registrado';
+
+                            const statusColor = studentAttendance ? (
+                              studentAttendance.status === 'present' ? 'text-green-600' :
+                              studentAttendance.status === 'absent' ? 'text-red-600' :
+                              'text-yellow-600'
+                            ) : 'text-muted-foreground';
+
+                            return (
+                              <div key={entry.id} className="flex justify-between items-center text-sm">
+                                <p>Professor: {entry.employees?.full_name || 'N/A'}</p>
+                                <p>Status: <span className={cn("font-bold", statusColor)}>{statusText}</span></p>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </CardContent>
                   </Card>
                 );
               })}
