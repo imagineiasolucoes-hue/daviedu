@@ -2,13 +2,15 @@ import React, { useMemo } from 'react';
 import { useProfile } from '@/hooks/useProfile';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { Loader2, GraduationCap, ClipboardList, User, ArrowRight, LogOut } from 'lucide-react';
+import { Loader2, GraduationCap, ClipboardList, User, ArrowRight, LogOut, CalendarDays } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
-import { useNavigate, Navigate } from 'react-router-dom'; // Importar Navigate
+import { useNavigate, Navigate } from 'react-router-dom';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import StudentClassDiarySection from '@/components/student/StudentClassDiarySection';
 
 interface StudentInfo {
   id: string;
@@ -19,6 +21,7 @@ interface StudentInfo {
   birth_date: string;
   classes: { name: string; school_year: number } | null;
   courses: { name: string } | null;
+  tenant_id: string;
 }
 
 const fetchStudentInfo = async (userId: string, tenantId: string): Promise<StudentInfo | null> => {
@@ -32,6 +35,7 @@ const fetchStudentInfo = async (userId: string, tenantId: string): Promise<Stude
       class_id,
       course_id,
       birth_date,
+      tenant_id,
       classes (name, school_year),
       courses (name)
     `)
@@ -82,8 +86,7 @@ const StudentPage: React.FC = () => {
   }
 
   if (!isStudent) {
-    // Se não for estudante, mas chegou aqui, redireciona para o dashboard principal
-    return <Navigate to="/dashboard" replace />; // CORREÇÃO AQUI
+    return <Navigate to="/dashboard" replace />;
   }
 
   if (studentError) {
@@ -130,42 +133,77 @@ const StudentPage: React.FC = () => {
       </header>
 
       <main className="flex-grow p-4 md:p-8 max-w-4xl mx-auto w-full space-y-6">
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-2xl flex items-center gap-2">
-              <User className="h-6 w-6 text-accent" />
-              Bem-vindo(a), {studentInfo.full_name}!
-            </CardTitle>
-            <CardDescription>
-              Informações da sua matrícula e acesso rápido aos seus documentos.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-            <p><span className="font-semibold">Matrícula:</span> {studentInfo.registration_code}</p>
-            <p><span className="font-semibold">Turma:</span> {studentInfo.classes?.name || 'N/A'} ({studentInfo.classes?.school_year || 'N/A'})</p>
-            <p><span className="font-semibold">Série/Ano:</span> {studentInfo.courses?.name || 'N/A'}</p>
-            <p><span className="font-semibold">Nascimento:</span> {format(new Date(studentInfo.birth_date), 'dd/MM/yyyy', { locale: ptBR })}</p>
-          </CardContent>
-        </Card>
+        <Tabs defaultValue="overview" className="w-full">
+          <TabsList className="grid w-full grid-cols-4">
+            <TabsTrigger value="overview">Visão Geral</TabsTrigger>
+            <TabsTrigger value="class-diary">Diário de Classe</TabsTrigger>
+            <TabsTrigger value="grades">Notas</TabsTrigger>
+            <TabsTrigger value="documents">Documentos</TabsTrigger>
+          </TabsList>
+          <TabsContent value="overview" className="mt-4">
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-2xl flex items-center gap-2">
+                  <User className="h-6 w-6 text-accent" />
+                  Bem-vindo(a), {studentInfo.full_name}!
+                </CardTitle>
+                <CardDescription>
+                  Informações da sua matrícula e acesso rápido aos seus documentos.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                <p><span className="font-semibold">Matrícula:</span> {studentInfo.registration_code}</p>
+                <p><span className="font-semibold">Turma:</span> {studentInfo.classes?.name || 'N/A'} ({studentInfo.classes?.school_year || 'N/A'})</p>
+                <p><span className="font-semibold">Série/Ano:</span> {studentInfo.courses?.name || 'N/A'}</p>
+                <p><span className="font-semibold">Nascimento:</span> {format(new Date(studentInfo.birth_date), 'dd/MM/yyyy', { locale: ptBR })}</p>
+              </CardContent>
+            </Card>
 
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-xl flex items-center gap-2">
-              <ClipboardList className="h-5 w-5 text-primary" />
-              Documentos Acadêmicos
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <Button onClick={handleViewReportCard} className="w-full md:w-auto">
-              <ClipboardList className="mr-2 h-4 w-4" />
-              Visualizar Boletim Escolar
-              <ArrowRight className="ml-2 h-4 w-4" />
-            </Button>
-            <p className="text-xs text-muted-foreground mt-2">
-              Para outros documentos (Histórico, Contratos), entre em contato com a secretaria.
-            </p>
-          </CardContent>
-        </Card>
+            <Card className="mt-6">
+              <CardHeader>
+                <CardTitle className="text-xl flex items-center gap-2">
+                  <ClipboardList className="h-5 w-5 text-primary" />
+                  Documentos Acadêmicos
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <Button onClick={handleViewReportCard} className="w-full md:w-auto">
+                  <ClipboardList className="mr-2 h-4 w-4" />
+                  Visualizar Boletim Escolar
+                  <ArrowRight className="ml-2 h-4 w-4" />
+                </Button>
+                <p className="text-xs text-muted-foreground mt-2">
+                  Para outros documentos (Histórico, Contratos), entre em contato com a secretaria.
+                </p>
+              </CardContent>
+            </Card>
+          </TabsContent>
+          <TabsContent value="class-diary" className="mt-4">
+            {studentInfo.class_id && studentInfo.tenant_id ? (
+              <StudentClassDiarySection studentInfo={studentInfo} />
+            ) : (
+              <Card>
+                <CardContent className="p-6 text-center text-muted-foreground">
+                  Você não está vinculado a uma turma para visualizar o diário de classe.
+                </CardContent>
+              </Card>
+            )}
+          </TabsContent>
+          <TabsContent value="grades" className="mt-4">
+            <Card>
+              <CardContent className="p-6 text-center text-muted-foreground">
+                Conteúdo da aba de Notas (em breve).
+              </CardContent>
+            </Card>
+          </TabsContent>
+          <TabsContent value="documents" className="mt-4">
+            <Card>
+              <CardContent className="p-6 text-center text-muted-foreground">
+                Conteúdo da aba de Documentos (em breve).
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
       </main>
     </div>
   );
