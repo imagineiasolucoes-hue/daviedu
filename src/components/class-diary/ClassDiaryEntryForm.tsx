@@ -109,6 +109,8 @@ const ClassDiaryEntryForm: React.FC<ClassDiaryEntryFormProps> = ({
       tenant_id: tenantId,
     };
 
+    console.log("Attempting to save entryData:", entryData); // DEBUG: Log data being sent
+
     let error = null;
     if (initialData?.id) {
       // Update existing entry
@@ -126,6 +128,7 @@ const ClassDiaryEntryForm: React.FC<ClassDiaryEntryFormProps> = ({
     }
 
     if (error) {
+      console.error("Supabase save error:", error); // DEBUG: Log Supabase error
       toast.error("Erro ao salvar entrada do diário: " + error.message);
     } else {
       toast.success("Entrada do diário salva com sucesso!");
