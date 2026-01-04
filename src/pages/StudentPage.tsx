@@ -165,25 +165,6 @@ const StudentPage: React.FC = () => {
                 <p><span className="font-semibold">Nascimento:</span> {format(new Date(studentInfo.birth_date), 'dd/MM/yyyy', { locale: ptBR })}</p>
               </CardContent>
             </Card>
-
-            <Card className="mt-6">
-              <CardHeader>
-                <CardTitle className="text-xl flex items-center gap-2">
-                  <ClipboardList className="h-5 w-5 text-primary" />
-                  Documentos Acadêmicos
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <Button onClick={handleViewReportCard} className="w-full md:w-auto">
-                  <ClipboardList className="mr-2 h-4 w-4" />
-                  Visualizar Boletim Escolar
-                  <ArrowRight className="ml-2 h-4 w-4" />
-                </Button>
-                <p className="text-xs text-muted-foreground mt-2">
-                  Para outros documentos (Histórico, Contratos), entre em contato com a secretaria.
-                </p>
-              </CardContent>
-            </Card>
           </TabsContent>
           <TabsContent value="class-diary" className="mt-4">
             {studentInfo.class_id && studentInfo.tenant_id ? (
