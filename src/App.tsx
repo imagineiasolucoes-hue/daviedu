@@ -42,8 +42,9 @@ import TeacherDashboard from "./pages/TeacherDashboard";
 import SuperAdminMessageDisplay from "./components/super-admin/SuperAdminMessageDisplay";
 import SuperAdminMessagesPage from "./pages/super-admin/SuperAdminMessagesPage";
 import TermsPage from "./pages/TermsPage";
-import TeacherClassDiaryPage from "./pages/TeacherClassDiaryPage"; // NOVO IMPORT
-import AdminClassDiaryOverviewPage from "./pages/AdminClassDiaryOverviewPage"; // NOVO IMPORT
+import TeacherClassDiaryPage from "./pages/TeacherClassDiaryPage";
+import AdminClassDiaryOverviewPage from "./pages/AdminClassDiaryOverviewPage";
+import KiwifyProductMappingPage from "./pages/super-admin/KiwifyProductMappingPage"; // NOVO IMPORT
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -116,6 +117,7 @@ const App = () => {
                     <Route path="/super-admin/tenants" element={<TenantsPage />} />
                     <Route path="/super-admin/users" element={<UsersPage />} />
                     <Route path="/super-admin/messages" element={<SuperAdminMessagesPage />} />
+                    <Route path="/super-admin/kiwify-mapping" element={<KiwifyProductMappingPage />} /> {/* NOVA ROTA */}
                   </Route>
                 </Route>
 
