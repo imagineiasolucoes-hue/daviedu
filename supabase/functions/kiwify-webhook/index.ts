@@ -9,7 +9,7 @@ import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 // @ts-ignore
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 // @ts-ignore
-import { createHmac } from "https://deno.land/std@0.190.0/node/crypto.ts"; // Para verificar a assinatura do webhook
+import { createHmac } from "https://deno.land/std@0.190.0/hash/sha256.ts"; // Corrigido o import para o módulo crypto do Deno
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -38,9 +38,22 @@ serve(async (req) => {
     }
 
     // Verificar a assinatura do webhook
-    const hmac = createHmac("sha256", kiwifyWebhookSecret);
-    hmac.update(rawBody);
-    const expectedSignature = hmac.digest("hex");
+    const encoder = new TextEncoder();
+    const data = encoder.encode(rawBody);
+    const key = encoder.encode(kiwifyWebhookSecret);
+
+    const hmacKey = await crypto.subtle.importKey(
+      "raw",
+      key,
+      { name: "HMAC", hash: "SHA-256" },
+      false,
+      ["sign"]
+    );
+
+    const signatureBuffer = await crypto.subtle.sign("HMAC", hmacKey, data);
+    const expectedSignature = Array.from(new Uint8Array(signatureBuffer))
+      .map((b) => b.toString(16).padStart(2, "0"))
+      .join("");
 
     if (signature !== expectedSignature) {
       return new Response(JSON.stringify({ error: "Invalid webhook signature" }), {
@@ -50,7 +63,7 @@ serve(async (req) => {
     }
 
     const payload = JSON.parse(rawBody);
-    const eventType = payload.event; // Ex: "purchase_approved", "purchase_refunded"
+    const eventType = payload.event; // Ex: "purchase_approved", "subscription_activated"
     const transaction = payload.data; // Dados da transação
 
     const supabaseAdmin = createClient(
