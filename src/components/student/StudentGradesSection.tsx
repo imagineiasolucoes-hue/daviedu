@@ -5,6 +5,7 @@ import { toast } from 'sonner';
 import { Loader2, BookOpen, GraduationCap } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { format } from 'date-fns';
+import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from '@/components/ui/table';
 
 interface StudentInfo {
   id: string;
@@ -34,6 +35,9 @@ const StudentGradesSection: React.FC<StudentGradesSectionProps> = ({ studentInfo
 
   const tenantId = profile?.tenant_id;
   const studentId = studentInfo.id;
+
+  // Critério de aprovação (pode ser configurável no futuro)
+  const PASSING_GRADE = 7.0;
 
   useEffect(() => {
     const fetchGrades = async () => {
@@ -98,7 +102,7 @@ const StudentGradesSection: React.FC<StudentGradesSectionProps> = ({ studentInfo
   return (
     <div className="space-y-6">
       <h2 className="text-xl font-bold flex items-center gap-2">
-        <GraduationCap className="h-5 w-5" /> Boletim Resumido
+        <GraduationCap className="h-5 w-5" /> Boletim Escolar
       </h2>
 
       {isLoadingGrades ? (
@@ -113,26 +117,47 @@ const StudentGradesSection: React.FC<StudentGradesSectionProps> = ({ studentInfo
           </CardContent>
         </Card>
       ) : (
-        <div className="space-y-4">
+        <div className="space-y-6">
           {periods.map(period => (
             <Card key={period}>
               <CardHeader>
                 <CardTitle className="text-lg">Período: {period}</CardTitle>
               </CardHeader>
-              <CardContent className="space-y-3">
-                {Object.keys(gradesByPeriod[period]).sort().map(subject => (
-                  <div key={subject} className="border-b pb-2 last:border-b-0">
-                    <h3 className="font-semibold text-base mb-1">{subject}</h3>
-                    <div className="grid grid-cols-2 md:grid-cols-3 gap-2 text-sm">
-                      {gradesByPeriod[period][subject].map(grade => (
-                        <div key={grade.id} className="flex justify-between items-center">
-                          <p className="text-muted-foreground">{grade.assessment_type || 'Nota'}:</p>
-                          <p className="font-bold text-primary">{grade.grade_value.toFixed(1)}</p>
-                        </div>
-                      ))}
+              <CardContent>
+                {Object.keys(gradesByPeriod[period]).sort().map(subject => {
+                  const subjectGrades = gradesByPeriod[period][subject];
+                  const average = subjectGrades.reduce((sum, g) => sum + g.grade_value, 0) / subjectGrades.length;
+                  const isApproved = average >= PASSING_GRADE;
+
+                  return (
+                    <div key={subject} className="mb-4 last:mb-0">
+                      <h3 className="font-semibold text-base mb-2 flex items-center gap-2">
+                        <BookOpen className="h-4 w-4 text-muted-foreground" /> {subject}
+                        <span className={`ml-auto px-2 py-1 rounded-full text-xs font-bold ${isApproved ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                          Média: {average.toFixed(1)} ({isApproved ? 'Aprovado' : 'Reprovado'})
+                        </span>
+                      </h3>
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead className="w-[100px]">Avaliação</TableHead>
+                            <TableHead>Professor</TableHead>
+                            <TableHead className="text-right">Nota</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {subjectGrades.map(grade => (
+                            <TableRow key={grade.id}>
+                              <TableCell className="font-medium">{grade.assessment_type || 'Nota'}</TableCell>
+                              <TableCell>{grade.employees?.full_name || 'N/A'}</TableCell>
+                              <TableCell className="text-right font-bold">{grade.grade_value.toFixed(1)}</TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </CardContent>
             </Card>
           ))}
