@@ -3,7 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useProfile } from '@/hooks/useProfile';
 import { Link, Navigate } from 'react-router-dom';
-import { Loader2, School, Users, HardDrive, LayoutDashboard, AlertTriangle, Cloud } from 'lucide-react';
+import { Loader2, School, Users, HardDrive, LayoutDashboard, AlertTriangle, Cloud, UserCheck, BookOpen, User, Clock } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import MetricCard from '@/components/dashboard/MetricCard';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -11,11 +11,18 @@ import GlobalBackupStatusWidget from '@/components/backup/GlobalBackupStatusWidg
 import useAllTenantsBackupStatus from '@/hooks/useAllTenantsBackupStatus';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { toast } from 'sonner'; // Adicionado toast para feedback simples
+import { toast } from 'sonner';
 
 interface GlobalMetrics {
   totalTenants: number;
+  activeTenants: number;
+  trialTenants: number;
+  suspendedTenants: number;
   totalUsers: number;
+  totalAdmins: number;
+  totalSecretaries: number;
+  totalTeachers: number;
+  totalStudents: number;
 }
 
 const fetchGlobalMetrics = async (): Promise<GlobalMetrics> => {
@@ -71,7 +78,6 @@ const SuperAdminOverviewPage: React.FC = () => {
   }
 
   if (!isSuperAdmin) {
-    // Redireciona para o dashboard normal se não for Super Admin (embora ProtectedRoute já faça isso)
     return <Navigate to="/dashboard" replace />;
   }
 
@@ -94,37 +100,89 @@ const SuperAdminOverviewPage: React.FC = () => {
         Visão Geral do Sistema SaaS
       </h1>
 
-      {/* Linha de Métricas Globais */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        {areMetricsLoading ? Array.from({ length: 4 }).map((_, i) => <MetricCardSkeleton key={i} />) : (
-          <>
-            <MetricCard 
-              title="Total de Escolas (Tenants)" 
-              value={metrics?.totalTenants ?? 0} 
-              icon={School} 
-              iconColor="text-primary" 
-            />
-            <MetricCard 
-              title="Total de Usuários" 
-              value={metrics?.totalUsers ?? 0} 
-              icon={Users} 
-              iconColor="text-indigo-500" 
-            />
-            <MetricCard 
-              title="Escolas com Backup Crítico" 
-              value={criticalTenantsCount} 
-              icon={AlertTriangle} 
-              iconColor={criticalTenantsCount > 0 ? "text-red-600" : "text-muted-foreground"} 
-            />
-            <MetricCard 
-              title="Escolas com Backup em Atenção" 
-              value={warningTenantsCount} 
-              icon={AlertTriangle} 
-              iconColor={warningTenantsCount > 0 ? "text-yellow-600" : "text-muted-foreground"} 
-            />
-          </>
-        )}
-      </div>
+      {/* Linha de Métricas de Tenants */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-xl font-semibold">Métricas de Escolas (Tenants)</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+            {areMetricsLoading ? Array.from({ length: 4 }).map((_, i) => <MetricCardSkeleton key={i} />) : (
+              <>
+                <MetricCard 
+                  title="Total de Escolas" 
+                  value={metrics?.totalTenants ?? 0} 
+                  icon={School} 
+                  iconColor="text-primary" 
+                />
+                <MetricCard 
+                  title="Escolas Ativas" 
+                  value={metrics?.activeTenants ?? 0} 
+                  icon={School} 
+                  iconColor="text-green-500" 
+                />
+                <MetricCard 
+                  title="Escolas em Trial" 
+                  value={metrics?.trialTenants ?? 0} 
+                  icon={Clock} 
+                  iconColor="text-yellow-500" 
+                />
+                <MetricCard 
+                  title="Escolas Suspensas" 
+                  value={metrics?.suspendedTenants ?? 0} 
+                  icon={AlertTriangle} 
+                  iconColor="text-red-500" 
+                />
+              </>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Linha de Métricas de Usuários */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-xl font-semibold">Métricas de Usuários</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+            {areMetricsLoading ? Array.from({ length: 4 }).map((_, i) => <MetricCardSkeleton key={i} />) : (
+              <>
+                <MetricCard 
+                  title="Total de Usuários" 
+                  value={metrics?.totalUsers ?? 0} 
+                  icon={Users} 
+                  iconColor="text-indigo-500" 
+                />
+                <MetricCard 
+                  title="Administradores" 
+                  value={metrics?.totalAdmins ?? 0} 
+                  icon={UserCheck} 
+                  iconColor="text-blue-500" 
+                />
+                <MetricCard 
+                  title="Secretários(as)" 
+                  value={metrics?.totalSecretaries ?? 0} 
+                  icon={UserCheck} 
+                  iconColor="text-purple-500" 
+                />
+                <MetricCard 
+                  title="Professores" 
+                  value={metrics?.totalTeachers ?? 0} 
+                  icon={BookOpen} 
+                  iconColor="text-orange-500" 
+                />
+                <MetricCard 
+                  title="Estudantes" 
+                  value={metrics?.totalStudents ?? 0} 
+                  icon={User} 
+                  iconColor="text-green-500" 
+                />
+              </>
+            )}
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Status de Backup Global e Ações Rápidas */}
       <div className="grid gap-4 lg:grid-cols-3">
