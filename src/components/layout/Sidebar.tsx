@@ -145,7 +145,6 @@ const Sidebar: React.FC<SidebarProps> = ({ isSuperAdmin, displayName, roleDispla
     { to: "/super-admin/tenants", icon: <School className="h-5 w-5" />, label: "Gestão de Escolas", onCloseSheet, featureKey: 'sa_tenants', roles: ['super_admin'] },
     { to: "/super-admin/users", icon: <Users className="h-5 w-5" />, label: "Gestão de Usuários", onCloseSheet, featureKey: 'sa_users', roles: ['super_admin'] },
     { to: "/super-admin/messages", icon: <MessageSquare className="h-5 w-5" />, label: "Comunicação Global", onCloseSheet, featureKey: 'sa_messages', roles: ['super_admin'] },
-    { to: "/super-admin/kiwify-mapping", icon: <LinkIcon className="h-5 w-5" />, label: "Mapeamento Kiwify", onCloseSheet, featureKey: 'sa_kiwify_mapping', roles: ['super_admin'] }, // NOVO
     { to: "/backup", icon: <HardDrive className="h-5 w-5" />, label: "Backup Global", onCloseSheet, featureKey: 'sa_backup', roles: ['super_admin'] },
   ];
 
