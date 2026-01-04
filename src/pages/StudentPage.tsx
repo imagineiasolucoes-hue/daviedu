@@ -11,6 +11,7 @@ import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import StudentClassDiarySection from '@/components/student/StudentClassDiarySection';
+import StudentGradesSection from '@/components/student/StudentGradesSection';
 
 interface StudentInfo {
   id: string;
@@ -178,11 +179,15 @@ const StudentPage: React.FC = () => {
             )}
           </TabsContent>
           <TabsContent value="grades" className="mt-4">
-            <Card>
-              <CardContent className="p-6 text-center text-muted-foreground">
-                Conteúdo da aba de Notas (em breve).
-              </CardContent>
-            </Card>
+            {studentInfo.id && studentInfo.tenant_id ? (
+              <StudentGradesSection studentInfo={studentInfo} />
+            ) : (
+              <Card>
+                <CardContent className="p-6 text-center text-muted-foreground">
+                  Não foi possível carregar as notas. Informações do aluno incompletas.
+                </CardContent>
+              </Card>
+            )}
           </TabsContent>
           <TabsContent value="documents" className="mt-4">
             <Card>
