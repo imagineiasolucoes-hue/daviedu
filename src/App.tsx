@@ -39,6 +39,7 @@ import SecretariaPage from "./pages/SecretariaPage";
 import VerifyDocumentPage from "./pages/VerifyDocumentPage";
 import StudentPage from "./pages/StudentPage";
 import TeacherDashboard from "./pages/TeacherDashboard";
+import MensalidadesPage from "./pages/MensalidadesPage"; // NOVO IMPORT
 import SuperAdminMessageDisplay from "./components/super-admin/SuperAdminMessageDisplay";
 import SuperAdminMessagesPage from "./pages/super-admin/SuperAdminMessagesPage";
 import SubscriptionsPage from "./pages/super-admin/SubscriptionsPage";
@@ -103,6 +104,7 @@ const App = () => {
                   <Route path="/revenues" element={<RevenuesPage />} />
                   <Route path="/expenses" element={<ExpensesPage />} />
                   <Route path="/settings" element={<SettingsPage />} />
+                  <Route path="/mensalidades" element={<MensalidadesPage />} /> {/* NOVA ROTA */}
                   
                   {/* Grade Entry (Acessível por Admin/Secretary/Teacher) */}
                   <Route path="/grades/entry" element={<GradeEntryPage />} />

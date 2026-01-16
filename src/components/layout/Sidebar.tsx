@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Home, Users, Settings, LogOut, School, BookOpen, DollarSign, TrendingUp, TrendingDown, CalendarDays, FileText, UserCheck, ListChecks, HardDrive, ShoppingCart, HelpCircle, LayoutDashboard, ClipboardList, GraduationCap, ChevronDown, BookMarked, FolderKanban, MessageSquare, ShieldCheck, Lock, LinkIcon } from 'lucide-react';
+import { Home, Users, Settings, LogOut, School, BookOpen, DollarSign, TrendingUp, TrendingDown, CalendarDays, FileText, UserCheck, ListChecks, HardDrive, ShoppingCart, HelpCircle, LayoutDashboard, ClipboardList, GraduationCap, ChevronDown, BookMarked, FolderKanban, MessageSquare, ShieldCheck, Lock, LinkIcon, Wallet } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { cn } from '@/lib/utils';
@@ -120,6 +120,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isSuperAdmin, displayName, roleDispla
       children: [
         { to: "/revenues", icon: <TrendingUp className="h-5 w-5" />, label: "Receitas", onCloseSheet, isSubItem: true, featureKey: 'revenues', roles: ['admin', 'secretary'] },
         { to: "/expenses", icon: <TrendingDown className="h-5 w-5" />, label: "Despesas", onCloseSheet, isSubItem: true, featureKey: 'expenses', roles: ['admin', 'secretary'] },
+        { to: "/mensalidades", icon: <Wallet className="h-5 w-5" />, label: "Mensalidades", onCloseSheet, isSubItem: true, featureKey: 'mensalidades', roles: ['admin', 'secretary'] },
       ],
     },
     {
