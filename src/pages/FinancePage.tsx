@@ -13,6 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
+import { useEffect } from 'react';
 
 interface FinanceMetrics {
   paidRevenueMonth: number;
@@ -57,6 +58,35 @@ const FinancePage: React.FC = () => {
 
   const [selectedYear, setSelectedYear] = useState<string>(currentYear);
   const [selectedMonth, setSelectedMonth] = useState<string>('all'); // 'all' for all months, or '01' to '12'
+
+  // On mount (or when tenant changes), try to detect the most recent revenue year
+  // and use it as the default selectedYear so the overview shows existing data.
+  useEffect(() => {
+    if (!tenantId) return;
+    let mounted = true;
+    (async () => {
+      try {
+        const { data } = await supabase
+          .from('revenues')
+          .select('date')
+          .eq('tenant_id', tenantId)
+          .order('date', { ascending: false })
+          .limit(1);
+
+        if (!mounted) return;
+        if (data && data.length > 0 && data[0].date) {
+          const latestYear = new Date(data[0].date).getFullYear().toString();
+          // Only update if different so we don't unnecessarily re-render
+          if (latestYear !== selectedYear) {
+            setSelectedYear(latestYear);
+          }
+        }
+      } catch (err) {
+        console.error('[FinancePage] error fetching latest revenue date', err);
+      }
+    })();
+    return () => { mounted = false; };
+  }, [tenantId]);
 
   const { data: metrics, isLoading: areMetricsLoading, error } = useQuery<FinanceMetrics, Error>({
     queryKey: ['financeMetrics', tenantId, selectedYear, selectedMonth],
