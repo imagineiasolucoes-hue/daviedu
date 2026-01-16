@@ -24,6 +24,7 @@ interface TuitionFee {
   due_date: string;
   status: TuitionStatus;
   description: string;
+  revenue_id: string | null; // Novo campo
 }
 
 const MensalidadesPage: React.FC = () => {
@@ -53,7 +54,7 @@ const MensalidadesPage: React.FC = () => {
         students!inner(full_name)
       `)
       .eq('tenant_id', tenantId)
-      .order('due_date', { ascending: false });
+      .order('due_date', { ascending: true }); // Ordem: Mais recente (próximo) para distante
 
     if (filterStatus !== 'all') {
       query = query.eq('status', filterStatus);
@@ -106,17 +107,71 @@ const MensalidadesPage: React.FC = () => {
   };
 
   const updateFeeStatus = async (feeId: string, newStatus: TuitionStatus) => {
-    const { error } = await supabase
+    // 1. Buscar dados completos da mensalidade
+    const { data: feeData, error: fetchError } = await supabase
       .from('tuition_fees')
-      .update({ status: newStatus })
-      .eq('id', feeId);
-    
-    if (error) {
-      toast.error('Erro ao atualizar status');
-    } else {
-      toast.success('Status atualizado');
-      fetchFees();
+      .select('*, students(full_name)')
+      .eq('id', feeId)
+      .single();
+
+    if (fetchError) {
+      toast.error('Erro ao buscar dados da mensalidade');
+      return;
     }
+
+    if (newStatus === 'pago') {
+      // 2. Inserir na tabela de Receitas
+      const { data: revenueData, error: revenueError } = await supabase
+        .from('revenues')
+        .insert({
+          tenant_id: tenantId,
+          date: new Date().toISOString().split('T')[0], // Data de hoje
+          amount: feeData.amount,
+          description: `${feeData.description} - ${(feeData as any).students.full_name}`,
+          payment_method: 'Mensalidade', // Genérico, pode ser ajustado
+          status: 'pago',
+          source: 'Mensalidades',
+          student_id: feeData.student_id
+        })
+        .select()
+        .single();
+
+      if (revenueError) {
+        toast.error('Erro ao lançar receita: ' + revenueError.message);
+        return;
+      }
+
+      // 3. Atualizar a mensalidade com o ID da receita e status
+      const { error: updateError } = await supabase
+        .from('tuition_fees')
+        .update({ status: 'pago', revenue_id: revenueData.id })
+        .eq('id', feeId);
+
+      if (updateError) toast.error('Erro ao atualizar status da mensalidade');
+
+    } else if (newStatus === 'pendente' && feeData.revenue_id) {
+      // Estornar: Remover a receita vinculada
+      const { error: deleteRevenueError } = await supabase
+        .from('revenues')
+        .delete()
+        .eq('id', feeData.revenue_id);
+
+      if (deleteRevenueError) {
+        toast.error('Erro ao remover receita: ' + deleteRevenueError.message);
+        return;
+      }
+
+      // Atualizar a mensalidade
+      const { error: updateError } = await supabase
+        .from('tuition_fees')
+        .update({ status: 'pendente', revenue_id: null })
+        .eq('id', feeId);
+
+      if (updateError) toast.error('Erro ao estornar mensalidade');
+    }
+    
+    toast.success('Status atualizado com sucesso');
+    fetchFees();
   };
 
   // Cálculos de Métricas
