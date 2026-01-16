@@ -24,7 +24,7 @@ interface TuitionFee {
   due_date: string;
   status: TuitionStatus;
   description: string;
-  revenue_id: string | null; // Novo campo
+  revenue_id: string | null; // Novo campo para vincular a receita
 }
 
 const MensalidadesPage: React.FC = () => {
@@ -120,6 +120,12 @@ const MensalidadesPage: React.FC = () => {
     }
 
     if (newStatus === 'pago') {
+      // Verificar se já tem receita
+      if (feeData.revenue_id) {
+        toast.error('Esta mensalidade já está registrada como paga no financeiro.');
+        return;
+      }
+
       // 2. Inserir na tabela de Receitas
       const { data: revenueData, error: revenueError } = await supabase
         .from('revenues')
