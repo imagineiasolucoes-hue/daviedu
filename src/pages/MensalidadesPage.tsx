@@ -8,7 +8,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
-import { DollarSign, Calendar, CheckCircle2, AlertCircle, Loader2, PlayCircle } from 'lucide-react';
+import { DollarSign, Calendar, CheckCircle2, AlertCircle, Loader2, PlayCircle, Search } from 'lucide-react';
 import { useProfile } from '@/hooks/useProfile';
 import { supabase } from '@/integrations/supabase/client';
 import { formatCurrency } from '@/lib/utils';
@@ -33,6 +33,8 @@ const MensalidadesPage: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [generating, setGenerating] = useState(false);
   const [filterStatus, setFilterStatus] = useState<string>('all');
+  const [filterName, setFilterName] = useState('');
+  const [filterMonth, setFilterMonth] = useState<string>('all');
   
   // Form state for bulk generation
   const [year, setYear] = useState(String(new Date().getFullYear()));
@@ -122,6 +124,20 @@ const MensalidadesPage: React.FC = () => {
   const totalPaid = fees.filter(f => f.status === 'pago').reduce((acc, f) => acc + f.amount, 0);
   const totalPending = fees.filter(f => f.status === 'pendente' || f.status === 'atrasado').reduce((acc, f) => acc + f.amount, 0);
   const delinquencyRate = totalExpected > 0 ? ((totalPending / totalExpected) * 100).toFixed(1) : '0';
+
+  // Lógica de Filtro Combinada
+  const filteredFees = fees.filter(fee => {
+    const matchesStatus = filterStatus === 'all' || fee.status === filterStatus;
+    const matchesName = filterName === '' || fee.student_name.toLowerCase().includes(filterName.toLowerCase());
+    
+    let matchesMonth = true;
+    if (filterMonth !== 'all') {
+      const monthIndex = parseInt(filterMonth);
+      matchesMonth = new Date(fee.due_date).getMonth() === monthIndex;
+    }
+
+    return matchesStatus && matchesName && matchesMonth;
+  });
 
   const getStatusBadge = (status: TuitionStatus) => {
     const variants: Record<string, string> = {
@@ -230,17 +246,46 @@ const MensalidadesPage: React.FC = () => {
       {/* Filtros e Tabela */}
       <Card>
         <CardHeader>
-          <div className="flex justify-between items-center">
-            <CardTitle>Relação de Mensalidades</CardTitle>
+          <CardTitle>Relação de Mensalidades</CardTitle>
+          <div className="flex flex-wrap gap-2 mt-4">
+            <div className="relative flex-1 min-w-[200px]">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+              <Input
+                placeholder="Buscar por aluno..."
+                value={filterName}
+                onChange={(e) => setFilterName(e.target.value)}
+                className="pl-9"
+              />
+            </div>
             <Select value={filterStatus} onValueChange={setFilterStatus}>
               <SelectTrigger className="w-[180px]">
-                <SelectValue placeholder="Filtrar por status" />
+                <SelectValue placeholder="Status" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">Todos</SelectItem>
+                <SelectItem value="all">Todos os Status</SelectItem>
                 <SelectItem value="pendente">Pendente</SelectItem>
                 <SelectItem value="pago">Pago</SelectItem>
                 <SelectItem value="atrasado">Atrasado</SelectItem>
+              </SelectContent>
+            </Select>
+            <Select value={filterMonth} onValueChange={setFilterMonth}>
+              <SelectTrigger className="w-[150px]">
+                <SelectValue placeholder="Mês" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos os Meses</SelectItem>
+                <SelectItem value="0">Janeiro</SelectItem>
+                <SelectItem value="1">Fevereiro</SelectItem>
+                <SelectItem value="2">Março</SelectItem>
+                <SelectItem value="3">Abril</SelectItem>
+                <SelectItem value="4">Maio</SelectItem>
+                <SelectItem value="5">Junho</SelectItem>
+                <SelectItem value="6">Julho</SelectItem>
+                <SelectItem value="7">Agosto</SelectItem>
+                <SelectItem value="8">Setembro</SelectItem>
+                <SelectItem value="9">Outubro</SelectItem>
+                <SelectItem value="10">Novembro</SelectItem>
+                <SelectItem value="11">Dezembro</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -252,8 +297,8 @@ const MensalidadesPage: React.FC = () => {
               <Skeleton className="h-10 w-full" />
               <Skeleton className="h-10 w-full" />
             </div>
-          ) : fees.length === 0 ? (
-            <div className="text-center py-10 text-muted-foreground">Nenhuma mensalidade encontrada.</div>
+          ) : filteredFees.length === 0 ? (
+            <div className="text-center py-10 text-muted-foreground">Nenhuma mensalidade encontrada com os filtros atuais.</div>
           ) : (
             <Table>
               <TableHeader>
@@ -267,7 +312,7 @@ const MensalidadesPage: React.FC = () => {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {fees.map((fee) => (
+                {filteredFees.map((fee) => (
                   <TableRow key={fee.id}>
                     <TableCell className="font-medium">{fee.student_name}</TableCell>
                     <TableCell>{fee.description}</TableCell>
