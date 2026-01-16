@@ -24,7 +24,7 @@ interface TuitionFee {
   due_date: string;
   status: TuitionStatus;
   description: string;
-  revenue_id: string | null; // Novo campo para vincular a receita
+  revenue_id: string | null; // Adicionado
 }
 
 const MensalidadesPage: React.FC = () => {
@@ -107,7 +107,7 @@ const MensalidadesPage: React.FC = () => {
   };
 
   const updateFeeStatus = async (feeId: string, newStatus: TuitionStatus) => {
-    // 1. Buscar dados completos da mensalidade
+    // 1. Buscar dados completos da mensalidade para ter acesso ao student_name e revenue_id atual
     const { data: feeData, error: fetchError } = await supabase
       .from('tuition_fees')
       .select('*, students(full_name)')
@@ -120,7 +120,7 @@ const MensalidadesPage: React.FC = () => {
     }
 
     if (newStatus === 'pago') {
-      // Verificar se já tem receita
+      // Verificar se já tem receita para evitar duplicidade
       if (feeData.revenue_id) {
         toast.error('Esta mensalidade já está registrada como paga no financeiro.');
         return;
