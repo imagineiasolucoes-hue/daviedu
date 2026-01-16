@@ -41,6 +41,7 @@ import StudentPage from "./pages/StudentPage";
 import TeacherDashboard from "./pages/TeacherDashboard";
 import SuperAdminMessageDisplay from "./components/super-admin/SuperAdminMessageDisplay";
 import SuperAdminMessagesPage from "./pages/super-admin/SuperAdminMessagesPage";
+import SubscriptionsPage from "./pages/super-admin/SubscriptionsPage";
 import TermsPage from "./pages/TermsPage";
 import TeacherClassDiaryPage from "./pages/TeacherClassDiaryPage";
 import AdminClassDiaryOverviewPage from "./pages/AdminClassDiaryOverviewPage";
@@ -116,6 +117,7 @@ const App = () => {
                     <Route path="/super-admin/tenants" element={<TenantsPage />} />
                     <Route path="/super-admin/users" element={<UsersPage />} />
                     <Route path="/super-admin/messages" element={<SuperAdminMessagesPage />} />
+                    <Route path="/super-admin/subscriptions" element={<SubscriptionsPage />} />
                   </Route>
                 </Route>
 
