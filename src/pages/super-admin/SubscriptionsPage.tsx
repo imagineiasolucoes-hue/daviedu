@@ -11,7 +11,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Loader2, RotateCw, Search } from 'lucide-react';
+import { Loader2, RotateCw, Search, Users, DollarSign, Hourglass, Sparkles, AlertTriangle } from 'lucide-react';
 import { formatCurrency } from '@/lib/utils';
 
 type TenantSubscriptionStatus = 'active' | 'trial' | 'suspended' | string;
@@ -213,21 +213,21 @@ const SubscriptionsPage: React.FC = () => {
             <MetricCard
               title="Assinantes ativos"
               value={stats.active}
-              icon={Badge}
+              icon={Users}
               iconColor="text-primary-foreground"
               description="Base de contratos em produção"
             />
             <MetricCard
               title="Base total"
               value={stats.total}
-              icon={Badge}
+              icon={Users}
               iconColor="text-neutral-500"
               description="Inclui trials e suspensos"
             />
             <MetricCard
               title="MRR estimado"
               value={formatCurrency(stats.mrr)}
-              icon={Badge}
+              icon={DollarSign}
               iconColor="text-emerald-500"
               description="Receita mensal recorrente simulada"
             />
@@ -243,21 +243,21 @@ const SubscriptionsPage: React.FC = () => {
             <MetricCard
               title="Trials em andamento"
               value={stats.trial}
-              icon={Badge}
+              icon={Hourglass}
               iconColor="text-yellow-500"
               description="Potenciais conversões"
             />
             <MetricCard
               title="Novos (30 dias)"
               value={stats.newLast30Days}
-              icon={Badge}
+              icon={Sparkles}
               iconColor="text-sky-500"
               description="Assinantes que chegaram recentemente"
             />
             <MetricCard
               title="Trials finais em 7 dias"
               value={stats.trialsExpiringSoon}
-              icon={Badge}
+              icon={AlertTriangle}
               iconColor="text-orange-500"
               description="Atenção para renovações"
             />

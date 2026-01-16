@@ -20,6 +20,11 @@ interface ClassData {
   name: string;
 }
 
+interface TeacherClassJoinResult {
+  class_id: string;
+  classes: ClassData | null;
+}
+
 interface StudentData {
   id: string;
   full_name: string;
@@ -64,7 +69,10 @@ const TeacherClassDiaryPage: React.FC = () => {
       if (error) {
         toast.error("Erro ao carregar turmas: " + error.message);
       } else {
-        const classes = data?.map(tc => tc.classes).filter(Boolean) as ClassData[] || [];
+        const rawClasses = data as TeacherClassJoinResult[] | null;
+        const classes = rawClasses
+          ?.map(tc => tc.classes)
+          .filter((c): c is ClassData => c !== null) || [];
         setTeacherClasses(classes);
         if (classes.length > 0 && !selectedClassId) {
           setSelectedClassId(classes[0].id);
