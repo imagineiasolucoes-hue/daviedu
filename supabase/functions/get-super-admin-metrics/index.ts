@@ -25,6 +25,10 @@ serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
     );
 
+    const now = new Date().toISOString();
+    const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
+    const soonThreshold = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
+
     // Contar o total de tenants (escolas)
     const { count: totalTenants, error: tenantsError } = await supabaseAdmin
       .from('tenants')
@@ -66,6 +70,28 @@ serve(async (req) => {
     if (suspendedTenantsError) {
       console.error("Error fetching suspended tenants count:", suspendedTenantsError);
       throw new Error(`Erro ao buscar o número de escolas suspensas: ${suspendedTenantsError.message}`);
+    }
+
+    const { count: newTenantsLast30Days, error: newTenantsError } = await supabaseAdmin
+      .from('tenants')
+      .select('*', { count: 'exact', head: true })
+      .gte('created_at', thirtyDaysAgo);
+
+    if (newTenantsError) {
+      console.error("Error fetching new tenants count:", newTenantsError);
+      throw new Error(`Erro ao buscar o número de escolas criadas nos últimos 30 dias: ${newTenantsError.message}`);
+    }
+
+    const { count: trialExpiringSoon, error: trialExpiringSoonError } = await supabaseAdmin
+      .from('tenants')
+      .select('*', { count: 'exact', head: true })
+      .eq('status', 'trial')
+      .gte('trial_expires_at', now)
+      .lte('trial_expires_at', soonThreshold);
+
+    if (trialExpiringSoonError) {
+      console.error("Error fetching trial expiring soon count:", trialExpiringSoonError);
+      throw new Error(`Erro ao buscar o número de escolas com trial próximo do fim: ${trialExpiringSoonError.message}`);
     }
 
     // Contar o total de perfis (usuários)
@@ -129,6 +155,8 @@ serve(async (req) => {
       totalSecretaries: totalSecretaries ?? 0,
       totalTeachers: totalTeachers ?? 0,
       totalStudents: totalStudents ?? 0,
+      newTenantsLast30Days: newTenantsLast30Days ?? 0,
+      trialExpiringSoon: trialExpiringSoon ?? 0,
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 200,
