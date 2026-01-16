@@ -3,7 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useProfile } from '@/hooks/useProfile';
 import { Link, Navigate } from 'react-router-dom';
-import { Loader2, School, Users, HardDrive, LayoutDashboard, AlertTriangle, Cloud, UserCheck, BookOpen, User, Clock } from 'lucide-react';
+import { Loader2, School, Users, HardDrive, LayoutDashboard, AlertTriangle, Cloud, UserCheck, BookOpen, User, Clock, TrendingUp, TimerReset, Activity } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import MetricCard from '@/components/dashboard/MetricCard';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -23,6 +23,8 @@ interface GlobalMetrics {
   totalSecretaries: number;
   totalTeachers: number;
   totalStudents: number;
+  newTenantsLast30Days: number;
+  trialExpiringSoon: number;
 }
 
 const fetchGlobalMetrics = async (): Promise<GlobalMetrics> => {
@@ -135,6 +137,49 @@ const SuperAdminOverviewPage: React.FC = () => {
                 />
               </>
             )}
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-xl font-semibold">Crescimento e Saúde da Plataforma</CardTitle>
+          <CardDescription>Monitoramento de novos tenants e alertas críticos.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+            {areMetricsLoading ? Array.from({ length: 2 }).map((_, i) => <MetricCardSkeleton key={`growth-${i}`} />) : (
+              <>
+                <MetricCard
+                  title="Novas Escolas (30 dias)"
+                  value={metrics?.newTenantsLast30Days ?? 0}
+                  icon={TrendingUp}
+                  iconColor="text-emerald-500"
+                  description="Novos tenants criados no último mês"
+                />
+                <MetricCard
+                  title="Trials expirando em 7 dias"
+                  value={metrics?.trialExpiringSoon ?? 0}
+                  icon={TimerReset}
+                  iconColor="text-orange-500"
+                  description="Trials próximos do vencimento"
+                />
+              </>
+            )}
+            <MetricCard
+              title="Tenants em Atenção"
+              value={warningTenantsCount}
+              icon={Activity}
+              iconColor="text-yellow-500"
+              description="Backups com status de atenção"
+            />
+            <MetricCard
+              title="Tenants Críticos"
+              value={criticalTenantsCount}
+              icon={AlertTriangle}
+              iconColor="text-red-500"
+              description="Backups com falhas críticas"
+            />
           </div>
         </CardContent>
       </Card>
