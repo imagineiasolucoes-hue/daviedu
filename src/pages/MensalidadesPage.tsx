@@ -131,7 +131,9 @@ const MensalidadesPage: React.FC = () => {
         .from('revenues')
         .insert({
           tenant_id: tenantId,
-          date: new Date().toISOString().split('T')[0], // Data de hoje
+          // Use a data de vencimento da mensalidade para que o lançamento seja atribuído ao período correto.
+          // Se, por algum motivo, due_date não existir, caímos para a data de hoje.
+          date: feeData.due_date ? (feeData.due_date as string) : new Date().toISOString().split('T')[0],
           amount: feeData.amount,
           description: `${feeData.description} - ${(feeData as any).students.full_name}`,
           payment_method: 'Mensalidade', // Genérico, pode ser ajustado
