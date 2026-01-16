@@ -25,6 +25,8 @@ serve(async (req) => {
       throw new Error("ID da escola (tenant_id) e ano são obrigatórios.");
     }
 
+    console.log("[get-finance-metrics] Request received", { tenant_id, year, month });
+
     const supabaseAdmin = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
@@ -34,15 +36,21 @@ serve(async (req) => {
     let endDate: string;
     const monthNames = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
 
-    if (month && month !== 'all') {
-      // Período específico do mês
-      startDate = new Date(year, month - 1, 1).toISOString().split('T')[0];
-      endDate = new Date(year, month, 0).toISOString().split('T')[0];
+    // Robust check for a numeric month (handles 0 correctly)
+    const isSpecificMonth = typeof month === 'number' && !Number.isNaN(month);
+
+    if (isSpecificMonth) {
+      // Período específico do mês (month is 1-12)
+      const m = Math.max(1, Math.min(12, Math.floor(month)));
+      startDate = new Date(year, m - 1, 1).toISOString().split('T')[0];
+      endDate = new Date(year, m, 0).toISOString().split('T')[0];
     } else {
       // Período do ano inteiro
       startDate = new Date(year, 0, 1).toISOString().split('T')[0];
       endDate = new Date(year, 11, 31).toISOString().split('T')[0];
     }
+
+    console.log("[get-finance-metrics] Date range", { startDate, endDate });
 
     // --- Métricas para o período selecionado ---
     const [
@@ -62,24 +70,32 @@ serve(async (req) => {
     if (paidExpenseResult.error) throw new Error(`Erro ao buscar despesa paga: ${paidExpenseResult.error.message}`);
     if (categorizedExpensesDataResult.error) throw new Error(`Erro ao buscar despesas categorizadas: ${categorizedExpensesDataResult.error.message}`);
 
-    const paidRevenue = paidRevenueResult.data?.reduce((sum, r) => sum + r.amount, 0) ?? 0;
-    const pendingRevenue = pendingRevenueResult.data?.reduce((sum, r) => sum + r.amount, 0) ?? 0;
-    const paidExpense = paidExpenseResult.data?.reduce((sum, r) => sum + r.amount, 0) ?? 0;
+    console.log("[get-finance-metrics] Query results counts", {
+      paidRevenuesCount: paidRevenueResult.data?.length ?? 0,
+      pendingRevenuesCount: pendingRevenueResult.data?.length ?? 0,
+      paidExpensesCount: paidExpenseResult.data?.length ?? 0,
+      categorizedExpensesCount: categorizedExpensesDataResult.data?.length ?? 0,
+    });
+
+    const paidRevenue = paidRevenueResult.data?.reduce((sum, r) => sum + (Number(r.amount) || 0), 0) ?? 0;
+    const pendingRevenue = pendingRevenueResult.data?.reduce((sum, r) => sum + (Number(r.amount) || 0), 0) ?? 0;
+    const paidExpense = paidExpenseResult.data?.reduce((sum, r) => sum + (Number(r.amount) || 0), 0) ?? 0;
     const balance = paidRevenue - paidExpense;
 
     const categorizedExpensesMap = new Map<string, number>();
     categorizedExpensesDataResult.data?.forEach(expense => {
       const categoryName = expense.expense_categories?.name || 'Outros';
-      categorizedExpensesMap.set(categoryName, (categorizedExpensesMap.get(categoryName) || 0) + expense.amount);
+      const value = Number(expense.amount) || 0;
+      categorizedExpensesMap.set(categoryName, (categorizedExpensesMap.get(categoryName) || 0) + value);
     });
     const categorizedExpenses = Array.from(categorizedExpensesMap.entries()).map(([name, value]) => ({ name, value }));
 
     // --- Dados para o Gráfico de Barras (Mensal) ---
     const monthlyFinancialDataPromises = [];
-    const numMonths = (month && month !== 'all') ? 1 : 12; // Se mês específico, apenas 1 mês; senão, 12 meses
+    const numMonths = isSpecificMonth ? 1 : 12; // Se mês específico, apenas 1 mês; senão, 12 meses
 
     for (let i = 0; i < numMonths; i++) {
-      const currentMonthIndex = (month && month !== 'all') ? month - 1 : i;
+      const currentMonthIndex = isSpecificMonth ? (month as number) - 1 : i;
       const date = new Date(year, currentMonthIndex, 1);
       const monthStart = new Date(date.getFullYear(), date.getMonth(), 1).toISOString().split('T')[0];
       const monthEnd = new Date(date.getFullYear(), date.getMonth() + 1, 0).toISOString().split('T')[0];
@@ -97,8 +113,8 @@ serve(async (req) => {
           if (monthlyRevenueResult.error) throw new Error(`Erro ao buscar receita mensal: ${monthlyRevenueResult.error.message}`);
           if (monthlyExpenseResult.error) throw new Error(`Erro ao buscar despesa mensal: ${monthlyExpenseResult.error.message}`);
 
-          const totalMonthlyRevenue = monthlyRevenueResult.data?.reduce((sum, r) => sum + r.amount, 0) ?? 0;
-          const totalMonthlyExpense = monthlyExpenseResult.data?.reduce((sum, r) => sum + r.amount, 0) ?? 0;
+          const totalMonthlyRevenue = monthlyRevenueResult.data?.reduce((sum, r) => sum + (Number(r.amount) || 0), 0) ?? 0;
+          const totalMonthlyExpense = monthlyExpenseResult.data?.reduce((sum, r) => sum + (Number(r.amount) || 0), 0) ?? 0;
 
           return {
             name: monthNames[date.getMonth()],
@@ -109,6 +125,15 @@ serve(async (req) => {
       );
     }
     const monthlyFinancialData = await Promise.all(monthlyFinancialDataPromises);
+
+    console.log("[get-finance-metrics] Computed metrics", {
+      paidRevenue,
+      pendingRevenue,
+      paidExpense,
+      balance,
+      monthlyDataPreview: monthlyFinancialData.slice(0, 5),
+      categorizedExpensesPreview: categorizedExpenses.slice(0, 5)
+    });
 
     return new Response(JSON.stringify({
       paidRevenueMonth: paidRevenue,
@@ -124,7 +149,7 @@ serve(async (req) => {
 
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : "Ocorreu um erro inesperado.";
-    console.error("Edge Function CATCH block error (get-finance-metrics):", errorMessage);
+    console.error("[get-finance-metrics] CATCH error:", errorMessage);
     return new Response(JSON.stringify({ error: errorMessage }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 400,
