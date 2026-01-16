@@ -69,7 +69,8 @@ const TeacherClassDiaryPage: React.FC = () => {
       if (error) {
         toast.error("Erro ao carregar turmas: " + error.message);
       } else {
-        const rawClasses = data as TeacherClassJoinResult[] | null;
+        // Explicitly type the data from Supabase to match the expected structure
+        const rawClasses: TeacherClassJoinResult[] | null = data as TeacherClassJoinResult[] | null;
         const classes = rawClasses
           ?.map(tc => tc.classes)
           .filter((c): c is ClassData => c !== null) || [];
