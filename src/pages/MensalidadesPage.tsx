@@ -13,6 +13,7 @@ import { useProfile } from '@/hooks/useProfile';
 import { supabase } from '@/integrations/supabase/client';
 import { formatCurrency } from '@/lib/utils';
 import { toast } from 'sonner';
+import { useQueryClient } from '@tanstack/react-query';
 
 type TuitionStatus = 'pendente' | 'pago' | 'atrasado' | 'cancelado';
 
@@ -33,6 +34,7 @@ const MensalidadesPage: React.FC = () => {
   const [fees, setFees] = useState<TuitionFee[]>([]);
   const [loading, setLoading] = useState(false);
   const [generating, setGenerating] = useState(false);
+  const queryClient = useQueryClient();
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const [filterName, setFilterName] = useState('');
   const [filterMonth, setFilterMonth] = useState<string>('all');
@@ -136,7 +138,8 @@ const MensalidadesPage: React.FC = () => {
           date: feeData.due_date ? (feeData.due_date as string) : new Date().toISOString().split('T')[0],
           amount: feeData.amount,
           description: `${feeData.description} - ${(feeData as any).students.full_name}`,
-          payment_method: 'Mensalidade', // Genérico, pode ser ajustado
+          // Use um método de pagamento padrão compatível com o restante do sistema (ex: 'Pix')
+          payment_method: 'Pix',
           status: 'pago',
           source: 'Mensalidades',
           student_id: feeData.student_id
@@ -161,6 +164,15 @@ const MensalidadesPage: React.FC = () => {
 
       if (updateError) toast.error('Erro ao atualizar status da mensalidade');
 
+      // Invalidate finance metrics so FinancePage refetches and reflects the new revenue
+      try {
+        queryClient.invalidateQueries({
+          predicate: (query) => Array.isArray(query.queryKey) && query.queryKey[0] === 'financeMetrics'
+        });
+      } catch (e) {
+        console.warn('[MensalidadesPage] failed to invalidate financeMetrics queries', e);
+      }
+
     } else if (newStatus === 'pendente' && feeData.revenue_id) {
       // Estornar: Remover a receita vinculada
       const { error: deleteRevenueError } = await supabase
@@ -183,6 +195,15 @@ const MensalidadesPage: React.FC = () => {
         .eq('id', feeId);
 
       if (updateError) toast.error('Erro ao estornar mensalidade');
+
+      // Invalidate finance metrics so FinancePage refetches and reflects the removal
+      try {
+        queryClient.invalidateQueries({
+          predicate: (query) => Array.isArray(query.queryKey) && query.queryKey[0] === 'financeMetrics'
+        });
+      } catch (e) {
+        console.warn('[MensalidadesPage] failed to invalidate financeMetrics queries', e);
+      }
     }
     
     toast.success('Status atualizado com sucesso');
