@@ -147,6 +147,10 @@ const MensalidadesPage: React.FC = () => {
         return;
       }
 
+      // Debug: log the created revenue id so we can confirm it exists server-side
+      console.log('[MensalidadesPage] Created revenue:', revenueData);
+      toast.success(`Receita criada (id: ${revenueData?.id})`);
+      
       // 3. Atualizar a mensalidade com o ID da receita e status
       const { error: updateError } = await supabase
         .from('tuition_fees')
@@ -167,6 +171,9 @@ const MensalidadesPage: React.FC = () => {
         return;
       }
 
+      console.log('[MensalidadesPage] Deleted linked revenue id:', feeData.revenue_id);
+      toast.success(`Receita estornada (id: ${feeData.revenue_id})`);
+      
       // Atualizar a mensalidade
       const { error: updateError } = await supabase
         .from('tuition_fees')

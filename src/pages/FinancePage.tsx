@@ -49,6 +49,8 @@ const FinancePage: React.FC = () => {
   const { profile } = useProfile();
   const tenantId = profile?.tenant_id;
   const navigate = useNavigate();
+  const [showDebug, setShowDebug] = useState(false);
+  const [rawRevenues, setRawRevenues] = useState<any[] | null>(null);
 
   const currentYear = String(new Date().getFullYear());
   const currentMonth = String(new Date().getMonth() + 1).padStart(2, '0');
@@ -62,6 +64,30 @@ const FinancePage: React.FC = () => {
     enabled: !!tenantId,
   });
 
+  const fetchRecentRevenues = async () => {
+    if (!tenantId) {
+      setRawRevenues(null);
+      return;
+    }
+    try {
+      const { data, error } = await supabase
+        .from('revenues')
+        .select('id, date, description, amount, payment_method, status, created_at, student_id')
+        .eq('tenant_id', tenantId)
+        .order('created_at', { ascending: false })
+        .limit(50);
+      if (error) {
+        console.error('[FinancePage] fetchRecentRevenues error', error);
+        setRawRevenues(null);
+      } else {
+        setRawRevenues(data || []);
+      }
+    } catch (err) {
+      console.error('[FinancePage] fetchRecentRevenues exception', err);
+      setRawRevenues(null);
+    }
+  };
+
   if (areMetricsLoading) {
     return (
       <div className="flex justify-center items-center h-64">
@@ -73,6 +99,17 @@ const FinancePage: React.FC = () => {
   if (error) {
     return <div className="text-destructive">Erro ao carregar dados financeiros: {error.message}</div>;
   }
+
+  // Debug: show raw metrics and optionally direct revenue rows
+  const handleToggleDebug = async () => {
+    const next = !showDebug;
+    setShowDebug(next);
+    if (next) {
+      await fetchRecentRevenues();
+    } else {
+      setRawRevenues(null);
+    }
+  };
 
   const balanceColor = (metrics?.balanceMonth ?? 0) >= 0 ? 'text-green-600' : 'text-red-600';
 
@@ -123,6 +160,11 @@ const FinancePage: React.FC = () => {
               </Select>
             </div>
           </div>
+          <div className="flex items-end gap-2">
+            <Button variant="ghost" onClick={handleToggleDebug}>
+              {showDebug ? 'Ocultar Debug' : 'Mostrar Debug'}
+            </Button>
+          </div>
           <Button 
             onClick={() => navigate(`/documents/generate/finance_report/${selectedYear}/${selectedMonth}`)}
             disabled={areMetricsLoading}
@@ -133,6 +175,34 @@ const FinancePage: React.FC = () => {
           </Button>
         </div>
       </Card>
+
+      {showDebug && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Debug: resposta bruta da função e receitas recentes</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="mb-4">
+              <strong>Edge function response (metrics):</strong>
+              <pre className="mt-2 max-h-60 overflow-auto bg-slate-50 p-2 rounded text-sm">
+                {JSON.stringify(metrics, null, 2)}
+              </pre>
+            </div>
+            <div>
+              <strong>Revenues (client query):</strong>
+              {rawRevenues === null ? (
+                <p className="text-sm text-muted-foreground">Nenhum dado carregado.</p>
+              ) : rawRevenues.length === 0 ? (
+                <p className="text-sm text-muted-foreground">Sem registros de receitas</p>
+              ) : (
+                <pre className="mt-2 max-h-60 overflow-auto bg-slate-50 p-2 rounded text-sm">
+                  {JSON.stringify(rawRevenues.slice(0, 50), null, 2)}
+                </pre>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Linha de Métricas Chave */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
