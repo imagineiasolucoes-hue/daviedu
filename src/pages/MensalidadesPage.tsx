@@ -27,7 +27,8 @@ interface TuitionFee {
 }
 
 const MensalidadesPage: React.FC = () => {
-  const { profile, tenantId } = useProfile();
+  const { profile } = useProfile();
+  const tenantId = profile?.tenant_id;
   const [fees, setFees] = useState<TuitionFee[]>([]);
   const [loading, setLoading] = useState(false);
   const [generating, setGenerating] = useState(false);
