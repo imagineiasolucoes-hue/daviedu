@@ -90,6 +90,21 @@ serve(async (req) => {
     });
     const categorizedExpenses = Array.from(categorizedExpensesMap.entries()).map(([name, value]) => ({ name, value }));
 
+    // --- DIAGNOSTIC: fetch a small sample of all revenues for this tenant (no date filter)
+    // This helps confirm whether the edge function sees the same rows the client sees.
+    const allRevenuesResult = await supabaseAdmin
+      .from('revenues')
+      .select('id, amount, date, status, created_at, tenant_id, student_id, description')
+      .eq('tenant_id', tenant_id)
+      .order('created_at', { ascending: false })
+      .limit(10);
+
+    if (allRevenuesResult.error) {
+      console.log("[get-finance-metrics] allRevenuesResult error:", allRevenuesResult.error.message);
+    } else {
+      console.log("[get-finance-metrics] allRevenuesSampleCount:", allRevenuesResult.data?.length ?? 0);
+    }
+
     // --- Dados para o Gráfico de Barras (Mensal) ---
     const monthlyFinancialDataPromises = [];
     const numMonths = isSpecificMonth ? 1 : 12; // Se mês específico, apenas 1 mês; senão, 12 meses
@@ -142,6 +157,8 @@ serve(async (req) => {
       balanceMonth: balance,
       monthlyFinancialData: monthlyFinancialData,
       categorizedExpenses: categorizedExpenses,
+      // Diagnostic: include the small sample (if available) so client can show it
+      allRevenuesSample: allRevenuesResult.error ? [] : (allRevenuesResult.data || []),
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 200,
