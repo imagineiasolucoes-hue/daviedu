@@ -20,9 +20,9 @@ interface ClassData {
   name: string;
 }
 
-interface TeacherClassJoinResult {
+interface RawTeacherClassResult {
   class_id: string;
-  classes: ClassData | null;
+  classes: ClassData[];
 }
 
 interface StudentData {
@@ -69,11 +69,12 @@ const TeacherClassDiaryPage: React.FC = () => {
       if (error) {
         toast.error("Erro ao carregar turmas: " + error.message);
       } else {
-        // Explicitly type the data from Supabase to match the expected structure
-        const rawClasses: TeacherClassJoinResult[] | null = data as TeacherClassJoinResult[] | null;
+        // Cast to the raw result type to match TypeScript's inference
+        const rawClasses: RawTeacherClassResult[] | null = data as RawTeacherClassResult[] | null;
+        // Since classes is an array, we flatMap to get a single list of ClassData
         const classes = rawClasses
-          ?.map(tc => tc.classes)
-          .filter((c): c is ClassData => c !== null) || [];
+          ?.flatMap(r => r.classes)
+          .filter((c): c is ClassData => c !== null && c.id !== undefined && c.name !== undefined) || [];
         setTeacherClasses(classes);
         if (classes.length > 0 && !selectedClassId) {
           setSelectedClassId(classes[0].id);
