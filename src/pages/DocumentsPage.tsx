@@ -22,6 +22,7 @@ import { Button } from '@/components/ui/button';
 import { SchoolDocument } from '@/types/documents';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
+import DocumentViewerDialog from '@/components/documents/DocumentViewerDialog';
 
 // Tipos de documentos dinâmicos que podemos gerar
 type DocumentTypeFilter = 'all' | 'contract' | 'receipt' | 'report_card' | 'transcript' | 'payslip' | 'other';
@@ -118,7 +119,11 @@ const DocumentsPage: React.FC = () => {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [selectedDocument, setSelectedDocument] = useState<SchoolDocument | null>(null);
   const [documentTypeFilter, setDocumentTypeFilter] = useState<DocumentTypeFilter>('all');
-  const [studentIdFilter, setStudentIdFilter] = useState<string>('');
+  const [studentIdFilter, setStudentIdFilter] = useState<string>('all');
+
+  // NOVO: Estados para controlar o modal de visualização
+  const [isViewerOpen, setIsViewerOpen] = useState(false);
+  const [documentToView, setDocumentToView] = useState<SchoolDocument | null>(null);
 
   const { data: documents, isLoading: isDocumentsLoading, error } = useQuery<SchoolDocument[], Error>({
     queryKey: ['documents', tenantId, documentTypeFilter, studentIdFilter],
@@ -193,12 +198,9 @@ const DocumentsPage: React.FC = () => {
   });
 
   const handleViewDocument = (doc: SchoolDocument) => {
-    // Se o file_url for 'generated_on_demand', redireciona para a rota de visualização dinâmica
-    if (doc.file_url === 'generated_on_demand' && doc.related_entity_id) {
-      window.open(`/documents/generate/${doc.document_type}/${doc.related_entity_id}`, '_blank');
-    } else {
-      window.open(doc.file_url, '_blank');
-    }
+    // Agora, em vez de abrir em uma nova aba, abrimos o modal
+    setDocumentToView(doc);
+    setIsViewerOpen(true);
   };
 
   const handleDeleteDocument = (doc: SchoolDocument) => {
@@ -320,6 +322,13 @@ const DocumentsPage: React.FC = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* NOVO: Componente de visualização de documentos em modal */}
+      <DocumentViewerDialog
+        document={documentToView}
+        open={isViewerOpen}
+        onOpenChange={setIsViewerOpen}
+      />
     </div>
   );
 };
