@@ -43,7 +43,7 @@
     "@supabase/auth-ui-shared": "^0.1.8",
     "@supabase/storage-js": "^2.89.0",
     "@supabase/supabase-js": "^2.76.1",
-    "@tanstack/react-query": "^5.56.2",
+    "@tanstack/react-query": "^5.74.4",
     "@types/qrcode.react": "^3.0.0",
     "@types/react-query": "^1.2.9",
     "@types/react-router-dom": "^5.3.3",

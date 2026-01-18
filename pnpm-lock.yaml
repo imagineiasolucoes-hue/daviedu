@@ -105,7 +105,7 @@ importers:
         specifier: ^2.76.1
         version: 2.76.1
       '@tanstack/react-query':
-        specifier: ^5.56.2
+        specifier: ^5.74.4
         version: 5.74.4(react@18.3.1)
       '@types/qrcode.react':
         specifier: ^3.0.0
