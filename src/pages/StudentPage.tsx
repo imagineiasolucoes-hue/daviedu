@@ -14,6 +14,7 @@ import StudentClassDiarySection from '@/components/student/StudentClassDiarySect
 import StudentGradesSection from '@/components/student/StudentGradesSection';
 import StudentSnapshot from '@/components/student/StudentSnapshot';
 import AppFooter from '@/components/layout/AppFooter';
+import StudentDocumentsSection from '@/components/student/StudentDocumentsSection';
 
 interface StudentInfo {
   id: string;
@@ -213,11 +214,15 @@ const StudentPage: React.FC = () => {
             )}
           </TabsContent>
           <TabsContent value="documents" className="mt-4">
-            <Card>
-              <CardContent className="p-6 text-center text-muted-foreground">
-                Conteúdo da aba de Documentos (em breve).
-              </CardContent>
-            </Card>
+            {studentInfo.id && studentInfo.tenant_id ? (
+              <StudentDocumentsSection studentInfo={studentInfo} />
+            ) : (
+              <Card>
+                <CardContent className="p-6 text-center text-muted-foreground">
+                  Não foi possível carregar os documentos. Informações do aluno incompletas.
+                </CardContent>
+              </Card>
+            )}
           </TabsContent>
         </Tabs>
       </main>
