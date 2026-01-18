@@ -44,7 +44,7 @@
     "@supabase/storage-js": "^2.89.0",
     "@supabase/supabase-js": "^2.76.1",
     "@tanstack/query-core": "5.74.4",
-    "@tanstack/react-query": "^5.74.4",
+    "@tanstack/react-query": "5.74.4",
     "@types/qrcode.react": "^3.0.0",
     "@types/react-query": "^1.2.9",
     "@types/react-router-dom": "^5.3.3",
@@ -91,6 +91,10 @@
     "vite": "^6.3.4"
   },
   "pnpm": {
+    "overrides": {
+      "@tanstack/query-core": "5.74.4",
+      "@tanstack/react-query": "5.74.4"
+    },
     "onlyBuiltDependencies": [
       "@swc/core",
       "esbuild"
