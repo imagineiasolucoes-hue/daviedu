@@ -94,7 +94,6 @@ const DocumentsPage: React.FC = () => {
     mutationFn: async (docId: string) => {
       if (!tenantId) throw new Error("ID da escola não encontrado.");
 
-      // Lógica de exclusão do arquivo do storage e do registro do DB (mantida)
       const { data: docData, error: fetchError } = await supabase
         .from('documents')
         .select('file_url')
@@ -104,13 +103,31 @@ const DocumentsPage: React.FC = () => {
       if (fetchError) throw new Error(`Erro ao buscar URL do arquivo: ${fetchError.message}`);
       if (!docData?.file_url) throw new Error("URL do arquivo não encontrada para exclusão.");
 
-      const pathSegments = docData.file_url.split('/');
-      // Correção: O nome do bucket está no índice 7 e o filePath começa no índice 8
-      const bucketName = pathSegments[7]; 
-      const filePath = pathSegments.slice(8).join('/');
+      const fileUrl = docData.file_url;
+      const bucketName = 'school-documents'; // O nome do bucket é fixo
 
-      if (bucketName !== 'school-documents') {
-        throw new Error(`Bucket de armazenamento inválido para exclusão: ${bucketName}. Esperado 'school-documents'.`);
+      // Extrai o caminho do arquivo relativo ao bucket.
+      // Isso lida tanto com URLs completas do Supabase (ex: .../public/school-documents/path/to/file.pdf)
+      // quanto com caminhos que já começam com o nome do bucket (ex: school-documents/path/to/file.pdf)
+      const pathIdentifier = `/${bucketName}/`;
+      const pathIndex = fileUrl.indexOf(pathIdentifier);
+      let filePath: string;
+
+      if (pathIndex !== -1) {
+        // Se encontrar o identificador, pega tudo depois dele
+        filePath = fileUrl.substring(pathIndex + pathIdentifier.length);
+      } else if (fileUrl.startsWith(bucketName + '/')) {
+        // Se a URL já começa com o nome do bucket, remove apenas o nome do bucket
+        filePath = fileUrl.substring(bucketName.length + 1);
+      } else {
+        // Se nenhuma das opções acima, assume que a URL inteira (ou o que sobrou dela) é o filePath
+        // Isso pode acontecer se a URL for apenas 'uploads/file.pdf' e o bucket for implícito
+        console.warn(`[DocumentsPage] Não foi possível extrair o caminho do arquivo de forma padrão para: ${fileUrl}. Usando a URL completa como filePath.`);
+        filePath = fileUrl;
+      }
+
+      if (!filePath) {
+        throw new Error(`Caminho do arquivo não encontrado para exclusão na URL: ${fileUrl}`);
       }
 
       const { error: storageError } = await supabase.storage
