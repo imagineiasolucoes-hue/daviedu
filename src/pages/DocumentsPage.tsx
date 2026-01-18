@@ -193,24 +193,6 @@ const DocumentsPage: React.FC = () => {
       {/* Painel de Geração Dinâmica */}
       <DocumentGenerationPanel />
 
-      {/* Painel de Upload Manual e Lista de Documentos */}
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle className="flex items-center gap-2">
-            <FileText className="h-5 w-5 text-primary" />
-            Documentos Carregados Manualmente ({documents?.length || 0})
-          </CardTitle>
-          <AddDocumentSheet />
-        </CardHeader>
-        <CardContent>
-          <DocumentTable
-            documents={documents || []}
-            onView={handleViewDocument}
-            onDelete={handleDeleteDocument}
-          />
-        </CardContent>
-      </Card>
-
       <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
