@@ -54,7 +54,7 @@ const fetchDocuments = async (
   if (documentTypeFilter !== 'all') {
     query = query.eq('document_type', documentTypeFilter);
   }
-  if (studentIdFilter) {
+  if (studentIdFilter && studentIdFilter !== 'all') {
     query = query.eq('related_entity_id', studentIdFilter);
   }
 
@@ -278,7 +278,7 @@ const DocumentsPage: React.FC = () => {
                   <SelectValue placeholder={isLoadingStudentsForFilter ? "Carregando Alunos..." : "Todos os Alunos"} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Todos os Alunos</SelectItem>
+                  <SelectItem value="all">Todos os Alunos</SelectItem>
                   {studentsForFilter?.map((s) => (
                     <SelectItem key={s.id} value={s.id}>
                       {s.full_name} ({s.registration_code})
