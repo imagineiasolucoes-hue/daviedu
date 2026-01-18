@@ -66,6 +66,11 @@ const StudentSnapshot: React.FC<StudentSnapshotProps> = ({
             <div>
               <div className="text-xs text-muted-foreground">Nascimento</div>
               <div className="font-medium">{birthDate || 'N/A'}</div>
+              {/* Responsible name below birth date as requested */}
+              <div className="mt-2">
+                <div className="text-xs text-muted-foreground">Responsável</div>
+                <div className="font-medium">{responsibleName || '—'}</div>
+              </div>
             </div>
           </div>
 
@@ -87,11 +92,6 @@ const StudentSnapshot: React.FC<StudentSnapshotProps> = ({
             >
               Secretaria
             </Button>
-          </div>
-          {/* Responsible name */}
-          <div className="mt-3 text-sm text-muted-foreground">
-            <span className="text-xs text-muted-foreground">Responsável</span>
-            <div className="font-medium">{responsibleName || '—'}</div>
           </div>
         </CardDescription>
       </CardHeader>

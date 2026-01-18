@@ -13,6 +13,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import StudentClassDiarySection from '@/components/student/StudentClassDiarySection';
 import StudentGradesSection from '@/components/student/StudentGradesSection';
 import StudentSnapshot from '@/components/student/StudentSnapshot';
+import AppFooter from '@/components/layout/AppFooter';
 
 interface StudentInfo {
   id: string;
@@ -219,6 +220,9 @@ const StudentPage: React.FC = () => {
           </TabsContent>
         </Tabs>
       </main>
+      
+      {/* Use the same footer as the school panel */}
+      <AppFooter />
     </div>
   );
 };
