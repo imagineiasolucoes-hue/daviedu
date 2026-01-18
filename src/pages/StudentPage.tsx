@@ -184,7 +184,8 @@ const StudentPage: React.FC = () => {
                 responsibleName={responsibleName}
                 onGenerateReport={handleViewReportCard}
                 onContactSecretary={() => {
-                  toast("Para falar com a secretaria, envie um email para a secretaria da escola.", { type: "info" });
+                  // sonner toast doesn't accept a `type` field here; call without invalid options
+                  toast("Para falar com a secretaria, envie um email para a secretaria da escola.");
                 }}
               />
             </div>
