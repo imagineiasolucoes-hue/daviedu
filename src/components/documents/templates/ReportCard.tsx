@@ -1,5 +1,5 @@
 import React, { useRef, useMemo, useState } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Loader2, Printer, ArrowLeft, School, User, Calendar, BookOpen, GraduationCap, ClipboardList, QrCode, Link as LinkIcon, CheckCircle } from 'lucide-react';
@@ -144,6 +144,7 @@ const fetchAcademicSummary = async (studentId: string): Promise<AcademicSummary>
 
 const ReportCard: React.FC = () => {
   const { entityId: studentId } = useParams<{ entityId: string }>();
+  const navigate = useNavigate();
   const { profile } = useProfile();
   const tenantId = profile?.tenant_id;
   const printRef = useRef<HTMLDivElement>(null);
@@ -248,11 +249,11 @@ const ReportCard: React.FC = () => {
       <div className="p-8 text-center">
         <h1 className="text-2xl text-destructive">Erro ao Carregar Dados</h1>
         <p className="text-muted-foreground">Verifique se o aluno e a escola estão corretamente cadastrados. Erro: {error.message}</p>
-        <Button asChild variant="link" className="mt-4 print-hidden">
-          <Link to="/documents">
+        <div className="mt-4 print-hidden">
+          <Button variant="link" onClick={() => navigate('/student-portal')}>
             <ArrowLeft className="mr-2 h-4 w-4" /> Voltar
-          </Link>
-        </Button>
+          </Button>
+        </div>
       </div>
     );
   }
@@ -287,10 +288,8 @@ const ReportCard: React.FC = () => {
       
       {/* Botões de Ação (Ocultos na Impressão) */}
       <div className="flex justify-between items-center mb-6 print-hidden">
-        <Button variant="outline" asChild>
-          <Link to="/documents">
-            <ArrowLeft className="mr-2 h-4 w-4" /> Voltar
-          </Link>
+        <Button variant="outline" onClick={() => navigate('/student-portal')}>
+          <ArrowLeft className="mr-2 h-4 w-4" /> Voltar
         </Button>
         <div className="flex gap-2">
           <Button 

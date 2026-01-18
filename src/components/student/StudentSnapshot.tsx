@@ -13,6 +13,8 @@ interface StudentSnapshotProps {
   className?: string | null;
   tenantName?: string | null;
   avatarUrl?: string | null;
+  birthDate?: string | null;
+  courseName?: string | null;
   onGenerateReport?: () => void;
   onContactSecretary?: () => void;
 }
@@ -23,6 +25,8 @@ const StudentSnapshot: React.FC<StudentSnapshotProps> = ({
   className,
   tenantName,
   avatarUrl,
+  birthDate,
+  courseName,
   onGenerateReport,
   onContactSecretary,
 }) => {
@@ -50,34 +54,36 @@ const StudentSnapshot: React.FC<StudentSnapshotProps> = ({
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
             <div>
               <div className="text-xs text-muted-foreground">Matrícula</div>
-              <div className="font-medium">{registrationCode || "N/A"}</div>
+              <div className="font-medium break-words">{registrationCode || "N/A"}</div>
             </div>
             <div>
-              <div className="text-xs text-muted-foreground">Turma</div>
-              <div className="font-medium">{className || "N/A"}</div>
+              <div className="text-xs text-muted-foreground">Turma / Curso</div>
+              <div className="font-medium">{className || "N/A"}{courseName ? ` — ${courseName}` : ''}</div>
             </div>
             <div>
-              <div className="text-xs text-muted-foreground">Ações</div>
-              <div className="flex flex-col sm:flex-row gap-2 mt-2">
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={onGenerateReport}
-                  className="w-full sm:w-auto"
-                >
-                  <FileText className="mr-2 h-4 w-4" />
-                  Gerar Boletim
-                </Button>
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  onClick={onContactSecretary}
-                  className="w-full sm:w-auto"
-                >
-                  Secretaria
-                </Button>
-              </div>
+              <div className="text-xs text-muted-foreground">Nascimento</div>
+              <div className="font-medium">{birthDate || 'N/A'}</div>
             </div>
+          </div>
+
+          <div className="mt-3 flex flex-col sm:flex-row gap-2">
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={onGenerateReport}
+              className="w-full sm:w-auto"
+            >
+              <FileText className="mr-2 h-4 w-4" />
+              Gerar Boletim
+            </Button>
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={onContactSecretary}
+              className="w-full sm:w-auto"
+            >
+              Secretaria
+            </Button>
           </div>
         </CardDescription>
       </CardHeader>
