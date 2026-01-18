@@ -105,11 +105,12 @@ const DocumentsPage: React.FC = () => {
       if (!docData?.file_url) throw new Error("URL do arquivo não encontrada para exclusão.");
 
       const pathSegments = docData.file_url.split('/');
-      const bucketName = pathSegments[6];
-      const filePath = pathSegments.slice(7).join('/');
+      // Correção: O nome do bucket está no índice 7 e o filePath começa no índice 8
+      const bucketName = pathSegments[7]; 
+      const filePath = pathSegments.slice(8).join('/');
 
       if (bucketName !== 'school-documents') {
-        throw new Error("Bucket de armazenamento inválido para exclusão.");
+        throw new Error(`Bucket de armazenamento inválido para exclusão: ${bucketName}. Esperado 'school-documents'.`);
       }
 
       const { error: storageError } = await supabase.storage
