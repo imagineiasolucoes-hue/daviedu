@@ -33,8 +33,8 @@ export const useSuperAdminTasks = () => {
     staleTime: 1000 * 60, // 1 minute
   });
 
-  const createTask = useMutation(
-    async (payload: Partial<SuperAdminTask>) => {
+  const createTask = useMutation<SuperAdminTask, Error, Partial<SuperAdminTask>>({
+    mutationFn: async (payload) => {
       const { data, error } = await supabase
         .from("super_admin_tasks")
         .insert([{ ...payload }])
@@ -43,19 +43,21 @@ export const useSuperAdminTasks = () => {
       if (error) throw new Error(error.message);
       return data as SuperAdminTask;
     },
-    {
-      onSuccess: () => {
-        queryClient.invalidateQueries({ queryKey: ["superAdminTasks"] });
-        toast.success("Tarefa criada com sucesso");
-      },
-      onError: (err: any) => {
-        toast.error(err.message || "Erro ao criar tarefa");
-      },
-    }
-  );
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["superAdminTasks"] });
+      toast.success("Tarefa criada com sucesso");
+    },
+    onError: (err) => {
+      toast.error(err.message || "Erro ao criar tarefa");
+    },
+  });
 
-  const updateTask = useMutation(
-    async ({ id, updates }: { id: string; updates: Partial<SuperAdminTask> }) => {
+  const updateTask = useMutation<
+    SuperAdminTask,
+    Error,
+    { id: string; updates: Partial<SuperAdminTask> }
+  >({
+    mutationFn: async ({ id, updates }) => {
       const { data, error } = await supabase
         .from("super_admin_tasks")
         .update({ ...updates })
@@ -65,33 +67,29 @@ export const useSuperAdminTasks = () => {
       if (error) throw new Error(error.message);
       return data as SuperAdminTask;
     },
-    {
-      onSuccess: () => {
-        queryClient.invalidateQueries({ queryKey: ["superAdminTasks"] });
-        toast.success("Tarefa atualizada");
-      },
-      onError: (err: any) => {
-        toast.error(err.message || "Erro ao atualizar tarefa");
-      },
-    }
-  );
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["superAdminTasks"] });
+      toast.success("Tarefa atualizada");
+    },
+    onError: (err) => {
+      toast.error(err.message || "Erro ao atualizar tarefa");
+    },
+  });
 
-  const deleteTask = useMutation(
-    async (id: string) => {
+  const deleteTask = useMutation<string, Error, string>({
+    mutationFn: async (id) => {
       const { error } = await supabase.from("super_admin_tasks").delete().eq("id", id);
       if (error) throw new Error(error.message);
       return id;
     },
-    {
-      onSuccess: () => {
-        queryClient.invalidateQueries({ queryKey: ["superAdminTasks"] });
-        toast.success("Tarefa removida");
-      },
-      onError: (err: any) => {
-        toast.error(err.message || "Erro ao remover tarefa");
-      },
-    }
-  );
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["superAdminTasks"] });
+      toast.success("Tarefa removida");
+    },
+    onError: (err) => {
+      toast.error(err.message || "Erro ao remover tarefa");
+    },
+  });
 
   return {
     tasks: data ?? [],

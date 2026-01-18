@@ -6,7 +6,6 @@ import { useSuperAdminTasks, SuperAdminTask } from "@/hooks/useSuperAdminTasks";
 import TaskForm from "./TaskForm";
 import { Button } from "@/components/ui/button";
 import { Loader2, Clock, Check, Trash2, Edit } from "lucide-react";
-import { toast } from "sonner";
 
 const TaskCard: React.FC<{
   task: SuperAdminTask;
@@ -22,7 +21,11 @@ const TaskCard: React.FC<{
         <div>
           <div className="flex items-center gap-2">
             <h3 className="font-semibold">{task.title}</h3>
-            {task.status === "scheduled" && <span className="text-xs text-muted-foreground flex items-center gap-1"><Clock className="h-3 w-3" /> Agendada</span>}
+            {task.status === "scheduled" && (
+              <span className="text-xs text-muted-foreground flex items-center gap-1">
+                <Clock className="h-3 w-3" /> Agendada
+              </span>
+            )}
             {task.status === "completed" && <span className="text-xs text-green-600">Concluída</span>}
           </div>
           <p className="text-sm text-muted-foreground">{task.description}</p>
@@ -50,12 +53,12 @@ const TaskManager: React.FC = () => {
   const { tasks, isLoading, createTask, updateTask, deleteTask } = useSuperAdminTasks();
   const [editing, setEditing] = React.useState<SuperAdminTask | null>(null);
 
-  const handleCreate = async (payload: any) => {
+  const handleCreate = async (payload: Partial<SuperAdminTask>) => {
     // created_by will be set server-side by policy (we require created_by = auth.uid() in policy)
     await createTask.mutateAsync({ ...payload, created_by: undefined });
   };
 
-  const handleUpdate = async (payload: any) => {
+  const handleUpdate = async (payload: Partial<SuperAdminTask>) => {
     if (!editing) return;
     await updateTask.mutateAsync({ id: editing.id, updates: payload });
     setEditing(null);
