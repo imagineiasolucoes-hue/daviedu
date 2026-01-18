@@ -6,6 +6,8 @@ import { useSuperAdminTasks, SuperAdminTask } from "@/hooks/useSuperAdminTasks";
 import TaskForm from "./TaskForm";
 import { Button } from "@/components/ui/button";
 import { Loader2, Clock, Check, Trash2, Edit } from "lucide-react";
+import { useAuth } from "@/components/auth/SessionContextProvider";
+import { toast } from "sonner";
 
 const TaskCard: React.FC<{
   task: SuperAdminTask;
@@ -52,10 +54,18 @@ const TaskCard: React.FC<{
 const TaskManager: React.FC = () => {
   const { tasks, isLoading, createTask, updateTask, deleteTask } = useSuperAdminTasks();
   const [editing, setEditing] = React.useState<SuperAdminTask | null>(null);
+  const { user } = useAuth();
 
   const handleCreate = async (payload: Partial<SuperAdminTask>) => {
-    // created_by will be set server-side by policy (we require created_by = auth.uid() in policy)
-    await createTask.mutateAsync({ ...payload, created_by: undefined });
+    if (!user?.id) {
+      toast.error("Você precisa estar logado para criar uma atualização.");
+      return;
+    }
+
+    await createTask.mutateAsync({
+      ...payload,
+      created_by: user.id,
+    });
   };
 
   const handleUpdate = async (payload: Partial<SuperAdminTask>) => {
