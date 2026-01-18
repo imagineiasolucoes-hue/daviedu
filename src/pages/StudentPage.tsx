@@ -143,11 +143,12 @@ const StudentPage: React.FC = () => {
 
       <main className="flex-grow p-4 md:p-8 max-w-4xl mx-auto w-full space-y-6">
         <Tabs defaultValue="overview" className="w-full">
-          <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4">
-            <TabsTrigger value="overview">Visão Geral</TabsTrigger>
-            <TabsTrigger value="class-diary">Diário de Classe</TabsTrigger>
-            <TabsTrigger value="grades">Notas</TabsTrigger>
-            <TabsTrigger value="documents">Documentos</TabsTrigger>
+          {/* Make the tab list scrollable on small screens to avoid cramped buttons */}
+          <TabsList className="flex gap-2 overflow-x-auto pb-1 hide-scrollbar">
+            <TabsTrigger value="overview" className="whitespace-nowrap">Visão Geral</TabsTrigger>
+            <TabsTrigger value="class-diary" className="whitespace-nowrap">Diário de Classe</TabsTrigger>
+            <TabsTrigger value="grades" className="whitespace-nowrap">Notas</TabsTrigger>
+            <TabsTrigger value="documents" className="whitespace-nowrap">Documentos</TabsTrigger>
           </TabsList>
           <TabsContent value="overview" className="mt-4">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">

@@ -94,6 +94,14 @@ const StudentClassDiarySection: React.FC<StudentClassDiarySectionProps> = ({ stu
     setIsDayModalOpen(true);
   };
 
+  // keyboard support for day tiles
+  const handleDayKeyDown = (e: React.KeyboardEvent, day: Date) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      handleDayClick(day);
+    }
+  };
+
   if (isProfileLoading) {
     return (
       <div className="flex items-center justify-center min-h-[200px]">
@@ -202,7 +210,7 @@ const StudentClassDiarySection: React.FC<StudentClassDiarySectionProps> = ({ stu
                   </div>
                 ))}
                 {emptyDaysBefore.map(key => (
-                  <div key={key} className="h-12 w-full"></div>
+                  <div key={key} className="h-14 w-full"></div>
                 ))}
                 {daysInMonth.map(day => {
                   const dateKey = format(day, 'yyyy-MM-dd');
@@ -212,14 +220,18 @@ const StudentClassDiarySection: React.FC<StudentClassDiarySectionProps> = ({ stu
                   return (
                     <div
                       key={dateKey}
+                      role="button"
+                      tabIndex={0}
+                      aria-label={`Dia ${format(day, 'd')}: ${getStatusText(status)}`}
                       onClick={() => handleDayClick(day)}
+                      onKeyDown={(e) => handleDayKeyDown(e, day)}
                       className={cn(
-                        "h-12 w-full flex flex-col items-center justify-center rounded-md border p-1 cursor-pointer hover:shadow-sm",
+                        "h-14 w-full flex flex-col items-center justify-center rounded-md border p-2 cursor-pointer hover:shadow-sm active:scale-95 transition-transform",
                         getStatusColorClass(status)
                       )}
                     >
-                      <span className="text-xs font-bold">{format(day, 'd')}</span>
-                      <span className="text-[0.6rem] leading-none">{getStatusText(status)}</span>
+                      <span className="text-sm sm:text-xs font-bold">{format(day, 'd')}</span>
+                      <span className="text-[0.65rem] sm:text-[0.6rem] leading-none">{getStatusText(status)}</span>
                     </div>
                   );
                 })}

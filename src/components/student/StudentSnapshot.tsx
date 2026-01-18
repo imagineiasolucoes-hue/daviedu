@@ -58,12 +58,22 @@ const StudentSnapshot: React.FC<StudentSnapshotProps> = ({
             </div>
             <div>
               <div className="text-xs text-muted-foreground">Ações</div>
-              <div className="flex gap-2 mt-1">
-                <Button size="sm" variant="outline" onClick={onGenerateReport}>
+              <div className="flex flex-col sm:flex-row gap-2 mt-2">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={onGenerateReport}
+                  className="w-full sm:w-auto"
+                >
                   <FileText className="mr-2 h-4 w-4" />
                   Gerar Boletim
                 </Button>
-                <Button size="sm" variant="ghost" onClick={onContactSecretary}>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={onContactSecretary}
+                  className="w-full sm:w-auto"
+                >
                   Secretaria
                 </Button>
               </div>
@@ -71,7 +81,19 @@ const StudentSnapshot: React.FC<StudentSnapshotProps> = ({
           </div>
         </CardDescription>
       </CardHeader>
-      <CardContent className="hidden sm:block"></CardContent>
+      {/* Compact footer visible on very small screens to give quick glance info */}
+      <CardContent className="block sm:hidden pt-0">
+        <div className="flex justify-between text-xs text-muted-foreground">
+          <div>
+            <div className="text-[10px]">Último acesso</div>
+            <div className="font-medium text-[12px]">—</div>
+          </div>
+          <div>
+            <div className="text-[10px]">Notificações</div>
+            <div className="font-medium text-[12px]">—</div>
+          </div>
+        </div>
+      </CardContent>
     </Card>
   );
 };

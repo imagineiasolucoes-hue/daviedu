@@ -137,24 +137,26 @@ const StudentGradesSection: React.FC<StudentGradesSectionProps> = ({ studentInfo
                           Média: {average.toFixed(1)} ({isApproved ? 'Aprovado' : 'Reprovado'})
                         </span>
                       </h3>
-                      <Table>
-                        <TableHeader>
-                          <TableRow>
-                            <TableHead className="w-[100px]">Avaliação</TableHead>
-                            <TableHead>Professor</TableHead>
-                            <TableHead className="text-right">Nota</TableHead>
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {subjectGrades.map(grade => (
-                            <TableRow key={grade.id}>
-                              <TableCell className="font-medium">{grade.assessment_type || 'Nota'}</TableCell>
-                              <TableCell>{grade.employees?.full_name || 'N/A'}</TableCell>
-                              <TableCell className="text-right font-bold">{grade.grade_value.toFixed(1)}</TableCell>
+                      <div className="overflow-x-auto">
+                        <Table>
+                          <TableHeader>
+                            <TableRow>
+                              <TableHead className="w-[100px]">Avaliação</TableHead>
+                              <TableHead>Professor</TableHead>
+                              <TableHead className="text-right">Nota</TableHead>
                             </TableRow>
-                          ))}
-                        </TableBody>
-                      </Table>
+                          </TableHeader>
+                          <TableBody>
+                            {subjectGrades.map(grade => (
+                              <TableRow key={grade.id}>
+                                <TableCell className="font-medium">{grade.assessment_type || 'Nota'}</TableCell>
+                                <TableCell>{grade.employees?.full_name || 'N/A'}</TableCell>
+                                <TableCell className="text-right font-bold">{grade.grade_value.toFixed(1)}</TableCell>
+                              </TableRow>
+                            ))}
+                          </TableBody>
+                        </Table>
+                      </div>
                     </div>
                   );
                 })}
