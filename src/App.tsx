@@ -46,6 +46,7 @@ import SubscriptionsPage from "./pages/super-admin/SubscriptionsPage";
 import TermsPage from "./pages/TermsPage";
 import TeacherClassDiaryPage from "./pages/TeacherClassDiaryPage";
 import AdminClassDiaryOverviewPage from "./pages/AdminClassDiaryOverviewPage";
+import SuperAdminTasksPage from "./pages/super-admin/SuperAdminTasksPage";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -118,6 +119,7 @@ const App = () => {
                     <Route path="/backup" element={<BackupDashboard />} />
                     <Route path="/super-admin/tenants" element={<TenantsPage />} />
                     <Route path="/super-admin/users" element={<UsersPage />} />
+                    <Route path="/super-admin/tasks" element={<SuperAdminTasksPage />} />
                     <Route path="/super-admin/messages" element={<SuperAdminMessagesPage />} />
                     <Route path="/super-admin/subscriptions" element={<SubscriptionsPage />} />
                   </Route>
