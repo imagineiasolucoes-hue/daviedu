@@ -6,6 +6,7 @@ const AppFooter: React.FC = () => {
   const appVersion = import.meta.env.VITE_APP_VERSION;
   const buildTimestamp = import.meta.env.VITE_BUILD_TIMESTAMP;
   const fullVersion = `v${appVersion}.${buildTimestamp}`;
+  const envMode = import.meta.env.MODE || 'development';
 
   return (
     <footer className="w-full border-t border-border/50 bg-background p-4 print-hidden">
@@ -17,7 +18,7 @@ const AppFooter: React.FC = () => {
           </p>
           {appVersion && buildTimestamp && (
             <p className="font-mono text-muted-foreground/80">
-              {fullVersion}
+              Versão: {fullVersion} — Ambiente: {envMode}
             </p>
           )}
         </div>

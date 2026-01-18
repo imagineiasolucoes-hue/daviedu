@@ -63,6 +63,26 @@ const StudentPage: React.FC = () => {
     enabled: !!userId && !!tenantId && isStudent,
   });
 
+  // Fetch guardians linked to the student to show responsible name
+  const { data: guardiansData, isLoading: isLoadingGuardians } = useQuery<any[] | null, Error>({
+    queryKey: ['studentGuardians', studentInfo?.id],
+    queryFn: async () => {
+      if (!studentInfo?.id) return null;
+      const { data, error } = await supabase
+        .from('student_guardians')
+        .select('is_primary, guardians ( full_name )')
+        .eq('student_id', studentInfo.id);
+      if (error) throw new Error(error.message);
+      return data;
+    },
+    enabled: !!studentInfo?.id,
+  });
+
+  const primaryGuardian = guardiansData && guardiansData.length > 0
+    ? guardiansData.find(g => g.is_primary) || guardiansData[0]
+    : null;
+  const responsibleName = primaryGuardian?.guardians?.full_name ?? null;
+
   const handleLogout = async () => {
     try {
       await supabase.auth.signOut();
@@ -160,6 +180,7 @@ const StudentPage: React.FC = () => {
                 birthDate={format(new Date(studentInfo.birth_date), 'dd/MM/yyyy', { locale: ptBR })}
                 courseName={studentInfo.courses?.name || null}
                 avatarUrl={undefined}
+                responsibleName={responsibleName}
                 onGenerateReport={handleViewReportCard}
                 onContactSecretary={() => {
                   toast("Para falar com a secretaria, envie um email para a secretaria da escola.", { type: "info" });

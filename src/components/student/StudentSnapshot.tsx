@@ -15,6 +15,7 @@ interface StudentSnapshotProps {
   avatarUrl?: string | null;
   birthDate?: string | null;
   courseName?: string | null;
+  responsibleName?: string | null;
   onGenerateReport?: () => void;
   onContactSecretary?: () => void;
 }
@@ -27,9 +28,11 @@ const StudentSnapshot: React.FC<StudentSnapshotProps> = ({
   avatarUrl,
   birthDate,
   courseName,
+  responsibleName,
   onGenerateReport,
   onContactSecretary,
 }) => {
+  const firstName = fullName ? fullName.split(' ')[0] : '';
   return (
     <Card className="w-full">
       <CardHeader>
@@ -45,9 +48,9 @@ const StudentSnapshot: React.FC<StudentSnapshotProps> = ({
           </Avatar>
           <div className="flex flex-col">
             <span className="font-semibold text-base">{fullName}</span>
-            <span className="text-sm text-muted-foreground">
-              {tenantName ? tenantName : "Instituição"}
-            </span>
+            <span className="text-sm text-muted-foreground">{tenantName ? tenantName : "Instituição"}</span>
+            {/* Greeting */}
+            <span className="text-sm text-muted-foreground mt-1">Bem-vindo(a), {firstName}!</span>
           </div>
         </CardTitle>
         <CardDescription className="mt-2 text-sm">
@@ -84,6 +87,11 @@ const StudentSnapshot: React.FC<StudentSnapshotProps> = ({
             >
               Secretaria
             </Button>
+          </div>
+          {/* Responsible name */}
+          <div className="mt-3 text-sm text-muted-foreground">
+            <span className="text-xs text-muted-foreground">Responsável</span>
+            <div className="font-medium">{responsibleName || '—'}</div>
           </div>
         </CardDescription>
       </CardHeader>
