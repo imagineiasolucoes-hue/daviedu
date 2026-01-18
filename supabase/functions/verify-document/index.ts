@@ -1,82 +1,75 @@
-declare const Deno: {
-  env: {
-    get(key: string): string | undefined;
-  };
-};
-
-// @ts-ignore
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
-// @ts-ignore
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0';
 
 const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-async function sha256hex(message: string) {
-  const encoder = new TextEncoder();
-  const data = encoder.encode(message);
-  const hashBuffer = await crypto.subtle.digest('SHA-256', data);
-  const hashArray = Array.from(new Uint8Array(hashBuffer));
-  return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-}
-
 serve(async (req) => {
-  if (req.method === "OPTIONS") {
+  // Handle CORS preflight request
+  if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
+    // Create a Supabase client with the anon key for public access
+    const supabaseClient = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
+      {
+        global: { headers: { 'Authorization': req.headers.get('Authorization')! } },
+      }
+    );
+
     const { token } = await req.json();
 
     if (!token) {
-      throw new Error("Token de verificação é obrigatório.");
+      console.error("[verify-document] Missing token in request body.");
+      return new Response(JSON.stringify({ error: 'Token is required' }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 400,
+      });
     }
 
-    const supabaseAdmin = createClient(
-      Deno.env.get("SUPABASE_URL") ?? "",
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
-    );
-
-    // Compute hash of provided token and query by token_hash
-    const token_hash = await sha256hex(token);
-
-    // 1. Buscar o document_id usando the token_hash
-    const { data: tokenData, error: tokenError } = await supabaseAdmin
-      .from('document_verification_tokens')
-      .select('document_id, is_active')
-      .eq('token_hash', token_hash)
-      .single();
-
-    if (tokenError || !tokenData || !tokenData.is_active) {
-      throw new Error("Token inválido ou inativo.");
-    }
-
-    const documentId = tokenData.document_id;
-
-    // 2. Buscar os detalhes do documento (que contém o student_id e o tipo de documento)
-    const { data: documentDetails, error: documentError } = await supabaseAdmin
+    // 1. Find the document by verification_link
+    const { data: documentData, error: documentError } = await supabaseClient
       .from('documents')
-      .select('related_entity_id, tenant_id, document_type')
-      .eq('id', documentId)
+      .select(`
+        id,
+        document_type,
+        related_entity_id,
+        tenant_id,
+        status,
+        signed_at,
+        signed_by_guardian_id,
+        school_signed_at,
+        school_signed_by_profile_id
+      `)
+      .eq('verification_link', token)
       .single();
 
-    if (documentError || !documentDetails || 
-        (documentDetails.document_type !== 'transcript' && documentDetails.document_type !== 'report_card')) {
-      throw new Error("Documento não encontrado ou não é um histórico escolar ou boletim.");
+    if (documentError || !documentData) {
+      console.error("[verify-document] Document not found or error fetching document:", documentError?.message || "No document data");
+      return new Response(JSON.stringify({ error: 'Document not found or invalid token' }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 404,
+      });
     }
 
-    const studentId = documentDetails.related_entity_id;
-    const tenantId = documentDetails.tenant_id;
-    const documentType = documentDetails.document_type; // Captura o tipo de documento
+    const studentId = documentData.related_entity_id;
+    const tenantId = documentData.tenant_id;
 
     if (!studentId || !tenantId) {
-      throw new Error("ID do aluno ou da escola não encontrado no documento.");
+      console.error("[verify-document] Missing student_id or tenant_id in document data.");
+      return new Response(JSON.stringify({ error: 'Document data incomplete' }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 500,
+      });
     }
 
-    // 3. Buscar dados do aluno
-    const { data: studentData, error: studentError } = await supabaseAdmin
+    // 2. Fetch student details
+    const { data: studentRaw, error: studentError } = await supabaseClient
       .from('students')
       .select(`
         id, 
@@ -86,7 +79,7 @@ serve(async (req) => {
         tenant_id, 
         class_id,
         course_id,
-        created_at,
+        created_at, 
         gender,
         nationality,
         naturality,
@@ -102,71 +95,83 @@ serve(async (req) => {
         courses (name),
         student_guardians (
           guardians (
+            id,
             full_name,
             relationship,
             phone,
-            email
+            email,
+            cpf
           )
         )
       `)
       .eq('id', studentId)
       .single();
 
-    if (studentError) {
-      console.error("Supabase Student Fetch Error:", studentError);
-      throw new Error(`Erro ao buscar dados do aluno: ${studentError.message}`);
+    if (studentError || !studentRaw) {
+      console.error("[verify-document] Error fetching student data:", studentError?.message || "No student data");
+      return new Response(JSON.stringify({ error: 'Student data not found' }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 404,
+      });
     }
-    
-    // Processar guardiões
-    const student = studentData as any;
-    student.guardians = student.student_guardians?.map((sg: any) => sg.guardians).filter(Boolean) || [];
-    delete student.student_guardians;
+
+    // Flatten guardians data
+    const student = {
+      ...studentRaw,
+      guardians: studentRaw.student_guardians?.map((sg: any) => sg.guardians).filter(Boolean) || [],
+    };
+    delete (student as any).student_guardians;
 
 
-    // 4. Buscar dados do tenant
-    const { data: tenantData, error: tenantError } = await supabaseAdmin
+    // 3. Fetch tenant details
+    const { data: tenantData, error: tenantError } = await supabaseClient
       .from('tenants')
       .select('name, config')
       .eq('id', tenantId)
       .single();
 
-    if (tenantError) {
-      console.error("Supabase Tenant Fetch Error:", tenantError);
-      throw new Error(`Erro ao buscar dados da escola: ${tenantError.message}`);
+    if (tenantError || !tenantData) {
+      console.error("[verify-document] Error fetching tenant data:", tenantError?.message || "No tenant data");
+      return new Response(JSON.stringify({ error: 'Tenant data not found' }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 404,
+      });
     }
 
-    // 5. Buscar resumo acadêmico usando a função SQL
-    const { data: academicSummaryData, error: academicSummaryError } = await supabaseAdmin.rpc(
-        'calculate_student_academic_summary', 
-        { p_student_id: studentId }
+    // 4. Calculate academic summary (using the existing Supabase function)
+    // This is optional for contract verification, so we handle errors gracefully
+    const { data: academicSummaryData, error: academicSummaryError } = await supabaseClient.rpc(
+      'calculate_student_academic_summary',
+      { p_student_id: studentId }
     );
 
     if (academicSummaryError) {
-      console.error("Supabase Academic Summary RPC Error:", academicSummaryError);
-      throw new Error(`Erro ao calcular resumo acadêmico: ${academicSummaryError.message}`);
+      console.warn("[verify-document] Could not calculate academic summary:", academicSummaryError.message);
+      // Provide a default empty structure if calculation fails
     }
-    
-    // O resultado é um objeto JSONB que contém 'subjects' e 'periods'
-    const academicSummary = academicSummaryData;
 
-    return new Response(JSON.stringify({
+    const academicSummary = academicSummaryData || { subjects: [], periods: [] };
+
+    const verificationData = {
       success: true,
-      student: student,
+      documentId: documentData.id,
+      student,
       tenant: tenantData,
-      academicSummary: academicSummary, // Retorna o resumo processado
-      documentId: documentId,
-      documentType: documentType,
-    }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
+      academicSummary,
+    };
+
+    console.log(`[verify-document] Document ${documentData.id} verified successfully.`);
+
+    return new Response(JSON.stringify(verificationData), {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 200,
     });
 
   } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : "Ocorreu um erro inesperado.";
-    console.error("Edge Function CATCH block error (verify-document):", errorMessage);
-    return new Response(JSON.stringify({ error: errorMessage }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-      status: 400,
+    console.error("[verify-document] General error:", error.message);
+    return new Response(JSON.stringify({ error: error.message }), {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      status: 500,
     });
   }
 });

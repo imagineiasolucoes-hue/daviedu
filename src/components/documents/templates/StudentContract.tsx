@@ -13,6 +13,7 @@ import { useAuth } from '@/components/auth/SessionContextProvider';
 import { formatCurrency } from '@/lib/utils';
 import { toast } from 'sonner';
 import { QRCodeSVG } from 'qrcode.react';
+import html2pdf from 'html2pdf.js';
 
 // --- Tipos de Dados ---
 interface GuardianDetails {
@@ -331,6 +332,15 @@ const StudentContract: React.FC = () => {
     window.print();
   };
 
+  const handleDownloadPdf = () => {
+    if (printRef.current) {
+      const element = printRef.current;
+      html2pdf().from(element).save(`Contrato_Matricula_${student?.full_name.replace(/\s/g, '_')}.pdf`);
+    } else {
+      toast.error("Erro ao gerar PDF", { description: "Não foi possível encontrar o conteúdo do contrato para download." });
+    }
+  };
+
   const isLoading = isLoadingStudent || isLoadingTenant || isLoadingTemplate || isLoadingDocumentStatus;
   const error = studentError || tenantError || templateError;
 
@@ -440,6 +450,11 @@ const StudentContract: React.FC = () => {
                   <LinkIcon className="mr-2 h-4 w-4" />
                   )}
                   Gerar Link de Verificação
+              </Button>
+            )}
+            {isSignedBySchool && isSignedByGuardian && ( // Botão de download visível apenas se ambos assinaram
+              <Button onClick={handleDownloadPdf}>
+                <FileText className="mr-2 h-4 w-4" /> Baixar PDF
               </Button>
             )}
             <Button onClick={handlePrint}>
