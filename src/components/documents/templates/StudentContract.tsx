@@ -528,11 +528,22 @@ const StudentContract: React.FC = () => {
                     <p className="font-semibold">{signedGuardianName}</p>
                     <p className="text-xs text-muted-foreground">Responsável Legal</p>
                     {signedGuardianCpf && <p className="text-xs text-muted-foreground">CPF: {signedGuardianCpf}</p>}
+                    {isSignedByGuardian && documentStatus?.signed_at && (
+                        <p className="text-xs text-muted-foreground">
+                            Assinado em: {format(new Date(documentStatus.signed_at), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}
+                        </p>
+                    )}
                 </div>
                 <div className="space-y-2">
                     <Separator className="bg-foreground" />
                     <p className="font-semibold">{tenant?.name}</p>
                     <p className="text-xs text-muted-foreground">Escola Contratada</p>
+                    {tenant?.config?.cnpj && <p className="text-xs text-muted-foreground">CNPJ: {tenant.config.cnpj}</p>}
+                    {isSignedBySchool && documentStatus?.school_signed_at && (
+                        <p className="text-xs text-muted-foreground">
+                            Assinado em: {format(new Date(documentStatus.school_signed_at), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}
+                        </p>
+                    )}
                 </div>
             </div>
 
