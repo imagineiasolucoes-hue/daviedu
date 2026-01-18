@@ -73,6 +73,8 @@ interface DocumentDetails {
     full_name: string;
     cpf: string | null;
   } | null;
+  school_signed_at: string | null; // NOVO: Data da assinatura da escola
+  school_signed_by_profile_id: string | null; // NOVO: ID do perfil que assinou pela escola
 }
 
 // --- Funções de Busca ---
@@ -145,6 +147,8 @@ const fetchDocumentStatus = async (studentId: string): Promise<DocumentDetails |
           status, 
           signed_at, 
           signed_by_guardian_id,
+          school_signed_at,
+          school_signed_by_profile_id,
           guardians (full_name, cpf)
         `)
         .eq('related_entity_id', studentId)
@@ -222,23 +226,27 @@ const StudentContract: React.FC = () => {
     return newDoc.id;
   };
 
-  const generateTokenMutation = useMutation({
-    mutationFn: async (documentId: string) => {
-      const { data, error } = await supabase.functions.invoke('generate-document-token', {
-        body: JSON.stringify({ document_id: documentId }),
+  // Nova mutação para a assinatura da escola
+  const signSchoolContractMutation = useMutation({
+    mutationFn: async (document_id: string) => {
+      if (!tenantId || !studentId) throw new Error("Dados ausentes.");
+      
+      const { error } = await supabase.functions.invoke('sign-school-contract', {
+        body: JSON.stringify({ 
+          document_id: document_id, 
+          tenant_id: tenantId, 
+          student_id: studentId,
+        }),
       });
       if (error) throw new Error(error.message);
-      // @ts-ignore
-      if (data.error) throw new Error(data.error);
-      // @ts-ignore
-      return data.token as string;
     },
-    onSuccess: (token) => {
-      setVerificationLink(`${window.location.origin}/verify-document/${token}`);
-      toast.success("Link de verificação gerado com sucesso!");
+    onSuccess: () => {
+      toast.success("Contrato assinado pela escola com sucesso!");
+      refetchDocumentStatus();
+      queryClient.invalidateQueries({ queryKey: ['documents', tenantId] });
     },
     onError: (error) => {
-      toast.error("Erro ao gerar link de verificação", { description: error.message });
+      toast.error("Erro ao Assinar Contrato pela Escola", { description: error.message });
     },
   });
 
@@ -266,10 +274,39 @@ const StudentContract: React.FC = () => {
     },
   });
 
+  const generateTokenMutation = useMutation({
+    mutationFn: async (documentId: string) => {
+      const { data, error } = await supabase.functions.invoke('generate-document-token', {
+        body: JSON.stringify({ document_id: documentId }),
+      });
+      if (error) throw new Error(error.message);
+      // @ts-ignore
+      if (data.error) throw new Error(data.error);
+      // @ts-ignore
+      return data.token as string;
+    },
+    onSuccess: (token) => {
+      setVerificationLink(`${window.location.origin}/verify-document/${token}`);
+      toast.success("Link de verificação gerado com sucesso!");
+    },
+    onError: (error) => {
+      toast.error("Erro ao gerar link de verificação", { description: error.message });
+    },
+  });
+
   const handleGenerateVerificationLink = async () => {
     const docId = await ensureDocumentExists();
     if (docId) {
       generateTokenMutation.mutate(docId);
+    }
+  };
+
+  const handleSignSchoolContract = async () => {
+    const docId = await ensureDocumentExists();
+    if (docId) {
+      signSchoolContractMutation.mutate(docId);
+    } else {
+      toast.error("Erro", { description: "Não foi possível criar ou encontrar o registro do contrato para assinatura da escola." });
     }
   };
 
@@ -369,8 +406,11 @@ const StudentContract: React.FC = () => {
     );
   }
 
-  const isSigned = documentStatus?.status === 'signed';
-  const canSign = (isAdmin || isSecretary) && !isSigned; 
+  const isSignedByGuardian = documentStatus?.status === 'signed';
+  const isSignedBySchool = !!documentStatus?.school_signed_at;
+  const canSignBySchool = (isAdmin || isSecretary) && !isSignedBySchool;
+  const canSignByGuardian = (isAdmin || isSecretary) && !isSignedByGuardian && isSignedBySchool; // Só pode assinar pelo responsável se a escola já assinou
+  const canGenerateLink = (isAdmin || isSecretary) && isSignedBySchool; // Só pode gerar link se a escola já assinou
 
   const primaryGuardian = student?.guardians.find(g => g.relationship === 'Pai' || g.relationship === 'Mãe' || g.relationship === 'Tutor') || student?.guardians[0];
   const signedGuardianName = documentStatus?.guardians?.full_name || primaryGuardian?.full_name || 'N/A';
@@ -388,18 +428,20 @@ const StudentContract: React.FC = () => {
             </Link>
           </Button>
           <div className="flex gap-2">
-            <Button 
-                onClick={handleGenerateVerificationLink} 
-                disabled={generateTokenMutation.isPending}
-                variant="secondary"
-            >
-                {generateTokenMutation.isPending ? (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                ) : (
-                <LinkIcon className="mr-2 h-4 w-4" />
-                )}
-                Gerar Link de Verificação
-            </Button>
+            {canGenerateLink && (
+              <Button 
+                  onClick={handleGenerateVerificationLink} 
+                  disabled={generateTokenMutation.isPending || !canGenerateLink}
+                  variant="secondary"
+              >
+                  {generateTokenMutation.isPending ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  ) : (
+                  <LinkIcon className="mr-2 h-4 w-4" />
+                  )}
+                  Gerar Link de Verificação
+              </Button>
+            )}
             <Button onClick={handlePrint}>
               <Printer className="mr-2 h-4 w-4" /> Imprimir Contrato
             </Button>
@@ -420,26 +462,53 @@ const StudentContract: React.FC = () => {
 
         {/* Status de Assinatura */}
         <Card className="mb-6 p-3">
-            <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                    <FileText className="h-5 w-5 text-primary" />
-                    <span className="font-semibold text-sm">Status do Contrato:</span>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Status da Assinatura da Escola */}
+                <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                        <School className="h-5 w-5 text-primary" />
+                        <span className="font-semibold text-sm">Assinatura da Escola:</span>
+                    </div>
+                    {isSignedBySchool ? (
+                        <div className="flex items-center gap-2 text-green-600 font-bold">
+                            <CheckCircle className="h-5 w-5" />
+                            ASSINADO
+                        </div>
+                    ) : (
+                        <div className="flex items-center gap-2 text-yellow-600 font-bold">
+                            <Signature className="h-5 w-5" />
+                            PENDENTE
+                        </div>
+                    )}
                 </div>
-                {isSigned ? (
-                    <div className="flex items-center gap-2 text-green-600 font-bold">
-                        <CheckCircle className="h-5 w-5" />
-                        ASSINADO DIGITALMENTE
+
+                {/* Status da Assinatura do Responsável */}
+                <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                        <User className="h-5 w-5 text-primary" />
+                        <span className="font-semibold text-sm">Assinatura do Responsável:</span>
                     </div>
-                ) : (
-                    <div className="flex items-center gap-2 text-yellow-600 font-bold">
-                        <Signature className="h-5 w-5" />
-                        PENDENTE DE ASSINATURA
-                    </div>
-                )}
+                    {isSignedByGuardian ? (
+                        <div className="flex items-center gap-2 text-green-600 font-bold">
+                            <CheckCircle className="h-5 w-5" />
+                            ASSINADO
+                        </div>
+                    ) : (
+                        <div className="flex items-center gap-2 text-yellow-600 font-bold">
+                            <Signature className="h-5 w-5" />
+                            PENDENTE
+                        </div>
+                    )}
+                </div>
             </div>
-            {isSigned && documentStatus?.signed_at && (
+            {isSignedBySchool && (
                 <p className="text-xs text-muted-foreground mt-1 text-right">
-                    Assinado em: {format(new Date(documentStatus.signed_at), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}
+                    Pela escola em: {format(new Date(documentStatus!.school_signed_at!), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}
+                </p>
+            )}
+            {isSignedByGuardian && documentStatus?.signed_at && (
+                <p className="text-xs text-muted-foreground mt-1 text-right">
+                    Pelo responsável em: {format(new Date(documentStatus.signed_at), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}
                 </p>
             )}
         </Card>
@@ -467,11 +536,27 @@ const StudentContract: React.FC = () => {
                 </div>
             </div>
 
-            {/* Botão de Assinatura Digital (Visível apenas para Admin/Secretary e se não estiver assinado) */}
-            {canSign && (
+            {/* Botão de Assinatura da Escola */}
+            {canSignBySchool && (
+                <Button 
+                    onClick={handleSignSchoolContract} 
+                    disabled={signSchoolContractMutation.isPending}
+                    className="w-full max-w-xs bg-primary hover:bg-primary/90 print-hidden"
+                >
+                    {signSchoolContractMutation.isPending ? (
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    ) : (
+                        <Signature className="mr-2 h-4 w-4" />
+                    )}
+                    Assinar Pela Escola
+                </Button>
+            )}
+
+            {/* Botão de Assinatura Digital (Pelo Responsável) */}
+            {canSignByGuardian && (
                 <Button 
                     onClick={handleSignContract} 
-                    disabled={signContractMutation.isPending}
+                    disabled={signContractMutation.isPending || !canSignByGuardian}
                     className="w-full max-w-xs bg-accent hover:bg-accent/90 print-hidden"
                 >
                     {signContractMutation.isPending ? (
