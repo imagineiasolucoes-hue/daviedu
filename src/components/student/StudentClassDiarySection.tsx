@@ -8,6 +8,7 @@ import { format, parseISO, startOfMonth, endOfMonth, eachDayOfInterval, isSameDa
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { ptBR } from 'date-fns/locale';
+import DayEntriesModal from './DayEntriesModal';
 
 interface StudentInfo {
   id: string;
@@ -38,6 +39,10 @@ const StudentClassDiarySection: React.FC<StudentClassDiarySectionProps> = ({ stu
   const [entries, setEntries] = useState<ClassDiaryEntry[]>([]);
   const [isLoadingEntries, setIsLoadingEntries] = useState(false);
   const [currentMonth, setCurrentMonth] = useState<Date>(new Date());
+  // Modal state for day entries
+  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
+  const [isDayModalOpen, setIsDayModalOpen] = useState(false);
+  const [selectedDayEntries, setSelectedDayEntries] = useState<ClassDiaryEntry[] | null>(null);
 
   const tenantId = profile?.tenant_id;
   const studentId = studentInfo.id;
@@ -80,6 +85,14 @@ const StudentClassDiarySection: React.FC<StudentClassDiarySectionProps> = ({ stu
 
     fetchEntries();
   }, [classId, tenantId, studentId, currentMonth]);
+
+  const handleDayClick = (day: Date) => {
+    const dateKey = format(day, 'yyyy-MM-dd');
+    const dayEntries = entries.filter(e => format(parseISO(e.entry_date), 'yyyy-MM-dd') === dateKey);
+    setSelectedDate(day);
+    setSelectedDayEntries(dayEntries);
+    setIsDayModalOpen(true);
+  };
 
   if (isProfileLoading) {
     return (
@@ -197,10 +210,14 @@ const StudentClassDiarySection: React.FC<StudentClassDiarySectionProps> = ({ stu
                   const status = dayAttendance?.status || 'not_recorded';
                   
                   return (
-                    <div key={dateKey} className={cn(
-                      "h-12 w-full flex flex-col items-center justify-center rounded-md border p-1",
-                      getStatusColorClass(status)
-                    )}>
+                    <div
+                      key={dateKey}
+                      onClick={() => handleDayClick(day)}
+                      className={cn(
+                        "h-12 w-full flex flex-col items-center justify-center rounded-md border p-1 cursor-pointer hover:shadow-sm",
+                        getStatusColorClass(status)
+                      )}
+                    >
                       <span className="text-xs font-bold">{format(day, 'd')}</span>
                       <span className="text-[0.6rem] leading-none">{getStatusText(status)}</span>
                     </div>
@@ -211,6 +228,13 @@ const StudentClassDiarySection: React.FC<StudentClassDiarySectionProps> = ({ stu
           )}
         </CardContent>
       </Card>
+
+      <DayEntriesModal
+        open={isDayModalOpen}
+        onOpenChange={(open) => setIsDayModalOpen(open)}
+        date={selectedDate}
+        entries={selectedDayEntries || []}
+      />
     </div>
   );
 };

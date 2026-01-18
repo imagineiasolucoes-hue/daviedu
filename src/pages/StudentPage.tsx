@@ -12,6 +12,7 @@ import { ptBR } from 'date-fns/locale';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import StudentClassDiarySection from '@/components/student/StudentClassDiarySection';
 import StudentGradesSection from '@/components/student/StudentGradesSection';
+import StudentSnapshot from '@/components/student/StudentSnapshot';
 
 interface StudentInfo {
   id: string;
@@ -149,23 +150,40 @@ const StudentPage: React.FC = () => {
             <TabsTrigger value="documents">Documentos</TabsTrigger>
           </TabsList>
           <TabsContent value="overview" className="mt-4">
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-2xl flex items-center gap-2">
-                  <User className="h-6 w-6 text-accent" />
-                  Bem-vindo(a), {studentInfo.full_name}!
-                </CardTitle>
-                <CardDescription>
-                  Informações da sua matrícula e acesso rápido aos seus documentos.
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-                <p><span className="font-semibold">Matrícula:</span> {studentInfo.registration_code}</p>
-                <p><span className="font-semibold">Turma:</span> {studentInfo.classes?.name || 'N/A'} ({studentInfo.classes?.school_year || 'N/A'})</p>
-                <p><span className="font-semibold">Série/Ano:</span> {studentInfo.courses?.name || 'N/A'}</p>
-                <p><span className="font-semibold">Nascimento:</span> {format(new Date(studentInfo.birth_date), 'dd/MM/yyyy', { locale: ptBR })}</p>
-              </CardContent>
-            </Card>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="md:col-span-1">
+                <StudentSnapshot
+                  fullName={studentInfo.full_name}
+                  registrationCode={studentInfo.registration_code}
+                  className={studentInfo.classes?.name || null}
+                  tenantName={studentInfo.tenants?.name || null}
+                  avatarUrl={undefined}
+                  onGenerateReport={handleViewReportCard}
+                  onContactSecretary={() => {
+                    toast("Para falar com a secretaria, envie um email para a secretaria da escola.", { type: "info" });
+                  }}
+                />
+              </div>
+              <div className="md:col-span-2">
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-2xl flex items-center gap-2">
+                      <User className="h-6 w-6 text-accent" />
+                      Bem-vindo(a), {studentInfo.full_name}!
+                    </CardTitle>
+                    <CardDescription>
+                      Informações da sua matrícula e acesso rápido aos seus documentos.
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                    <p><span className="font-semibold">Matrícula:</span> {studentInfo.registration_code}</p>
+                    <p><span className="font-semibold">Turma:</span> {studentInfo.classes?.name || 'N/A'} ({studentInfo.classes?.school_year || 'N/A'})</p>
+                    <p><span className="font-semibold">Série/Ano:</span> {studentInfo.courses?.name || 'N/A'}</p>
+                    <p><span className="font-semibold">Nascimento:</span> {format(new Date(studentInfo.birth_date), 'dd/MM/yyyy', { locale: ptBR })}</p>
+                  </CardContent>
+                </Card>
+              </div>
+            </div>
           </TabsContent>
           <TabsContent value="class-diary" className="mt-4">
             {studentInfo.class_id && studentInfo.tenant_id ? (
