@@ -32,12 +32,12 @@ serve(async (req) => {
       });
     }
 
-    const token = uuidv4(); // Generate a unique token
+    const token = uuidv4(); // Generate a unique token (UUID)
 
-    // Update the document with the generated verification link
+    // Update the document with the generated UUID token
     const { error: updateError } = await supabaseClient
       .from('documents')
-      .update({ verification_link: token })
+      .update({ verification_link: token }) // Save ONLY the UUID token
       .eq('id', document_id);
 
     if (updateError) {
@@ -45,9 +45,9 @@ serve(async (req) => {
       throw updateError;
     }
 
-    console.log(`[generate-document-token] Verification token generated and saved for document ${document_id}`);
+    console.log(`[generate-document-token] Verification token (UUID) generated and saved for document ${document_id}: ${token}`);
 
-    return new Response(JSON.stringify({ token }), {
+    return new Response(JSON.stringify({ token }), { // Return ONLY the UUID token
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 200,
     });
