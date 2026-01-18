@@ -20,10 +20,25 @@ import {
 } from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
 import { SchoolDocument } from '@/types/documents';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Label } from '@/components/ui/label';
+
+// Tipos de documentos dinâmicos que podemos gerar
+type DocumentTypeFilter = 'all' | 'contract' | 'receipt' | 'report_card' | 'transcript' | 'payslip' | 'other';
+
+interface Student {
+  id: string;
+  full_name: string;
+  registration_code: string;
+}
 
 // Função para buscar documentos (mantida a lógica de RLS e busca de perfis)
-const fetchDocuments = async (tenantId: string): Promise<SchoolDocument[]> => {
-  const { data, error } = await supabase
+const fetchDocuments = async (
+  tenantId: string, 
+  documentTypeFilter: DocumentTypeFilter, 
+  studentIdFilter: string
+): Promise<SchoolDocument[]> => {
+  let query = supabase
     .from('documents')
     .select(`
       id,
@@ -34,8 +49,16 @@ const fetchDocuments = async (tenantId: string): Promise<SchoolDocument[]> => {
       related_entity_id,
       metadata,
       description
-    `)
-    .order('generated_at', { ascending: false });
+    `);
+
+  if (documentTypeFilter !== 'all') {
+    query = query.eq('document_type', documentTypeFilter);
+  }
+  if (studentIdFilter) {
+    query = query.eq('related_entity_id', studentIdFilter);
+  }
+
+  const { data, error } = await query.order('generated_at', { ascending: false });
 
   if (error) throw new Error(error.message);
   
@@ -76,6 +99,17 @@ const fetchDocuments = async (tenantId: string): Promise<SchoolDocument[]> => {
   });
 };
 
+// NOVO: Função para buscar alunos para o filtro
+const fetchStudentsForFilter = async (tenantId: string): Promise<Student[]> => {
+  const { data, error } = await supabase
+    .from('students')
+    .select('id, full_name, registration_code')
+    .eq('tenant_id', tenantId)
+    .order('full_name');
+  if (error) throw new Error(error.message);
+  return data;
+};
+
 const DocumentsPage: React.FC = () => {
   const { profile, isLoading: isProfileLoading } = useProfile();
   const queryClient = useQueryClient();
@@ -83,10 +117,19 @@ const DocumentsPage: React.FC = () => {
 
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [selectedDocument, setSelectedDocument] = useState<SchoolDocument | null>(null);
+  const [documentTypeFilter, setDocumentTypeFilter] = useState<DocumentTypeFilter>('all');
+  const [studentIdFilter, setStudentIdFilter] = useState<string>('');
 
   const { data: documents, isLoading: isDocumentsLoading, error } = useQuery<SchoolDocument[], Error>({
-    queryKey: ['documents', tenantId],
-    queryFn: () => fetchDocuments(tenantId!),
+    queryKey: ['documents', tenantId, documentTypeFilter, studentIdFilter],
+    queryFn: () => fetchDocuments(tenantId!, documentTypeFilter, studentIdFilter),
+    enabled: !!tenantId,
+  });
+
+  // NOVO: Query para buscar alunos para o filtro
+  const { data: studentsForFilter, isLoading: isLoadingStudentsForFilter } = useQuery<Student[], Error>({
+    queryKey: ['studentsForDocumentFilter', tenantId],
+    queryFn: () => fetchStudentsForFilter(tenantId!),
     enabled: !!tenantId,
   });
 
@@ -101,41 +144,34 @@ const DocumentsPage: React.FC = () => {
         .single();
 
       if (fetchError) throw new Error(`Erro ao buscar URL do arquivo: ${fetchError.message}`);
-      if (!docData?.file_url) throw new Error("URL do arquivo não encontrada para exclusão.");
+      // Documentos gerados dinamicamente podem ter 'generated_on_demand' como file_url
+      // Não tentamos deletar do storage se for um documento gerado on-demand
+      if (docData?.file_url && docData.file_url !== 'generated_on_demand') {
+        const fileUrl = docData.file_url;
+        const bucketName = 'school-documents'; // O nome do bucket é fixo
 
-      const fileUrl = docData.file_url;
-      const bucketName = 'school-documents'; // O nome do bucket é fixo
+        const pathIdentifier = `/${bucketName}/`;
+        const pathIndex = fileUrl.indexOf(pathIdentifier);
+        let filePath: string;
 
-      // Extrai o caminho do arquivo relativo ao bucket.
-      // Isso lida tanto com URLs completas do Supabase (ex: .../public/school-documents/path/to/file.pdf)
-      // quanto com caminhos que já começam com o nome do bucket (ex: school-documents/path/to/file.pdf)
-      const pathIdentifier = `/${bucketName}/`;
-      const pathIndex = fileUrl.indexOf(pathIdentifier);
-      let filePath: string;
+        if (pathIndex !== -1) {
+          filePath = fileUrl.substring(pathIndex + pathIdentifier.length);
+        } else if (fileUrl.startsWith(bucketName + '/')) {
+          filePath = fileUrl.substring(bucketName.length + 1);
+        } else {
+          console.warn(`[DocumentsPage] Não foi possível extrair o caminho do arquivo de forma padrão para: ${fileUrl}. Usando a URL completa como filePath.`);
+          filePath = fileUrl;
+        }
 
-      if (pathIndex !== -1) {
-        // Se encontrar o identificador, pega tudo depois dele
-        filePath = fileUrl.substring(pathIndex + pathIdentifier.length);
-      } else if (fileUrl.startsWith(bucketName + '/')) {
-        // Se a URL já começa com o nome do bucket, remove apenas o nome do bucket
-        filePath = fileUrl.substring(bucketName.length + 1);
-      } else {
-        // Se nenhuma das opções acima, assume que a URL inteira (ou o que sobrou dela) é o filePath
-        // Isso pode acontecer se a URL for apenas 'uploads/file.pdf' e o bucket for implícito
-        console.warn(`[DocumentsPage] Não foi possível extrair o caminho do arquivo de forma padrão para: ${fileUrl}. Usando a URL completa como filePath.`);
-        filePath = fileUrl;
-      }
+        if (filePath) {
+          const { error: storageError } = await supabase.storage
+            .from(bucketName)
+            .remove([filePath]);
 
-      if (!filePath) {
-        throw new Error(`Caminho do arquivo não encontrado para exclusão na URL: ${fileUrl}`);
-      }
-
-      const { error: storageError } = await supabase.storage
-        .from(bucketName)
-        .remove([filePath]);
-
-      if (storageError) {
-        console.warn("Erro ao deletar arquivo do storage (pode já ter sido removido):", storageError.message);
+          if (storageError) {
+            console.warn("Erro ao deletar arquivo do storage (pode já ter sido removido):", storageError.message);
+          }
+        }
       }
 
       const { error: dbError } = await supabase
@@ -157,7 +193,12 @@ const DocumentsPage: React.FC = () => {
   });
 
   const handleViewDocument = (doc: SchoolDocument) => {
-    window.open(doc.file_url, '_blank');
+    // Se o file_url for 'generated_on_demand', redireciona para a rota de visualização dinâmica
+    if (doc.file_url === 'generated_on_demand' && doc.related_entity_id) {
+      window.open(`/documents/generate/${doc.document_type}/${doc.related_entity_id}`, '_blank');
+    } else {
+      window.open(doc.file_url, '_blank');
+    }
   };
 
   const handleDeleteDocument = (doc: SchoolDocument) => {
@@ -171,7 +212,7 @@ const DocumentsPage: React.FC = () => {
     }
   };
 
-  if (isProfileLoading || isDocumentsLoading) {
+  if (isProfileLoading || isDocumentsLoading || isLoadingStudentsForFilter) {
     return (
       <div className="flex justify-center items-center h-64">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -187,11 +228,73 @@ const DocumentsPage: React.FC = () => {
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h1 className="text-3xl font-bold">Gestão de Documentos</h1>
-        {/* O botão de Novo Documento agora está dentro do painel de upload */}
       </div>
 
       {/* Painel de Geração Dinâmica */}
       <DocumentGenerationPanel />
+
+      {/* NOVO: Filtros para a tabela de documentos */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <FileText className="h-5 w-5 text-accent" />
+            Documentos Gerados
+          </CardTitle>
+          <CardDescription>Visualize e gerencie todos os documentos gerados no sistema.</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Filtro por Tipo de Documento */}
+            <div className="space-y-2">
+              <Label htmlFor="filter_document_type">Filtrar por Tipo</Label>
+              <Select 
+                onValueChange={(value: DocumentTypeFilter) => setDocumentTypeFilter(value)} 
+                value={documentTypeFilter}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Todos os Tipos" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos os Tipos</SelectItem>
+                  <SelectItem value="contract">Contrato</SelectItem>
+                  <SelectItem value="receipt">Recibo</SelectItem>
+                  <SelectItem value="report_card">Boletim</SelectItem>
+                  <SelectItem value="transcript">Histórico Escolar</SelectItem>
+                  <SelectItem value="payslip">Holerite</SelectItem>
+                  <SelectItem value="other">Outro</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Filtro por Aluno */}
+            <div className="space-y-2">
+              <Label htmlFor="filter_student_id">Filtrar por Aluno</Label>
+              <Select 
+                onValueChange={setStudentIdFilter} 
+                value={studentIdFilter}
+                disabled={isLoadingStudentsForFilter}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder={isLoadingStudentsForFilter ? "Carregando Alunos..." : "Todos os Alunos"} />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">Todos os Alunos</SelectItem>
+                  {studentsForFilter?.map((s) => (
+                    <SelectItem key={s.id} value={s.id}>
+                      {s.full_name} ({s.registration_code})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <DocumentTable 
+            documents={documents || []} 
+            onView={handleViewDocument} 
+            onDelete={handleDeleteDocument} 
+          />
+        </CardContent>
+      </Card>
 
       <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
         <AlertDialogContent>
